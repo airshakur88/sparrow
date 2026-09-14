@@ -1,6 +1,9 @@
 #!/bin/sh
 set -eu
 
+sparrow_ref="${SPARROW_REF:-main}"
+sparrow_source="git+https://github.com/airshakur88/sparrow@${sparrow_ref}"
+
 usage() {
     printf '%s\n' \
         'Install Sparrow with uv.' \
@@ -30,6 +33,13 @@ if [ ! -x "$uv_cmd" ]; then
     exit 1
 fi
 
-"$uv_cmd" tool install --python 3.11 --force sparrow
-printf '%s\n' 'Sparrow installed. Open a new shell if sparrow is not on PATH yet.'
-"$uv_cmd" tool run --from sparrow sparrow --version
+"$uv_cmd" tool install --python 3.11 --force "$sparrow_source"
+bin_dir=$($uv_cmd tool dir --bin)
+PATH="$bin_dir:$PATH"
+export PATH
+if ! command -v sparrow >/dev/null 2>&1; then
+    printf '%s\n' 'sparrow command was not found after installation.' >&2
+    exit 1
+fi
+printf '%s\n' 'Sparrow installed from GitHub.'
+sparrow --version

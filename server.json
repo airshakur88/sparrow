@@ -7,23 +7,5 @@
     "url": "https://github.com/airshakur88/sparrow",
     "source": "github"
   },
-  "version": "0.13.0",
-  "packages": [
-    {
-      "registryType": "pypi",
-      "registryBaseUrl": "https://pypi.org",
-      "identifier": "sparrow",
-      "version": "0.13.0",
-      "runtimeHint": "uvx",
-      "transport": {
-        "type": "stdio"
-      },
-      "packageArguments": [
-        {
-          "type": "positional",
-          "value": "mcp"
-        }
-      ]
-    }
-  ]
+  "version": "0.13.0"
 }

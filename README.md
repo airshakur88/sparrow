@@ -12,8 +12,14 @@ Run in a terminal with `curl`:
 curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.sh | sh
 ```
 
-The installer installs `uv` when needed, then installs Sparrow as a `uv` tool.
-Open a new shell if the `sparrow` command is not immediately available.
+The installer installs `uv` when needed, then installs Sparrow directly from this
+GitHub repository.
+
+To install a specific branch or tag, set `SPARROW_REF` before running the script:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.sh | SPARROW_REF=v0.13.0 sh
+```
 
 ### Windows
 
@@ -23,8 +29,14 @@ Run in PowerShell:
 irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.ps1 | iex
 ```
 
-If PowerShell cannot find `sparrow` after installation, open a new PowerShell
-window. The installer does not request or store API keys.
+The installer adds the `uv` tool directory to the current PowerShell session.
+The installer does not request or store API keys.
+
+To install a specific branch or tag:
+
+```powershell
+$env:SPARROW_REF = "v0.13.0"; irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.ps1 | iex
+```
 
 Check the installation:
 

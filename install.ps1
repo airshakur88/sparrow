@@ -2,6 +2,9 @@
 
 $ErrorActionPreference = 'Stop'
 
+$sparrowRef = if ($env:SPARROW_REF) { $env:SPARROW_REF } else { 'main' }
+$sparrowSource = "git+https://github.com/airshakur88/sparrow@$sparrowRef"
+
 if ($args.Count -gt 0 -and $args[0] -in @('-h', '--help')) {
     Write-Output 'Install Sparrow with uv.'
     Write-Output 'Usage: irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.ps1 | iex'
@@ -27,6 +30,11 @@ if ($null -eq $uv) {
     throw 'uv was not found after installation.'
 }
 
-& $uv.Source tool install --python 3.11 --force sparrow
-Write-Output 'Sparrow installed. Open a new PowerShell session if sparrow is not on PATH yet.'
-& $uv.Source tool run --from sparrow sparrow --version
+& $uv.Source tool install --python 3.11 --force $sparrowSource
+$binPath = (& $uv.Source tool dir --bin).Trim()
+$env:Path = "$binPath;$env:Path"
+if (-not (Get-Command sparrow -ErrorAction SilentlyContinue)) {
+    throw 'sparrow command was not found after installation.'
+}
+Write-Output 'Sparrow installed from GitHub.'
+& sparrow --version
