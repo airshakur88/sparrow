@@ -9,7 +9,7 @@ Sparrow is an OpenAI-compatible gateway for free and configured LLM providers.
 Run in a terminal with `curl`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.sh | sh
 ```
 
 The installer installs `uv` when needed, then installs Sparrow as a `uv` tool.
@@ -20,7 +20,7 @@ Open a new shell if the `sparrow` command is not immediately available.
 Run in PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/airshakur88/sparrow/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.ps1 | iex
 ```
 
 If PowerShell cannot find `sparrow` after installation, open a new PowerShell

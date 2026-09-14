@@ -4,7 +4,7 @@ set -eu
 usage() {
     printf '%s\n' \
         'Install Sparrow with uv.' \
-        'Usage: curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/main/install.sh | sh'
+        'Usage: curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.sh | sh'
 }
 
 if [ "$#" -gt 0 ]; then

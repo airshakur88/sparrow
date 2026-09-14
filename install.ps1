@@ -4,7 +4,7 @@ $ErrorActionPreference = 'Stop'
 
 if ($args.Count -gt 0 -and $args[0] -in @('-h', '--help')) {
     Write-Output 'Install Sparrow with uv.'
-    Write-Output 'Usage: irm https://raw.githubusercontent.com/airshakur88/sparrow/main/install.ps1 | iex'
+    Write-Output 'Usage: irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/install.ps1 | iex'
     exit 0
 }
 
