@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "fixture_sha256": {
+    "grounded-reading": "d7e5a6eacd6d326e38ace0a7204cd35d2c86706d0ff6a53b8481a422c7f1afd8"
+  },
+  "scores": {
+    "grounded-reading": {
+      "llama-3.3-70b-versatile": {
+        "fixture_sha256": "d7e5a6eacd6d326e38ace0a7204cd35d2c86706d0ff6a53b8481a422c7f1afd8",
+        "passed": 3,
+        "score": 1.0,
+        "source": "synthetic-grounded-v1 live free-tier validation 2026-07-29",
+        "trials": 3
+      }
+    }
+  }
+}
