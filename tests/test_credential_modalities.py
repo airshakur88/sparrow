@@ -47,7 +47,7 @@ def test_embed_uses_managed_secret_without_legacy_env_key():
         env={},
         post=post,
         embedders=[_provider()],
-        credential_manager=manager,  # type: ignore[arg-type]
+        credential_manager=manager,                          
     ).embed("hello", providers=["alpha"])
 
     assert reply.vectors == [[1.0]]
@@ -69,7 +69,7 @@ def test_transcribe_uses_managed_secret_without_legacy_env_key():
         env={},
         transcribe_post=multipart,
         transcribers=[_provider()],
-        credential_manager=manager,  # type: ignore[arg-type]
+        credential_manager=manager,                          
     ).transcribe(b"audio", "sample.wav", providers=["alpha"])
 
     assert reply.text == "hello"

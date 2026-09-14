@@ -1,14 +1,14 @@
-"""Local foreground job queue for slow, quota-aware sparrow work.
+                                                                 
 
-The queue is an append-only JSONL log under the user config dir. Every
-state transition is a new event, not a mutation of an earlier record — the
-queue is replayed from scratch on read so the queue survives process
-restart. Cancellation is represented by a dedicated ``cancelled`` event so
-it composes with restart-safe replay.
+                                                                      
+                                                                          
+                                                                    
+                                                                          
+                                     
 
-The first slice runs jobs synchronously in the foreground (no daemon); see
-``sparrow jobs run`` for the entry point.
-"""
+                                                                          
+                                         
+   
 
 from __future__ import annotations
 
@@ -25,12 +25,12 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import fcntl  # POSIX advisory file locks
-except ImportError:  # pragma: no cover - non-POSIX (Windows)
-    fcntl = None  # type: ignore[assignment]  # noqa: N806
+    import fcntl                             
+except ImportError:                                          
+    fcntl = None                                          
 
 from .models import Reply
-from .reports import write_report  # re-exported at module level for tests/CLI  # noqa: E402
+from .reports import write_report                                                           
 
 JOB_SCHEMA_VERSION = "1.0.0"
 JOB_KIND_RECIPE = "recipe"
@@ -42,13 +42,13 @@ JOB_EVENT_COMPLETED = "completed"
 JOB_EVENT_FAILED = "failed"
 JOB_EVENT_CANCELLED = "cancelled"
 
-# WU-009 contract: the set of event types this implementation understands
-# and is willing to materialize. Any other event type seen in the JSONL
-# must be rejected by ``JobEvent.from_dict`` and skipped during replay
-# so a future/unknown event appended by a newer writer can never mutate
-# the materialized view of an already-terminal job (e.g. resurrecting a
-# ``completed``/``cancelled`` job by emitting a spurious
-# ``status="running"`` event after the fact).
+                                                                         
+                                                                       
+                                                                      
+                                                                       
+                                                                       
+                                                        
+                                             
 JOB_KNOWN_EVENT_TYPES = frozenset(
     {
         JOB_EVENT_QUEUED,
@@ -73,7 +73,7 @@ _JOB_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 class JobError(ValueError):
-    """Raised when a job record cannot be parsed or written safely."""
+    pass
 
 
 class UnknownJobError(JobError):
@@ -88,7 +88,7 @@ class DuplicateJobError(JobError):
 
 @dataclass(frozen=True)
 class JobEvent:
-    """One append-only event in the job queue log."""
+                                                     
 
     seq: int
     event: str
@@ -111,10 +111,10 @@ class JobEvent:
             raise JobError(f"unsupported job schema version: {schema!r}")
         seq = data.get("seq")
         event = data.get("event")
-        # WU-009 contract: events must carry a stable top-level ``id`` (==
-        # ``job_id``) so future readers can address an event without having
-        # to know about the legacy ``job_id`` alias. Accept either form on
-        # replay so older logs keep working.
+                                                                          
+                                                                           
+                                                                          
+                                            
         job_id = data.get("job_id")
         if job_id is None:
             job_id = data.get("id")
@@ -124,11 +124,11 @@ class JobEvent:
             raise JobError("job event missing integer seq")
         if not isinstance(event, str) or not event:
             raise JobError("job event missing event type")
-        # Reject unknown/future event types so they can never mutate the
-        # materialized view of an already-terminal job. ``_read_jsonl_events``
-        # catches ``JobError`` and skips the offending line, so an unknown
-        # future event appended later in the JSONL is dropped on replay
-        # instead of being applied as a fresh status transition.
+                                                                        
+                                                                              
+                                                                          
+                                                                       
+                                                                
         if event not in JOB_KNOWN_EVENT_TYPES:
             raise JobError(f"unknown job event type: {event!r}")
         if not isinstance(job_id, str) or not _JOB_ID.fullmatch(job_id):
@@ -146,9 +146,9 @@ class JobEvent:
         attempt_metadata = data.get("attempt_metadata", {})
         if not isinstance(attempt_metadata, Mapping):
             raise JobError("job event attempt_metadata must be an object")
-        # When only the integer ``attempt`` was stored (older writers or
-        # truncated logs), synthesise a minimal ``attempt_metadata`` so the
-        # replayed materialised job still exposes a stable expansion point.
+                                                                        
+                                                                           
+                                                                           
         normalised_metadata = dict(attempt_metadata)
         if not normalised_metadata:
             normalised_metadata = {"number": int(attempt)}
@@ -171,12 +171,12 @@ class JobEvent:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        # WU-009 contract: emit a stable top-level ``id`` alias equal to
-        # ``job_id`` while still writing ``job_id`` for internal
-        # compatibility with the rest of the codepath.
+                                                                        
+                                                                
+                                                      
         attempt_metadata = dict(self.attempt_metadata) if self.attempt_metadata else {}
-        # Keep ``attempt_metadata.number`` in sync with the integer
-        # ``attempt`` so the two never drift on append.
+                                                                   
+                                                       
         if attempt_metadata.get("number") != self.attempt:
             attempt_metadata = {**attempt_metadata, "number": int(self.attempt)}
         payload: dict[str, Any] = {
@@ -206,7 +206,7 @@ class JobEvent:
 
 @dataclass(frozen=True)
 class Job:
-    """Materialized view of a job built by replaying JSONL events."""
+                                                                     
 
     job_id: str
     kind: str
@@ -249,12 +249,12 @@ class Job:
 
 @dataclass(frozen=True)
 class JobSpec:
-    """Caller-facing spec describing a queued job.
+                                                  
 
-    ``kind`` is ``"recipe"`` (the common case) or ``"ask"`` for plain
-    prompt/role jobs. ``dedupe_key`` is optional; when provided and not
-    empty, ``JobStore.add`` rejects re-submissions of the same key.
-    """
+                                                                     
+                                                                       
+                                                                   
+       
 
     kind: str
     payload: Mapping[str, Any]
@@ -262,7 +262,7 @@ class JobSpec:
 
 
 class JobStore:
-    """Append-only JSONL-backed job queue."""
+                                             
 
     def __init__(
         self,
@@ -278,10 +278,10 @@ class JobStore:
         self._id_factory = id_factory or _default_job_id
         self._lock = threading.Lock()
 
-    # ---- public API -------------------------------------------------
+                                                                       
 
     def add(self, spec: JobSpec) -> Job:
-        """Append a new ``queued`` event and return the materialized job."""
+                                                                            
         kind = spec.kind
         if kind not in {JOB_KIND_RECIPE, JOB_KIND_ASK}:
             raise JobError(f"unsupported job kind: {kind!r}")
@@ -319,13 +319,13 @@ class JobStore:
                 attempt_metadata={"number": 0},
             )
             self._append_locked(event)
-            # Replay after the append so the materialized view reflects the
-            # new ``queued`` event we just wrote.
+                                                                           
+                                                 
             replay = self._replay_locked()
             return self._materialize(event.job_id, replay)
 
     def cancel(self, job_id: str) -> Job:
-        """Append a ``cancelled`` tombstone event. Idempotent."""
+                                                                 
         with self._lock, self._file_lock():
             replay = self._replay_locked()
             job = replay.get(job_id)
@@ -355,27 +355,27 @@ class JobStore:
             return list(self._events_locked())
 
     def jobs(self) -> list[Job]:
-        """Return all jobs in append (FIFO) order.
+                                                  
 
-        Job ids are random UUIDs by default, so a lexicographic sort over
-        ``job_id`` would shuffle the queue. We sort by the seq of each
-        job's first event (a monotonically increasing counter written at
-        append time) and use ``created_at`` as a stable tiebreaker so the
-        observed order matches the order callers added jobs in.
-        """
+                                                                         
+                                                                      
+                                                                        
+                                                                         
+                                                               
+           
         with self._lock:
             return self._jobs_locked()
 
     def pending(self) -> list[Job]:
-        """Return jobs that are still retryable.
+                                                
 
-        A job is retryable when its last event is *not* a terminal event
-        (i.e. it is still ``pending`` *or* stranded in ``started``/
-        ``running`` because a previous ``jobs run`` crashed before
-        appending ``completed``/``failed``/``cancelled``). The runner
-        distinguishes the two cases internally: pending jobs start fresh
-        on attempt 1, while stranded jobs resume with attempt+1.
-        """
+                                                                        
+                                                                   
+                                                                  
+                                                                     
+                                                                        
+                                                                
+           
         return [job for job in self.jobs() if not job.is_terminal]
 
     def get(self, job_id: str) -> Job | None:
@@ -385,7 +385,7 @@ class JobStore:
         with self._lock:
             return dict(self._replay_locked())
 
-    # ---- internal ---------------------------------------------------
+                                                                       
 
     def _append_event_locked(
         self,
@@ -400,9 +400,9 @@ class JobStore:
     ) -> JobEvent:
         with self._file_lock():
             seq = self._next_seq_locked()
-            # Default attempt_metadata always carries ``number`` so future
-            # readers have a stable expansion point even when the caller
-            # did not provide richer metadata.
+                                                                          
+                                                                        
+                                              
             if attempt_metadata is None:
                 attempt_metadata = {"number": int(attempt)}
             else:
@@ -424,22 +424,22 @@ class JobStore:
 
     def _replay_locked(self) -> dict[str, Job]:
         replay: dict[str, Job] = {}
-        # Preserve the original append order alongside the materialized view
-        # so ``_jobs_locked`` can return jobs in FIFO order without having
-        # to re-scan the log.
+                                                                            
+                                                                          
+                             
         for event in self._events_locked():
             replay[event.job_id] = _materialize_event(event, replay.get(event.job_id))
         return replay
 
     def _jobs_locked(self) -> list[Job]:
-        """Materialize and sort jobs in append order (FIFO).
+                                                            
 
-        We sort by the seq of each job's *first* event because seq is
-        monotonically increasing across the log and is robust to clock
-        jitter, fractional seconds, and the random job_id UUIDs.
-        ``created_at`` is kept as a tiebreaker so two jobs whose queued
-        events somehow share a seq still land in a stable order.
-        """
+                                                                     
+                                                                      
+                                                                
+                                                                       
+                                                                
+           
         replay = self._replay_locked()
         ordered = sorted(
             replay.values(),
@@ -479,17 +479,17 @@ class JobStore:
     def _append_locked(self, event: JobEvent) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8", newline="") as fh:
-            # WU-009 append-safety: if the file already ends with a
-            # malformed partial line that has no trailing newline (e.g. a
-            # truncated write from a previous process), emitting the next
-            # JSON object immediately after that fragment would create one
-            # combined line that ``json.loads`` rejects as a single unit.
-            # The replay path would then drop the combined malformed line
-            # *and* the newly appended event, silently losing the new
-            # event. Insert a newline before the next event so the new
-            # event always starts on its own JSONL line. The malformed
-            # fragment is left untouched (append-only) and continues to be
-            # skipped on replay.
+                                                                   
+                                                                         
+                                                                         
+                                                                          
+                                                                         
+                                                                         
+                                                                     
+                                                                      
+                                                                      
+                                                                          
+                                
             if self.path.exists():
                 try:
                     with self.path.open("rb") as tail:
@@ -527,12 +527,12 @@ class JobStore:
         return self._clock().astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-# ---- runner ---------------------------------------------------------
+                                                                       
 
 
 @dataclass(frozen=True)
 class RunOutcome:
-    """Result of one foreground ``jobs run`` invocation."""
+                                                           
 
     completed: tuple[Job, ...]
     failed: tuple[Job, ...]
@@ -561,22 +561,22 @@ def run_pending_jobs(
     max_failures: int | None = None,
     limit: int | None = None,
 ) -> RunOutcome:
-    """Process pending queued jobs foreground-style.
+                                                    
 
-    The runner is intentionally minimal: it appends a ``started`` event,
-    invokes the appropriate execution path, then appends either a
-    ``completed`` or ``failed`` event. Cancellation that arrived between
-    replay and dispatch is honoured (the runner skips the job rather than
-    running it). Reports are written for completed jobs via the WU-008
-    ``RunRecord``/``write_report`` helpers.
+                                                                        
+                                                                 
+                                                                        
+                                                                         
+                                                                      
+                                           
 
-    Stranded ``started`` events from a crashed previous run are picked
-    up too: the materialized status of such a job is ``running`` (not
-    terminal), so the loop re-runs it and appends a fresh ``started``
-    event with an incremented attempt before doing the work. Old
-    ``started`` records are never mutated — only new events are
-    appended.
-    """
+                                                                      
+                                                                     
+                                                                     
+                                                                
+                                                               
+             
+       
     if max_failures is not None and max_failures < 1:
         raise JobError("--max-failures must be >= 1")
     if limit is not None and limit < 1:
@@ -599,18 +599,18 @@ def run_pending_jobs(
             halted_by_max_failures = True
             break
         if dry_run:
-            # Dry-run never mutates the queue.
+                                              
             continue
         refreshed = store.get(job.job_id)
         if refreshed is None:
             continue
-        # Honour cancellation that arrived between snapshot and dispatch
-        # (the materialized view only flips to ``cancelled`` after a
-        # ``cancelled`` tombstone event is appended).
+                                                                        
+                                                                    
+                                                     
         if refreshed.is_terminal and refreshed.status != JOB_STATUS_CANCELLED:
-            # Another runner already finished the job (e.g. terminal
-            # ``completed``/``failed`` appeared between snapshot and
-            # dispatch). Skip it without recording it as cancelled.
+                                                                    
+                                                                    
+                                                                   
             continue
         if refreshed.status == JOB_STATUS_CANCELLED:
             cancelled.append(refreshed)
@@ -634,9 +634,9 @@ def run_pending_jobs(
             if max_failures is not None and consecutive_failures >= max_failures:
                 halted_by_max_failures = True
                 break
-        else:  # cancelled before/during execution
+        else:                                     
             cancelled.append(final)
-        _ = index  # silence unused warning; index reserved for future tracing
+        _ = index                                                             
 
     pending_after = tuple(
         job
@@ -662,12 +662,12 @@ def _execute_job(
     record_store: Any,
     recipes_module: Any,
 ) -> str | None:
-    """Run a single job and append terminal events. Returns final status."""
+                                                                            
     attempt = job.attempt + 1
-    # Stranded jobs (last event is a non-terminal ``started`` from a
-    # crashed previous run) get a resumed marker in attempt_metadata so
-    # operators can grep the JSONL for ``"resumed": true`` when triaging
-    # crashes.
+                                                                    
+                                                                       
+                                                                        
+              
     is_resumed = bool(job.events) and job.events[-1].event == JOB_EVENT_STARTED
     attempt_metadata: dict[str, Any] = {
         "number": int(attempt),
@@ -683,9 +683,9 @@ def _execute_job(
         attempt=attempt,
         attempt_metadata=attempt_metadata,
     )
-    # Re-check terminal status right before execution starts; honour any
-    # terminal event that arrived while we were waiting for the lock above.
-    # This generalizes the cancellation recheck to completed/failed races too.
+                                                                        
+                                                                           
+                                                                              
     refreshed = store.get(job.job_id)
     if refreshed is None:
         return JOB_STATUS_CANCELLED
@@ -698,17 +698,17 @@ def _execute_job(
                 pool_factory=pool_factory,
                 recipes_module=recipes_module,
             )
-            # Re-check terminal status after provider/recipe execution before
-            # writing any terminal ``completed`` side effects. If a terminal
-            # event arrived during execution (race with another runner), return
-            # its status immediately without appending a second terminal event.
+                                                                             
+                                                                            
+                                                                               
+                                                                               
             refreshed_after = store.get(job.job_id)
             if refreshed_after is not None and refreshed_after.is_terminal:
                 return refreshed_after.status
             record = recipes_module.write_recipe_record(result, store=record_store)
             try:
                 write_report(record, "md", store=record_store)
-            except Exception:  # noqa: BLE001 - report is best-effort
+            except Exception:                                        
                 pass
             store._append_event_locked(
                 job_id=job.job_id,
@@ -725,7 +725,7 @@ def _execute_job(
             return JOB_STATUS_COMPLETED
         if job.kind == JOB_KIND_ASK:
             reply = _execute_ask_job(job, pool_factory=pool_factory)
-            # Honour terminal status that arrived during ``ask`` execution.
+                                                                           
             refreshed_after = store.get(job.job_id)
             if refreshed_after is not None and refreshed_after.is_terminal:
                 return refreshed_after.status
@@ -741,9 +741,9 @@ def _execute_job(
                 model=reply.model,
             )
             return JOB_STATUS_COMPLETED
-    except Exception as exc:  # noqa: BLE001 - record failure, keep going
-        # Honour terminal status that arrived before the provider raised. Do
-        # not append a ``failed`` event for a job that is already terminal.
+    except Exception as exc:                                             
+                                                                            
+                                                                           
         refreshed_after = store.get(job.job_id)
         if refreshed_after is not None and refreshed_after.is_terminal:
             return refreshed_after.status
@@ -757,7 +757,7 @@ def _execute_job(
             error=_safe_error(exc),
         )
         return JOB_STATUS_FAILED
-    return None  # pragma: no cover - defensive
+    return None                                
 
 
 def _execute_recipe_job(
@@ -818,7 +818,7 @@ def _safe_error(exc: BaseException) -> str:
     return final
 
 
-# ---- path defaults --------------------------------------------------
+                                                                       
 
 
 def default_jobs_path() -> Path:
@@ -864,42 +864,42 @@ def _default_record_store() -> Any:
     return RunRecordStore()
 
 
-# ---- helpers --------------------------------------------------------
+                                                                       
 
 
 def _first_event_seq(job: Job) -> int:
-    """Return the seq of the job's earliest recorded event.
+                                                           
 
-    Used as the FIFO sort key in ``_jobs_locked``. A job whose log starts
-    with seq=42 will always sort before a job whose log starts with seq=43
-    even when its random UUID id would have placed it elsewhere in a
-    lexicographic sort.
-    """
+                                                                         
+                                                                          
+                                                                    
+                       
+       
     if not job.events:
         return 0
     return min(event.seq for event in job.events)
 
 
 def _is_retryable(job: Job) -> bool:
-    """A job is retryable when it is not yet terminal.
+                                                      
 
-    This covers both newly queued (pending) jobs and jobs whose last
-    event is a stranded ``started``/``running`` event from a crashed
-    previous run. The runner will append a fresh ``started`` event with
-    an incremented attempt before doing the actual work.
-    """
+                                                                    
+                                                                    
+                                                                       
+                                                        
+       
     return not job.is_terminal
 
 
 def _stranded_jobs(jobs: Iterable[Job]) -> list[Job]:
-    """Return jobs whose last event is a non-terminal ``started``/``running``.
+                                                                              
 
-    This is the crash signature: the JSONL ends with ``started`` (or any
-    other non-terminal running-state event) and never reached
-    ``completed``, ``failed``, or ``cancelled``. The runner re-runs these
-    by appending a new ``started`` event with an incremented attempt
-    before doing the real work.
-    """
+                                                                        
+                                                             
+                                                                         
+                                                                    
+                               
+       
     stranded: list[Job] = []
     for job in jobs:
         if not job.events:
@@ -911,13 +911,13 @@ def _stranded_jobs(jobs: Iterable[Job]) -> list[Job]:
 
 
 def _materialize_event(event: JobEvent, prior: Job | None) -> Job:
-    """Reduce an event onto the materialized job view."""
-    # Terminal events (completed, failed, cancelled) freeze the materialized
-    # view: once a job has reached a terminal status, later known events in the
-    # append-only log must be tolerated (the log is append-only and may already
-    # contain them) but must not overwrite the terminal state. Preserve the
-    # first terminal event's status, attempt metadata, error, run_id, output,
-    # provider_id, and model across trailing events.
+                                                         
+                                                                            
+                                                                               
+                                                                               
+                                                                           
+                                                                             
+                                                    
     if prior is not None and prior.is_terminal:
         return Job(
             job_id=prior.job_id,
@@ -948,8 +948,8 @@ def _materialize_event(event: JobEvent, prior: Job | None) -> Job:
         if event.attempt_metadata
         else (dict(prior.attempt_metadata) if prior else {"number": int(attempt)})
     )
-    # Keep ``attempt_metadata.number`` aligned with the integer ``attempt``
-    # so the materialized view never has them disagree.
+                                                                           
+                                                       
     attempt_metadata.setdefault("number", int(attempt))
     last_error = event.error if event.error is not None else (
         prior.last_error if prior else None
@@ -1013,11 +1013,11 @@ def _optional_str(value: Any) -> str | None:
     return text if text else None
 
 
-# ---- rendering ------------------------------------------------------
+                                                                       
 
 
 def render_jobs(jobs: Iterable[Job]) -> str:
-    """Stable text table for ``sparrow jobs list`` and ``jobs watch``."""
+                                                                         
     rows = list(jobs)
     if not rows:
         return "No jobs in queue."
@@ -1052,14 +1052,14 @@ def render_jobs(jobs: Iterable[Job]) -> str:
 
 
 def render_run_plan(jobs: Iterable[Job], *, limit: int | None = None) -> str:
-    """Pretty execution order for ``jobs run --dry-run``.
+                                                         
 
-    ``jobs`` is expected to be the same snapshot ``run_pending_jobs``
-    would iterate (i.e. the pending FIFO list, including stranded
-    started jobs). ``limit`` mirrors ``--limit`` on ``jobs run`` and
-    caps how many lines the plan prints — so a dry-run produces the
-    same shape a real limited run would.
-    """
+                                                                     
+                                                                 
+                                                                    
+                                                                   
+                                        
+       
     rows = list(jobs)
     if limit is not None:
         if limit < 1:

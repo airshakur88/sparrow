@@ -1,9 +1,9 @@
-"""Parse explicit credential records and resolve availability before filtering.
+                                                                               
 
-This module handles the [[credentials]] table from config.toml, validating fields,
-resolving environment variables, deduplicating secrets, and synthesizing legacy
-credentials from provider.key_env when no explicit rows exist.
-"""
+                                                                                  
+                                                                               
+                                                              
+   
 
 from __future__ import annotations
 
@@ -14,16 +14,16 @@ from typing import Any
 from .credentials import CredentialSlot
 from .models import Provider
 
-# ID validation: 1-64 ASCII letters/digits/underscore/hyphen, starting with letter or digit
+                                                                                           
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
 
-# env_var validation: [A-Za-z_][A-Za-z0-9_]*
+                                            
 _ENV_VAR_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
 
 
 @dataclass(frozen=True)
 class ParseError(Exception):
-    """Raised when credential configuration is invalid."""
+                                                          
 
     message: str
     provider_id: str | None = None
@@ -40,7 +40,7 @@ class ParseError(Exception):
 
 
 def _validate_id(value: str, provider_id: str, credential_id: str | None) -> None:
-    """Validate credential ID format."""
+                                        
     if not _ID_RE.fullmatch(value):
         raise ParseError(
             f"invalid credential id {value!r}: must be 1-64 ASCII letters, digits, "
@@ -51,7 +51,7 @@ def _validate_id(value: str, provider_id: str, credential_id: str | None) -> Non
 
 
 def _validate_env_var(value: str, provider_id: str, credential_id: str | None) -> None:
-    """Validate environment variable name format."""
+                                                    
     if not _ENV_VAR_RE.fullmatch(value):
         raise ParseError(
             f"invalid env_var {value!r}: must match [A-Za-z_][A-Za-z0-9_]*",
@@ -61,7 +61,7 @@ def _validate_env_var(value: str, provider_id: str, credential_id: str | None) -
 
 
 def _validate_quota_group(value: str, provider_id: str, credential_id: str | None) -> None:
-    """Validate quota_group is non-empty."""
+                                            
     if not value or not value.strip():
         raise ParseError(
             "quota_group must be a non-empty string",
@@ -71,7 +71,7 @@ def _validate_quota_group(value: str, provider_id: str, credential_id: str | Non
 
 
 def _validate_enabled(value: object, provider_id: str, credential_id: str | None) -> bool:
-    """Validate and coerce enabled field to bool."""
+                                                    
     if isinstance(value, bool):
         return value
     if isinstance(value, str):
@@ -90,7 +90,7 @@ def _validate_enabled(value: object, provider_id: str, credential_id: str | None
 def _validate_known_fields(
     row: dict[str, Any], provider_id: str, credential_id: str | None
 ) -> None:
-    """Reject unsupported fields in credential row."""
+                                                      
     known = {"id", "provider", "env_var", "quota_group", "enabled"}
     for key in row:
         if key not in known:
@@ -102,7 +102,7 @@ def _validate_known_fields(
 
 
 def _resolve_secret(env_var: str, effective_env: dict[str, str]) -> str | None:
-    """Resolve secret from effective environment. Returns None if missing or blank."""
+                                                                                      
     value = effective_env.get(env_var)
     if value is None or value == "":
         return None
@@ -166,23 +166,23 @@ def parse_credentials(
     providers: list[Provider],
     env: dict[str, str],
 ) -> list[CredentialSlot]:
-    """Parse [[credentials]] from config.toml and resolve availability.
+                                                                       
 
-    Args:
-        config_data: Parsed config.toml dict (from load_config_file)
-        providers: List of Provider objects from the catalog
-        env: Effective environment (real env with config.toml [keys] as defaults)
+         
+                                                                    
+                                                            
+                                                                                 
 
-    Returns:
-        List of CredentialSlot objects with resolved availability.
+            
+                                                                  
 
-    Raises:
-        ParseError: On validation failures (duplicate ids, invalid types, etc.)
-    """
-    # Build provider lookup by id
+           
+                                                                               
+       
+                                 
     provider_by_id = {p.id: p for p in providers}
 
-    # Collect explicit credential rows from config
+                                                  
     credentials_rows = config_data.get("credentials", [])
     if not isinstance(credentials_rows, list):
         raise ParseError("[credentials] must be an array of tables")
@@ -194,7 +194,7 @@ def parse_credentials(
         if row["provider"] not in legacy_providers
     ]
 
-    # Track explicit credentials by (provider_id, credential_id)
+                                                                
     explicit_by_provider: dict[str, list[dict[str, Any]]] = {}
     seen_pairs: set[tuple[str, str]] = set()
 
@@ -202,7 +202,7 @@ def parse_credentials(
         if not isinstance(row, dict):
             raise ParseError("each [[credentials]] entry must be a table")
 
-        # Validate required fields
+                                  
         provider_id = row.get("provider")
         if not isinstance(provider_id, str):
             raise ParseError("credential row missing required 'provider' field (string)")
@@ -216,7 +216,7 @@ def parse_credentials(
 
         _validate_id(credential_id, provider_id, credential_id)
 
-        # Check for duplicate (provider, id)
+                                            
         pair = (provider_id, credential_id)
         if pair in seen_pairs:
             raise ParseError(
@@ -226,7 +226,7 @@ def parse_credentials(
             )
         seen_pairs.add(pair)
 
-        # Validate provider exists
+                                  
         if provider_id not in provider_by_id:
             raise ParseError(
                 f"credential references unknown provider {provider_id!r}",
@@ -236,7 +236,7 @@ def parse_credentials(
 
         provider = provider_by_id[provider_id]
 
-        # auth="none" providers reject explicit credential rows
+                                                               
         if provider.auth == "none":
             raise ParseError(
                 f"provider {provider_id!r} has auth=\"none\" and cannot have explicit credential rows",
@@ -244,7 +244,7 @@ def parse_credentials(
                 credential_id=credential_id,
             )
 
-        # Validate env_var
+                          
         env_var = row.get("env_var")
         if not isinstance(env_var, str):
             raise ParseError(
@@ -254,7 +254,7 @@ def parse_credentials(
             )
         _validate_env_var(env_var, provider_id, credential_id)
 
-        # Validate quota_group
+                              
         quota_group = row.get("quota_group")
         if not isinstance(quota_group, str):
             raise ParseError(
@@ -264,10 +264,10 @@ def parse_credentials(
             )
         _validate_quota_group(quota_group, provider_id, credential_id)
 
-        # Validate enabled (optional, defaults to True)
+                                                       
         enabled = _validate_enabled(row.get("enabled", True), provider_id, credential_id)
 
-        # Reject unknown fields
+                               
         _validate_known_fields(row, provider_id, credential_id)
 
         explicit_by_provider.setdefault(provider_id, []).append(
@@ -279,20 +279,20 @@ def parse_credentials(
             }
         )
 
-    # Now build CredentialSlot list
+                                   
     slots: list[CredentialSlot] = []
 
-    # Process providers with explicit credentials
+                                                 
     for provider_id, creds in explicit_by_provider.items():
         provider = provider_by_id[provider_id]
 
-        # Resolve secrets and deduplicate equal secrets within this provider
-        seen_secrets: dict[str, CredentialSlot] = {}  # secret -> first slot with that secret
+                                                                            
+        seen_secrets: dict[str, CredentialSlot] = {}                                         
 
         for cred in creds:
             secret = _resolve_secret(cred["env_var"], env)
 
-            # Create slot (secret not stored, only env_var reference)
+                                                                     
             slot = CredentialSlot(
                 id=cred["id"],
                 provider=provider_id,
@@ -301,10 +301,10 @@ def parse_credentials(
                 enabled=cred["enabled"],
             )
 
-            # Deduplicate: if secret is same as an earlier slot, skip this one
-            # (but only if both have actual secrets; None secrets are not deduped)
+                                                                              
+                                                                                  
             if secret is not None and secret in seen_secrets:
-                # Duplicate secret - skip this slot (it's unavailable due to duplicate)
+                                                                                       
                 continue
 
             if secret is not None:
@@ -312,25 +312,25 @@ def parse_credentials(
 
             slots.append(slot)
 
-    # Process providers WITHOUT explicit credentials - synthesize "legacy" from key_env
+                                                                                       
     for provider in providers:
         if provider.id in explicit_by_provider:
-            continue  # explicit rows replace implicit
+            continue                                  
 
-        # Only synthesize for providers that have a key_env
+                                                           
         if provider.key_env:
-            # Validate the key_env format (should already be valid from provider parsing)
+                                                                                         
             _validate_env_var(provider.key_env, provider.id, "legacy")
 
-            # Check if this provider is key_optional with explicit rows - but we already
-            # skipped providers with explicit rows, so this is the implicit case
+                                                                                        
+                                                                                
             secret = _resolve_secret(provider.key_env, env)
 
             slot = CredentialSlot(
                 id="legacy",
                 provider=provider.id,
                 env_var=provider.key_env,
-                quota_group=provider.id,  # quota_group defaults to provider id
+                quota_group=provider.id,                                       
                 enabled=True,
             )
             slots.append(slot)
@@ -341,15 +341,15 @@ def parse_credentials(
 def filter_available_slots(
     slots: list[CredentialSlot], env: dict[str, str]
 ) -> tuple[list[CredentialSlot], list[tuple[CredentialSlot, str]]]:
-    """Filter slots to only available ones, returning (available, unavailable_with_reason).
+                                                                                           
 
-    A slot is available if:
-    - enabled=True
-    - env_var resolves to a non-empty secret in the environment
+                           
+                  
+                                                               
 
-    Returns:
-        Tuple of (available_slots, list of (slot, reason) for unavailable)
-    """
+            
+                                                                          
+       
     available: list[CredentialSlot] = []
     unavailable: list[tuple[CredentialSlot, str]] = []
 

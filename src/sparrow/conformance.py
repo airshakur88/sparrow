@@ -1,9 +1,9 @@
-"""Per-model protocol conformance evidence and deterministic canary validators.
+                                                                               
 
-The store deliberately contains only bounded classifications and timestamps. Provider
-responses, prompts, exception strings, credentials, and user/repository content are
-never persisted.
-"""
+                                                                                     
+                                                                                   
+                
+   
 
 from __future__ import annotations
 
@@ -27,15 +27,15 @@ from .models import Provider, Reply
 if TYPE_CHECKING:
     from .router import Target
 
-try:  # pragma: no cover - Windows fallback
+try:                                       
     import fcntl
-except ImportError:  # pragma: no cover
-    fcntl = None  # type: ignore[assignment]
+except ImportError:                    
+    fcntl = None                            
 
-try:  # pragma: no cover - POSIX fallback
+try:                                     
     import msvcrt
-except ImportError:  # pragma: no cover
-    msvcrt = None  # type: ignore[assignment]
+except ImportError:                    
+    msvcrt = None                            
 
 
 FEATURE_CHAT = "chat"
@@ -74,7 +74,7 @@ _OK_PROMPT = "Reply with exactly OK."
 _JSON_PROMPT = 'Return exactly this JSON object: {"ok":true}'
 _TOOL_PROMPT = "Call record_number exactly once with number 7. Do not answer in text."
 _VISION_PROMPT = "What single color is this image? Reply with one lowercase color word."
-# A fixed 1x1 red PNG. It contains no user or repository content.
+                                                                 
 _RED_PIXEL = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/"
@@ -96,7 +96,7 @@ _CANARY_TOOL = {
 
 
 def default_conformance_path(env: Mapping[str, str] | None = None) -> Path:
-    """Return the local machine-readable protocol evidence path."""
+                                                                   
 
     source = env if env is not None else os.environ
     override = source.get("SPARROW_CONFORMANCE_FILE")
@@ -106,7 +106,7 @@ def default_conformance_path(env: Mapping[str, str] | None = None) -> Path:
 
 
 def target_fingerprint(provider: Provider, model: str) -> str:
-    """Stable identity used to invalidate evidence after adapter/model endpoint changes."""
+                                                                                           
 
     value = "\0".join((provider.id, provider.adapter, provider.base_url, model))
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
@@ -173,7 +173,7 @@ def _clean_state(value: object) -> dict[str, Any]:
 
 
 def _target_recency(value: object) -> str:
-    """Comparable latest verification timestamp for deterministic eviction."""
+                                                                              
 
     if not isinstance(value, dict) or not isinstance(value.get("features"), dict):
         return ""
@@ -188,7 +188,7 @@ def _target_recency(value: object) -> str:
 
 
 class ConformanceStore:
-    """Small JSON-backed feature evidence store shared by CLI, router, and proxy."""
+                                                                                    
 
     def __init__(self, path: Path | str | None = None):
         self.path = Path(path) if path is not None else default_conformance_path()
@@ -264,7 +264,7 @@ class ConformanceStore:
         classification: str,
         verified_at: str | None = None,
     ) -> None:
-        """Persist one sanitized feature result, preserving only a bounded classification."""
+                                                                                             
 
         if feature not in FEATURES:
             raise ValueError(f"unknown conformance feature: {feature}")
@@ -306,7 +306,7 @@ class ConformanceStore:
             self._save(state)
 
     def snapshot(self) -> dict[str, Any]:
-        """Return a sanitized current snapshot without mutating a malformed source file."""
+                                                                                           
 
         with self._lock:
             return self._load()
@@ -318,7 +318,7 @@ class ConformanceStore:
         *,
         snapshot: Mapping[str, Any] | None = None,
     ) -> dict[str, dict[str, Any]]:
-        """Feature evidence for the exact current target identity, or an empty mapping."""
+                                                                                          
 
         state = self.snapshot() if snapshot is None else snapshot
         raw_targets = state.get("targets")
@@ -380,7 +380,7 @@ def required_features(
     stream: bool = False,
     protocol: str | None = None,
 ) -> frozenset[str]:
-    """Infer protocol features required by a request without inspecting its text."""
+                                                                                    
 
     features: set[str] = set()
     if tools:
@@ -403,7 +403,7 @@ def required_features(
 
 
 def classify_canary_exception(exc: Exception) -> str:
-    """Return a privacy-safe failure class; never include the exception message."""
+                                                                                   
 
     if isinstance(exc, ProviderHTTPError):
         if exc.status in {400, 404, 405, 415, 422}:
@@ -429,7 +429,7 @@ def _normalized_ok(text: str) -> bool:
 
 
 def validate_canary_result(feature: str, result: Reply | str | Iterable[str]) -> str:
-    """Validate normalized feature semantics, not merely syntactic provider success."""
+                                                                                       
 
     if feature == FEATURE_STREAMING:
         if isinstance(result, str):
@@ -487,12 +487,12 @@ def run_target_canaries(
     stream_fn: Callable[..., Iterable[str]] | None = None,
     credential_manager: CredentialManager | None = None,
 ) -> dict[str, dict[str, str]]:
-    """Run a deterministic, quota-bounded feature matrix for one exact target.
+                                                                              
 
-    Each selected feature performs at most one provider call with at most 16 output
-    tokens. Inputs are module constants only. Returned rows contain no response,
-    exception, credential, prompt, repository, or user content.
-    """
+                                                                                   
+                                                                                
+                                                               
+       
 
     selected = tuple(features)
     if len(selected) > _MAX_CANARY_FEATURES:
@@ -631,7 +631,7 @@ def run_target_canaries(
                         raw={},
                     )
                 classification = validate_canary_result(feature, reply)
-        except Exception as exc:  # noqa: BLE001 - every feature result remains advisory
+        except Exception as exc:                                                        
             classification = classify_canary_exception(exc)
             if (
                 not observed_failure

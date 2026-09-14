@@ -1,4 +1,4 @@
-"""TDD tests for credential_config.py — parse_credentials and filter_available_slots."""
+                                                                                        
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from sparrow.credentials import CredentialSlot
 from sparrow.models import Model, Provider
 
 
-# Helper to create a minimal provider
+                                     
 def make_provider(
     provider_id: str,
     *,
@@ -32,7 +32,7 @@ def make_provider(
 
 
 class TestParseCredentialsValid:
-    """Tests for valid credential parsing."""
+                                             
 
     def test_parse_single_valid_credential(self):
         config = {
@@ -114,7 +114,7 @@ class TestParseCredentialsValid:
         assert {s.provider for s in slots} == {"groq", "cerebras"}
 
     def test_parse_credentials_with_env_var_from_config_toml_keys(self):
-        """env_var resolution uses effective_env (config.toml [keys] as defaults)."""
+                                                                                     
         config = {
             "keys": {"GROQ_API_KEY": "from-config"},
             "credentials": [
@@ -128,15 +128,15 @@ class TestParseCredentialsValid:
             ]
         }
         providers = [make_provider("groq")]
-        env = {}  # Real env is empty, but config.toml provides the key
+        env = {}                                                       
 
         slots = parse_credentials(config, providers, env)
 
         assert len(slots) == 1
-        # The slot is created regardless of secret resolution; filter_available_slots handles availability
+                                                                                                          
 
     def test_parse_credentials_precedence_real_env_overrides_config_toml(self):
-        """Real environment variables override config.toml [keys] (precedence test)."""
+                                                                                       
         config = {
             "keys": {"GROQ_API_KEY": "from-config"},
             "credentials": [
@@ -150,7 +150,7 @@ class TestParseCredentialsValid:
             ]
         }
         providers = [make_provider("groq")]
-        env = {"GROQ_API_KEY": "from-real-env"}  # Real env wins
+        env = {"GROQ_API_KEY": "from-real-env"}                 
 
         slots = parse_credentials(config, providers, env)
 
@@ -195,7 +195,7 @@ class TestParseCredentialsValid:
         assert slots[0].enabled is True
 
     def test_parse_credentials_enabled_string_coercion(self):
-        """enabled accepts string 'true'/'false'."""
+                                                    
         for val, expected in [("true", True), ("false", False), ("1", True), ("0", False)]:
             config = {
                 "credentials": [
@@ -216,7 +216,7 @@ class TestParseCredentialsValid:
 
 
 class TestParseCredentialsInvalid:
-    """Tests for invalid credential configurations (should raise ParseError)."""
+                                                                                
 
     def test_duplicate_provider_id_raises(self):
         config = {
@@ -363,7 +363,7 @@ class TestParseCredentialsInvalid:
 
 
 class TestImplicitLegacySynthesis:
-    """Tests for legacy credential synthesis when no explicit rows exist."""
+                                                                            
 
     def test_no_explicit_credentials_synthesizes_legacy(self):
         config = {"credentials": []}
@@ -377,11 +377,11 @@ class TestImplicitLegacySynthesis:
         assert slot.id == "legacy"
         assert slot.provider == "groq"
         assert slot.env_var == "GROQ_API_KEY"
-        assert slot.quota_group == "groq"  # defaults to provider id
+        assert slot.quota_group == "groq"                           
         assert slot.enabled is True
 
     def test_explicit_credentials_replace_implicit(self):
-        """Explicit rows for a provider REPLACE its implicit single-key candidate."""
+                                                                                     
         config = {
             "credentials": [
                 {
@@ -398,13 +398,13 @@ class TestImplicitLegacySynthesis:
 
         slots = parse_credentials(config, providers, env)
 
-        # Only explicit credential should exist, no legacy
+                                                          
         assert len(slots) == 1
         assert slots[0].id == "explicit-key"
         assert slots[0].env_var == "GROQ_API_KEY_EXPLICIT"
 
     def test_provider_without_key_env_no_legacy(self):
-        """Provider with no key_env (keyless) gets no legacy credential."""
+                                                                           
         config = {"credentials": []}
         providers = [make_provider("pollinations", auth="none", key_env=None)]
         env = {}
@@ -414,7 +414,7 @@ class TestImplicitLegacySynthesis:
         assert len(slots) == 0
 
     def test_key_optional_provider_with_explicit_never_anonymous(self):
-        """Optional-key provider with explicit rows never silently becomes anonymous."""
+                                                                                        
         config = {
             "credentials": [
                 {
@@ -433,7 +433,7 @@ class TestImplicitLegacySynthesis:
 
         assert len(slots) == 1
         assert slots[0].id == "explicit"
-        # No legacy slot should be created
+                                          
 
     def test_multiple_providers_some_explicit_some_legacy(self):
         config = {
@@ -464,10 +464,10 @@ class TestImplicitLegacySynthesis:
 
 
 class TestDeduplication:
-    """Tests for deduplication of equal secrets within a provider."""
+                                                                     
 
     def test_deduplicate_equal_secrets_same_provider(self):
-        """Two credentials with same resolved secret -> only first kept."""
+                                                                           
         config = {
             "credentials": [
                 {
@@ -487,17 +487,17 @@ class TestDeduplication:
             ]
         }
         providers = [make_provider("groq")]
-        # Both env vars resolve to the SAME secret
+                                                  
         env = {"GROQ_API_KEY_1": "sk-same", "GROQ_API_KEY_2": "sk-same"}
 
         slots = parse_credentials(config, providers, env)
 
-        # Only first credential should be kept
+                                              
         assert len(slots) == 1
         assert slots[0].id == "key1"
 
     def test_deduplication_only_within_same_provider(self):
-        """Same secret across different providers is NOT deduplicated."""
+                                                                         
         config = {
             "credentials": [
                 {
@@ -521,11 +521,11 @@ class TestDeduplication:
 
         slots = parse_credentials(config, providers, env)
 
-        # Both should be kept (different providers)
+                                                   
         assert len(slots) == 2
 
     def test_none_secrets_not_deduplicated(self):
-        """Missing/blank secrets (None) are not deduplicated - each is unavailable independently."""
+                                                                                                    
         config = {
             "credentials": [
                 {
@@ -545,16 +545,16 @@ class TestDeduplication:
             ]
         }
         providers = [make_provider("groq")]
-        env = {}  # Both env vars missing
+        env = {}                         
 
         slots = parse_credentials(config, providers, env)
 
-        # Both slots should exist (both unavailable, but not deduplicated)
+                                                                          
         assert len(slots) == 2
         assert {s.id for s in slots} == {"key1", "key2"}
 
     def test_disabled_slot_not_deduplicated(self):
-        """Disabled slot with same secret as enabled slot - both kept (disabled filtered later)."""
+                                                                                                   
         config = {
             "credentials": [
                 {
@@ -578,15 +578,15 @@ class TestDeduplication:
 
         slots = parse_credentials(config, providers, env)
 
-        # Both slots created (deduplication happens before disabled filtering)
-        # Actually, deduplication checks secret resolution, and both resolve to same secret
-        # The first one (enabled) wins, second is skipped
+                                                                              
+                                                                                           
+                                                         
         assert len(slots) == 1
         assert slots[0].id == "enabled-key"
 
 
 class TestFilterAvailableSlots:
-    """Tests for filter_available_slots function."""
+                                                    
 
     def test_available_slot_with_secret(self):
         slot = CredentialSlot(
@@ -643,7 +643,7 @@ class TestFilterAvailableSlots:
             CredentialSlot(id="b", provider="groq", env_var="K2", quota_group="g", enabled=False),
             CredentialSlot(id="c", provider="groq", env_var="K3", quota_group="g", enabled=True),
         ]
-        env = {"K1": "sk-1", "K3": "sk-3"}  # K2 missing
+        env = {"K1": "sk-1", "K3": "sk-3"}              
 
         available, unavailable = filter_available_slots(slots, env)
 
@@ -655,7 +655,7 @@ class TestFilterAvailableSlots:
 
 
 class TestCredentialSlotImmutability:
-    """CredentialSlot is frozen - verify immutability."""
+                                                         
 
     def test_slot_is_frozen(self):
         slot = CredentialSlot(
@@ -668,7 +668,7 @@ class TestCredentialSlotImmutability:
 
 
 class TestParseErrorAttributes:
-    """ParseError carries provider_id and credential_id for diagnostics."""
+                                                                           
 
     def test_parse_error_has_provider_and_credential(self):
         config = {

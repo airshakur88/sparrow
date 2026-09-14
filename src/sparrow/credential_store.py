@@ -1,4 +1,4 @@
-"""Durable, private SQLite state for provider credentials."""
+                                                             
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def default_credential_store_path() -> Path:
 
 
 class CredentialStore:
-    """Manage credential state with one short-lived connection per operation."""
+                                                                                
 
     def __init__(self, path: Path | str | None = None,
                  clock: Callable[[], float] | None = None,
@@ -52,7 +52,7 @@ class CredentialStore:
 
     @property
     def schema_version(self) -> int:
-        """Return the on-disk schema version."""
+                                                
         with self._operation() as connection:
             return int(connection.execute("PRAGMA user_version").fetchone()[0])
 
@@ -64,7 +64,7 @@ class CredentialStore:
 
     def upsert(self, provider_id: str, credential_id: str,
                state: CredentialState = CredentialState.RESERVED) -> None:
-        """Create or replace a credential state row without resetting counters."""
+                                                                                  
         with self._operation() as connection, connection:
             connection.execute(
                 """INSERT INTO credential_state(provider_id, credential_id, state)
@@ -86,7 +86,7 @@ class CredentialStore:
         return self.get(provider_id, credential_id)
 
     def get(self, provider_id: str, credential_id: str) -> dict[str, str | int | float | None] | None:
-        """Return one credential state row, or ``None`` when absent."""
+                                                                       
         with self._operation() as connection:
             row = connection.execute(
                 "SELECT * FROM credential_state WHERE provider_id=? AND credential_id=?",
@@ -95,7 +95,7 @@ class CredentialStore:
         return dict(row) if row else None
 
     def list_by_provider(self, provider_id: str) -> list[dict[str, str | int | float | None]]:
-        """Return all persisted credential state rows for a provider."""
+                                                                        
         with self._operation() as connection:
             rows = connection.execute(
                 "SELECT * FROM credential_state WHERE provider_id=? ORDER BY credential_id",
@@ -125,7 +125,7 @@ class CredentialStore:
         return [dict(row) for row in rows]
 
     def update_state(self, credential_id: str, provider_id: str, state: CredentialState | str) -> bool:
-        """Update the state of an existing credential."""
+                                                         
         with self._operation() as connection, connection:
             connection.execute(
                 "UPDATE credential_state SET state=? WHERE provider_id=? AND credential_id=?",
@@ -189,7 +189,7 @@ class CredentialStore:
 
     def record_success(self, credential_id: str, provider_id: str,
                        when: float | None = None) -> None:
-        """Record a successful attempt and reset consecutive failures."""
+                                                                         
         timestamp = self._clock() if when is None else when
         with self._operation() as connection, connection:
             connection.execute(
@@ -202,13 +202,13 @@ class CredentialStore:
     def record_failure(self, credential_id: str, provider_id: str,
                        cooldown_until: float | object | None = None,
                        when: float | None = None) -> None:
-        """Record a failure and optionally set its cooldown expiry.
+                                                                   
 
-        For compatibility with the public lifecycle API, an enum-like third
-        argument is treated as a reason and the fourth argument as a cooldown
-        duration in seconds. A numeric third argument remains an absolute
-        expiry timestamp.
-        """
+                                                                           
+                                                                             
+                                                                         
+                         
+           
         now = self._clock()
         timestamp = now if when is None else when
         expiry: float | None
@@ -238,7 +238,7 @@ class CredentialStore:
         operation: str,
         state: CredentialState | str,
     ) -> None:
-        """Insert a new attempt record with its reservation timestamp."""
+                                                                         
         with self._operation() as connection, connection:
             connection.execute(
                 """INSERT INTO attempts
@@ -253,7 +253,7 @@ class CredentialStore:
         quota_group: str, model: str, operation: str, generation: str,
         lease_until: float,
     ) -> None:
-        """Persist a reservation before any provider I/O."""
+                                                            
         now = self._clock()
         with self._operation() as connection, connection:
             connection.execute(
@@ -284,7 +284,7 @@ class CredentialStore:
         usage_missing: bool = False, error_class: str | None = None,
         error_message: str | None = None,
     ) -> bool:
-        """CAS-finalize once and update the matching daily aggregate atomically."""
+                                                                                   
         value = getattr(state, "value", state)
         if value not in {"succeeded", "failed", "cancelled", "unknown"}:
             raise ValueError("attempt finalization requires a terminal state")
@@ -349,7 +349,7 @@ class CredentialStore:
         error_class: str | None = None,
         error_message: str | None = None,
     ) -> bool:
-        """CAS-finalize an attempt that is still reservable or dispatched."""
+                                                                             
         terminal = {"succeeded", "failed", "cancelled"}
         value = str(getattr(state, "value", state))
         with self._operation() as connection, connection:
@@ -362,20 +362,20 @@ class CredentialStore:
             return result.rowcount == 1
 
     def prune_old_attempts(self, max_age_days: int) -> int:
-        """Delete attempts older than the requested retention window."""
+                                                                        
         cutoff = self._clock() - max_age_days * 86400
         with self._operation() as connection, connection:
             result = connection.execute("DELETE FROM attempts WHERE started_at < ?", (cutoff,))
             return result.rowcount
 
     def prune_old_cooldowns(self) -> int:
-        """Delete cooldown records whose expiry has passed."""
+                                                              
         with self._operation() as connection, connection:
             result = connection.execute("DELETE FROM cooldown WHERE until_utc <= ?", (self._clock(),))
             return result.rowcount
 
     def prune_old_daily_usage(self, max_age_days: int) -> int:
-        """Delete daily usage rows outside the retention window."""
+                                                                   
         cutoff = time.strftime("%Y-%m-%d", time.gmtime(self._clock() - max_age_days * 86400))
         with self._operation() as connection, connection:
             result = connection.execute("DELETE FROM daily_usage WHERE day < ?", (cutoff,))
@@ -385,7 +385,7 @@ class CredentialStore:
         self._bootstrap()
 
     def reserve_round_robin(self, provider_id: str, credential_ids: list[str]) -> str | None:
-        """Atomically select and advance the next ID in declaration order."""
+                                                                             
         if not credential_ids:
             return None
         with self._operation() as connection, connection:

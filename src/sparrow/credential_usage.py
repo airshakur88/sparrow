@@ -1,4 +1,4 @@
-"""Attempt lifecycle and per-credential usage accounting."""
+                                                            
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from .credentials import CredentialSelection, CredentialState
 
 @dataclass(frozen=True, slots=True)
 class UsageOutcome:
-    """The immutable inputs needed to finalize one provider attempt."""
+                                                                       
 
     state: CredentialState
     prompt_tokens: int | None = None
@@ -21,7 +21,7 @@ class UsageOutcome:
 
 
 class CredentialUsage:
-    """Coordinate durable reservation, dispatch and idempotent finalization."""
+                                                                               
 
     def __init__(self, store: CredentialStore, lease_seconds: float = 60.0) -> None:
         self._store = store

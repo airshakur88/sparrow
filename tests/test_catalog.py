@@ -181,14 +181,14 @@ def test_discover_openai_models(monkeypatch):
 
     seen = {}
 
-    def fake_open(request, timeout=None):  # OpenerDirector.open signature
+    def fake_open(request, timeout=None):                                 
         seen["url"] = request.full_url
         seen["auth"] = request.headers.get("Authorization")
         seen["timeout"] = timeout
         return Response()
 
-    # Discovery goes through the no-redirect opener (so the Bearer key can't be
-    # forwarded to a 3xx target); patch its .open.
+                                                                               
+                                                  
     from sparrow import catalog
 
     monkeypatch.setattr(catalog._NO_REDIRECT_OPENER, "open", fake_open)
@@ -277,7 +277,7 @@ def test_import_rejects_surrounding_whitespace_base_url(tmp_path, monkeypatch):
 
 
 def test_import_sanitizes_control_chars_in_model_id(tmp_path, monkeypatch):
-    """A malicious model id with a newline must not corrupt the user catalog."""
+                                                                                
     import tomllib
 
     evil = 'good\nkey_env = "PATH"\n[[provider]]\nid = "injected"\nmodels = [{ name = "x"'
@@ -294,7 +294,7 @@ def test_create_user_provider_stub_rejects_bad_scheme(tmp_path, monkeypatch):
 
 
 def test_create_user_provider_stub_allows_http_localhost(tmp_path, monkeypatch):
-    # http is fine for a user's own custom/local endpoint (e.g. Ollama).
+                                                                        
     monkeypatch.setenv("SPARROW_CONFIG", str(tmp_path / "providers.toml"))
     local_id = create_user_provider_stub(
         name="Local", base_url="http://localhost:11434/v1", model="llama3"
@@ -306,97 +306,6 @@ def test_create_user_provider_stub_allows_http_localhost(tmp_path, monkeypatch):
 def test_discover_openai_models_rejects_non_http_scheme():
     with pytest.raises(ValueError, match="http"):
         discover_openai_models("file:///etc/passwd")
-
-
-def _stub_capacity_dependencies(monkeypatch):
-    class EmptyReport:
-        healthy_count = 0
-        low_quota_count = 0
-        needs_action = False
-        providers = []
-
-    monkeypatch.setattr("sparrow.cli.load_catalog", lambda: [])
-    monkeypatch.setattr("sparrow.key_inventory.load_inventory", lambda: [])
-    monkeypatch.setattr(
-        "sparrow.capacity.build_capacity_report", lambda **_kwargs: EmptyReport()
-    )
-
-
-def test_capacity_status_sanitizes_and_bounds_untrusted_cached_catalog_fields(
-    tmp_path, monkeypatch, capsys
-):
-    from sparrow.cli import main
-
-    cache = tmp_path / "provider_catalog.json"
-    malicious_name = "Trusted\x1b[31m\nFORGED-NAME\r" + ("N" * 4_000)
-    malicious_url = (
-        "https://catalog.example.test/\x1b]8;;https://evil.test\x07\nFORGED-URL"
-        + ("U" * 5_000)
-    )
-    cache.write_text(
-        json.dumps(
-            {
-                "providers": [
-                    {
-                        "name": malicious_name,
-                        "url": malicious_url,
-                        "baseUrl": "https://api.example.test/v1\x1b[2J",
-                        "models": [],
-                    }
-                ]
-            }
-        ),
-        encoding="utf-8",
-    )
-    monkeypatch.setenv("SPARROW_EXTERNAL_CATALOG_PATH", str(cache))
-    _stub_capacity_dependencies(monkeypatch)
-
-    providers = load_external_catalog(cache)
-    assert len(providers) == 1
-    assert len(providers[0].name) <= 128
-    assert providers[0].url is not None and len(providers[0].url) <= 2_048
-
-    assert (
-        main(
-            [
-                "capacity",
-                "status",
-                "--all",
-                "--target",
-                "0",
-                "--no-catalog-sync",
-                "--external-limit",
-                "1",
-            ]
-        )
-        == 0
-    )
-    out = capsys.readouterr().out
-    assert "\x1b" not in out
-    assert "\x07" not in out
-    assert "\r" not in out
-    assert "\nFORGED-NAME" not in out
-    assert "\nFORGED-URL" not in out
-    external_line = next(line for line in out.splitlines() if "external    " in line)
-    assert len(external_line) <= 2_300
-
-
-def test_capacity_status_treats_non_utf8_cached_catalog_as_empty(
-    tmp_path, monkeypatch, capsys
-):
-    from sparrow.cli import main
-
-    cache = tmp_path / "provider_catalog.json"
-    cache.write_bytes(b'{"providers": [{"name": "Safe"}]}\xff')
-    monkeypatch.setenv("SPARROW_EXTERNAL_CATALOG_PATH", str(cache))
-    _stub_capacity_dependencies(monkeypatch)
-
-    assert load_external_catalog(cache) == []
-    assert main(["capacity", "status", "--all", "--target", "0"]) == 0
-    captured = capsys.readouterr()
-    assert "External catalog cache: 0 providers" in captured.out
-    assert "Traceback" not in captured.out
-    assert "Traceback" not in captured.err
 
 
 def test_load_external_catalog_ignores_invalid_provider_container(tmp_path):

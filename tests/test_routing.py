@@ -1,4 +1,4 @@
-"""Metrics-aware routing: fair mode sinks failing targets, fast mode sorts by latency."""
+                                                                                         
 
 from __future__ import annotations
 
@@ -34,11 +34,11 @@ def _quality_pool(
     models,
     task_scores=None,
 ):
-    """A quality-routing pool over ``models`` with an injected capability table.
+                                                                                
 
-    All providers succeed (200), so whichever target quality routing puts first is
-    the one that actually serves — letting end-to-end tests assert on `reply.model`.
-    """
+                                                                                  
+                                                                                    
+       
     import json
 
     cap_file = tmp_path / "cap.json"
@@ -99,7 +99,7 @@ def _quality_pool(
 def test_fair_default_is_least_used(providers, env, quota):
     pool = Pool(providers, quota=quota, env=env, post=make_post({}))
     order = _names(pool)
-    # nothing used yet → stable least-used ordering includes every enabled target
+                                                                                 
     assert "alpha/alpha-small" in order
     assert "beta/beta-1" in order
 
@@ -122,11 +122,11 @@ def test_legacy_routing_balances_by_model(providers, env, quota):
 
 def test_fair_sinks_a_failing_target(providers, env, quota):
     pool = Pool(providers, quota=quota, env=env, post=make_post({}))
-    # make beta look broken
+                           
     for _ in range(3):
         pool.metrics.record_failure("beta/beta-1", "down")
     order = _names(pool)
-    assert order[-1] == "beta/beta-1", order  # failing target pushed to the back
+    assert order[-1] == "beta/beta-1", order                                     
 
 
 def test_fast_mode_prefers_low_latency(providers, env, quota):
@@ -138,22 +138,22 @@ def test_fast_mode_prefers_low_latency(providers, env, quota):
 
 
 def test_spread_serves_least_used_tier_first_over_faster_busy_provider(providers, env, quota):
-    # The anti-429 property fast lacks: a heavily-used provider drops to a higher usage tier,
-    # so spread serves the least-used one first EVEN IF the busy one is faster.
+                                                                                             
+                                                                               
     from sparrow.router import _SPREAD_BUCKET
 
     for _ in range(_SPREAD_BUCKET + 1):
-        quota.record("beta", "beta-1")  # beta into a higher usage tier
+        quota.record("beta", "beta-1")                                 
     pool = Pool(providers, quota=quota, env=env, post=make_post({}), routing="spread")
-    pool.metrics.record_success("beta/beta-1", 50.0)  # busy provider is FAST
-    pool.metrics.record_success("alpha/alpha-small", 900.0)  # least-used is SLOW
+    pool.metrics.record_success("beta/beta-1", 50.0)                         
+    pool.metrics.record_success("alpha/alpha-small", 900.0)                      
     order = _names(pool, include=["alpha", "beta"])
     assert order.index("alpha/alpha-small") < order.index("beta/beta-1")
 
 
 def test_spread_breaks_ties_by_latency_within_a_usage_tier(providers, env, quota):
-    # Within the same usage tier (both unused), spread prefers the faster/healthier one —
-    # the speed of fast, on top of the breadth of fair.
+                                                                                         
+                                                       
     pool = Pool(providers, quota=quota, env=env, post=make_post({}), routing="spread")
     pool.metrics.record_success("beta/beta-1", 50.0)
     pool.metrics.record_success("alpha/alpha-small", 900.0)
@@ -174,7 +174,7 @@ def test_chat_records_success_metric(providers, env, quota):
 
 
 def test_chat_records_failure_metric_on_bad_provider(providers, env, quota):
-    # alpha 500s; the pool fails over but should record alpha's failure
+                                                                       
     post = make_post({"alpha.test": (500, {"error": "boom"})})
     pool = Pool(providers, quota=quota, env=env, post=post)
     pool.chat([{"role": "user", "content": "hi"}], providers=["alpha", "beta"])
@@ -182,13 +182,13 @@ def test_chat_records_failure_metric_on_bad_provider(providers, env, quota):
 
 
 def test_client_error_does_not_count_as_health_failure(providers, env, quota):
-    # a 400 (bad request / capability) must NOT mark the provider failing — only
-    # availability failures (429/5xx/network) do.
+                                                                                
+                                                 
     post = make_post({"alpha.test": (400, {"error": "unsupported"})})
     pool = Pool(providers, quota=quota, env=env, post=post)
     pool.chat([{"role": "user", "content": "hi"}], providers=["alpha", "beta"])
     st = pool.metrics.get("alpha/alpha-small")
-    assert st is None or st.fail == 0  # 400 didn't poison alpha's health
+    assert st is None or st.fail == 0                                    
 
 
 def test_402_capability_error_not_health_failure(providers, env, quota):
@@ -248,7 +248,7 @@ def test_quality_matches_difficulty_to_capability(tmp_path, monkeypatch, quota):
         models=[Model("big"), Model("small")],
     )
     targets = pool._all_targets()
-    # hard prompt → strong model first; easy prompt → light model first (rationing)
+                                                                                   
     assert pool._order(targets, difficulty=0.9)[0].model == "big"
     assert pool._order(targets, difficulty=0.1)[0].model == "small"
 
@@ -283,7 +283,7 @@ def test_agent_stays_in_strongest_capability_tier_and_spreads_usage(
 
 
 def test_agent_spreads_by_provider_not_catalog_width(monkeypatch, quota):
-    """A provider must not earn extra traffic merely by listing more models."""
+                                                                               
     monkeypatch.setattr("sparrow.router.capability_table", lambda: {})
     monkeypatch.setattr("sparrow.router.model_capability", lambda _name, _table: 0.99)
     wide = Provider(
@@ -320,17 +320,17 @@ def test_quality_over_budget_model_sinks(tmp_path, monkeypatch, quota):
         scores={"big": 0.9, "small": 0.2},
         models=[Model("big", rpd=1), Model("small")],
     )
-    quota.record("x", "big", 1)  # big is now over its daily cap
-    # even for a hard prompt, an over-budget strong model sinks behind a usable one
+    quota.record("x", "big", 1)                                 
+                                                                                   
     order = [t.model for t in pool._order(pool._all_targets(), difficulty=0.9)]
     assert order[0] == "small"
-    assert order[-1] == "big"  # still reachable, just last
+    assert order[-1] == "big"                              
 
 
 def test_quality_latency_breaks_capability_near_tie(tmp_path, monkeypatch, quota):
-    # Both models clear a hard prompt's bar. "slowbig" is the closest capability fit
-    # (it would win on capability alone) but is painfully slow; "fastbig" is snappy.
-    # Latency-aware quality must avoid the slow giant.
+                                                                                    
+                                                                                    
+                                                      
     pool = _quality_pool(
         tmp_path,
         monkeypatch,
@@ -338,15 +338,15 @@ def test_quality_latency_breaks_capability_near_tie(tmp_path, monkeypatch, quota
         scores={"slowbig": 0.90, "fastbig": 0.95},
         models=[Model("slowbig"), Model("fastbig")],
     )
-    pool.metrics.record_success("x/slowbig", 30000.0)  # 30s
-    pool.metrics.record_success("x/fastbig", 700.0)  # 0.7s
+    pool.metrics.record_success("x/slowbig", 30000.0)       
+    pool.metrics.record_success("x/fastbig", 700.0)        
     order = [t.model for t in pool._order(pool._all_targets(), difficulty=0.90)]
-    assert order[0] == "fastbig"  # capability-fit alone would put slowbig first
+    assert order[0] == "fastbig"                                                
 
 
 def test_quality_latency_never_overrides_capability_bar(tmp_path, monkeypatch, quota):
-    # A fast but under-powered model must NOT leapfrog a capable one on a hard prompt:
-    # the latency term is bounded below the under-power penalty.
+                                                                                      
+                                                                
     pool = _quality_pool(
         tmp_path,
         monkeypatch,
@@ -354,10 +354,10 @@ def test_quality_latency_never_overrides_capability_bar(tmp_path, monkeypatch, q
         scores={"weakfast": 0.30, "strongslow": 0.95},
         models=[Model("weakfast"), Model("strongslow")],
     )
-    pool.metrics.record_success("x/weakfast", 200.0)  # blazing
-    pool.metrics.record_success("x/strongslow", 30000.0)  # slow
+    pool.metrics.record_success("x/weakfast", 200.0)           
+    pool.metrics.record_success("x/strongslow", 30000.0)        
     order = [t.model for t in pool._order(pool._all_targets(), difficulty=0.90)]
-    assert order[0] == "strongslow"  # hard prompt still gets the capable model
+    assert order[0] == "strongslow"                                            
 
 
 def test_quality_failing_model_sinks(tmp_path, monkeypatch, quota):
@@ -368,19 +368,19 @@ def test_quality_failing_model_sinks(tmp_path, monkeypatch, quota):
         scores={"big": 0.9, "small": 0.2},
         models=[Model("big"), Model("small")],
     )
-    for _ in range(3):  # enough samples to mark "big" as failing
+    for _ in range(3):                                           
         pool.metrics.record_failure("x/big", "boom")
     order = [t.model for t in pool._order(pool._all_targets(), difficulty=0.9)]
-    assert order[0] == "small"  # a healthy light model beats a failing strong one
+    assert order[0] == "small"                                                    
 
 
-# ---- end-to-end: difficulty is computed and threaded through the public APIs ----
+                                                                                   
 
 
 def _qpool(tmp_path, monkeypatch, quota):
-    # Both capabilities sit ABOVE the easy-prompt difficulty floor (~0.35), so the
-    # easy/hard split exercises rationing (prefer the right-sized model) rather than
-    # the under-powered penalty. small (0.5) wins easy; big (0.95) wins hard.
+                                                                                  
+                                                                                    
+                                                                             
     return _quality_pool(
         tmp_path,
         monkeypatch,
@@ -391,8 +391,8 @@ def _qpool(tmp_path, monkeypatch, quota):
 
 
 def test_quality_chat_end_to_end(tmp_path, monkeypatch, quota):
-    # All providers return 200, so the model that actually serves is the one quality
-    # routing ordered first — proving difficulty is computed and threaded in chat().
+                                                                                    
+                                                                                    
     pool = _qpool(tmp_path, monkeypatch, quota)
     assert pool.chat(_EASY).model == "small"
     assert pool.chat(_HARD).model == "big"
@@ -402,7 +402,7 @@ def test_quality_stream_chat_end_to_end(tmp_path, monkeypatch, quota):
     pool = _qpool(tmp_path, monkeypatch, quota)
 
     def served(messages):
-        meta = next(pool.stream_chat(messages))  # first yield is {"provider","model"}
+        meta = next(pool.stream_chat(messages))                                       
         return meta["model"]
 
     assert served(_EASY) == "small"
@@ -424,11 +424,11 @@ def test_quality_achat_end_to_end(tmp_path, monkeypatch, quota):
     assert asyncio.run(apool.achat(_HARD)).model == "big"
 
 
-# ---- per-request routing override (thread-safe; does not mutate self.routing) ----
+                                                                                    
 
 
 def test_order_routing_override_beats_default(tmp_path, monkeypatch, quota):
-    """A pool whose default is *not* quality still honors routing='quality' per call."""
+                                                                                        
     pool = _quality_pool(
         tmp_path,
         monkeypatch,
@@ -436,11 +436,11 @@ def test_order_routing_override_beats_default(tmp_path, monkeypatch, quota):
         scores={"big": 0.9, "small": 0.2},
         models=[Model("big"), Model("small")],
     )
-    pool.routing = "fair"  # flip default away from quality
+    pool.routing = "fair"                                  
     targets = pool._all_targets()
-    # the per-call override reorders by capability even though the default is fair
+                                                                                  
     assert pool._order(targets, difficulty=0.9, routing="quality")[0].model == "big"
-    # and it never mutates the pool's default
+                                             
     assert pool.routing == "fair"
 
 
@@ -454,7 +454,7 @@ def test_order_invalid_routing_override_falls_back_to_default(tmp_path, monkeypa
     )
     pool.routing = "fair"
     targets = pool._all_targets()
-    # a bogus override is ignored → identical to the pool default ordering
+                                                                          
     assert [t.model for t in pool._order(targets, routing="bogus")] == [
         t.model for t in pool._order(targets)
     ]
@@ -462,10 +462,10 @@ def test_order_invalid_routing_override_falls_back_to_default(tmp_path, monkeypa
 
 def test_chat_routing_override_end_to_end(tmp_path, monkeypatch, quota):
     pool = _qpool(tmp_path, monkeypatch, quota)
-    pool.routing = "fast"  # default no longer computes difficulty
-    # a per-call routing="quality" still sends the hard prompt to the strong model
+    pool.routing = "fast"                                         
+                                                                                  
     assert pool.chat(_HARD, routing="quality").model == "big"
-    assert pool.routing == "fast"  # default untouched
+    assert pool.routing == "fast"                     
 
 
 def test_quality_grounded_reading_prefers_validated_task_evidence(

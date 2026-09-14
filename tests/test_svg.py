@@ -1,4 +1,4 @@
-"""Zero-dependency SVG badge + summary rendering."""
+                                                    
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from sparrow import svg
 
 
 def _is_valid_xml(s: str) -> bool:
-    xml.dom.minidom.parseString(s)  # raises on malformed XML
+    xml.dom.minidom.parseString(s)                           
     return True
 
 
@@ -36,7 +36,7 @@ def test_summary_svg_has_numbers_and_leaderboard():
     }
     out = svg.summary_svg(s, [("groq", 1.0), ("cohere", 0.5)])
     assert _is_valid_xml(out)
-    assert "123" in out  # requests
+    assert "123" in out            
     assert "groq" in out and "cohere" in out
     assert "2026-01-01" in out
 
@@ -47,12 +47,12 @@ def test_summary_svg_no_leaderboard_ok():
 
 
 def test_summary_svg_truncates_before_escaping():
-    # '&' positioned so a naive escape-then-truncate would split an entity mid-string
-    name = "aaaaaaaaaaaaaa&&&&&&&&"  # >16 chars, ampersands straddle the cut point
+                                                                                     
+    name = "aaaaaaaaaaaaaa&&&&&&&&"                                                
     out = svg.summary_svg(
         {"prompt_tokens": 0, "completion_tokens": 0, "requests": 0}, [(name, 1.0)]
     )
-    assert _is_valid_xml(out)  # must stay well-formed (no half '&amp;' entity)
+    assert _is_valid_xml(out)                                                  
 
 
 def test_svg_escapes_untrusted_text():
@@ -60,5 +60,5 @@ def test_svg_escapes_untrusted_text():
         {"prompt_tokens": 0, "completion_tokens": 0, "requests": 0}, [("<b>&z", 1.0)]
     )
     assert _is_valid_xml(out)
-    assert "<b>&z" not in out  # raw injection must be escaped
+    assert "<b>&z" not in out                                 
     assert "&lt;b&gt;" in out

@@ -1,33 +1,33 @@
-"""A tiny Model Context Protocol (MCP) server, zero extra dependencies.
+                                                                       
 
-`sparrow mcp` speaks MCP over stdio (newline-delimited JSON-RPC 2.0), so an
-MCP client — Claude Desktop, Claude Code, Cursor, etc. — can offload subtasks to
-free LLMs, get a free *second opinion* from several models at once, see exactly
-where a prompt would route, and watch the free tokens add up:
+                                                                           
+                                                                                
+                                                                               
+                                                             
 
-    {
-      "mcpServers": {
-        "sparrow": { "command": "sparrow", "args": ["mcp"] }
-      }
-    }
+     
+                     
+                                                            
+       
+     
 
-Tools exposed:
-    free_llm_ask             ask a free model (routing-aware; tells you which model served)
-    free_llm_panel           ask N free models in parallel and compare — a free second opinion
-    free_llm_second_opinion  same panel behavior, exposed as its own agent-facing tool
-    free_llm_battle          bounded multi-model comparison rendered as Markdown
-    free_llm_recipe          run a bundled recipe (panel/text) end-to-end
-    free_llm_roles           list available roles and recommended use
-    free_llm_tailnet_info    safe Tailscale Tailnet connection instructions
-    free_llm_quota_wise      local quota-mode / headroom advice (no bypass suggestions)
-    tokenmax                 🌈 blast the prompt to a swarm of models; you synthesize them all
-    free_llm_route           explain where a prompt WOULD route (difficulty + ranked models), $0
-    free_llm_models          list available provider/model ids
-    free_llm_quota           today's per-provider usage + daily-limit headroom
-    free_llm_stats           lifetime tokens served free + estimated cost avoided
+              
+                                                                                           
+                                                                                              
+                                                                                      
+                                                                                
+                                                                         
+                                                                     
+                                                                           
+                                                                                       
+                                                                                             
+                                                                                                
+                                                              
+                                                                              
+                                                                                 
 
-Implemented on the standard library only — no MCP SDK required.
-"""
+                                                               
+   
 
 from __future__ import annotations
 
@@ -77,9 +77,9 @@ _DEFAULT_PROTOCOL = "2025-06-18"
 _MAX_PANEL = MAX_PANEL_COUNT
 _log = logging.getLogger(__name__)
 
-# Returned in the `initialize` handshake (MCP's standard `instructions` field) so the
-# calling agent learns HOW to invoke these tools — chiefly: call them directly instead
-# of shelling out to the CLI, which is what hides the live progress + banner from the user.
+                                                                                     
+                                                                                      
+                                                                                           
 _SERVER_INSTRUCTIONS = (
     "sparrow pools many free-tier LLMs behind these tools. Offload self-contained "
     "subtasks (drafting, summarizing, classifying, quick lookups) to free models instead "
@@ -446,7 +446,7 @@ def _text(text: str, is_error: bool = False) -> dict:
 
 
 def _routing_arg(value) -> str | None:
-    """Map the tool's routing arg to a pool routing override (auto/unknown -> None)."""
+                                                                                       
     return routing_override(value)
 
 
@@ -470,9 +470,9 @@ def _max_tokens(value, default: int) -> int:
 
 
 def _resolve_model(model, env, provider_ids=None) -> tuple[list[str] | None, str | None]:
-    """Resolve a model arg to (providers, model) filters, honoring aliases. Only splits a
-    ``provider/model`` prefix when it's a real provider id, so slash-bearing model names
-    (HF / OpenRouter / Kilo ids) aren't mis-split."""
+                                                                                         
+                                                                                        
+                                                     
     if not (isinstance(model, str) and model):
         return None, None
     model = resolve_alias(model, env)
@@ -534,7 +534,7 @@ def _tool_ask(pool: Pool, args: dict) -> dict:
             max_tokens=_max_tokens(args.get("max_tokens"), 1024),
             task=args.get("task"),
         )
-    except Exception as exc:  # noqa: BLE001 — surface as a tool error
+    except Exception as exc:                                          
         return _text(f"{type(exc).__name__}: {exc}", is_error=True)
     ms = round((time.monotonic() - started) * 1000)
     tag = "cache" if reply.cached else f"{ms}ms"
@@ -560,11 +560,11 @@ def _tool_panel(pool: Pool, args: dict) -> dict:
     return _text(render_panel_markdown(result))
 
 
-# `_tool_second_opinion` is the same callable as `_tool_panel` so the
-# "free_llm_second_opinion just runs the panel" contract is enforced by
-# Python identity, not just by convention — any future change to the panel
-# behavior automatically reaches both tools, and dispatch in `_call_tool`
-# routes the second-opinion tool name straight to the panel handler.
+                                                                     
+                                                                       
+                                                                          
+                                                                         
+                                                                    
 _tool_second_opinion = _tool_panel
 
 
@@ -594,11 +594,11 @@ def _tool_recipe(pool: Pool, args: dict) -> dict:
         recipe = get_recipe(name.strip())
     except UnknownRecipeError as exc:
         return _text(f"{type(exc).__name__}: {exc}", is_error=True)
-    except RecipeError as exc:  # unknown schema / malformed JSON
+    except RecipeError as exc:                                   
         return _text(f"{type(exc).__name__}: {exc}", is_error=True)
 
-    # Inline prompt (or `input`) is the recipe's `input` template variable.
-    # `validation_output` is optional and only used by recipes that declare it.
+                                                                           
+                                                                               
     inline_prompt = args.get("input")
     if inline_prompt is None:
         inline_prompt = args.get("prompt") or ""
@@ -628,10 +628,10 @@ def _tool_recipe(pool: Pool, args: dict) -> dict:
         "validation_output": validation_output,
     }
 
-    # Fail-fast: surface missing-variable errors before any fan-out work.
-    # run_recipe would raise the same MissingRecipeVariableError itself, but
-    # doing the render_prompt check here keeps that contract explicit at the
-    # MCP boundary and returns a clean tool error in the same code path.
+                                                                         
+                                                                            
+                                                                            
+                                                                        
     from .recipes import render_prompt, run_recipe
 
     try:
@@ -659,7 +659,7 @@ def _tool_recipe(pool: Pool, args: dict) -> dict:
         )
     except MissingRecipeVariableError as exc:
         return _text(f"{type(exc).__name__}: {exc}", is_error=True)
-    except Exception as exc:  # noqa: BLE001 - surface as a tool error, not a traceback
+    except Exception as exc:                                                           
         return _text(f"{type(exc).__name__}: {exc}", is_error=True)
 
     header = f"{recipe.name} ({recipe.version}) — {recipe.description}"
@@ -704,9 +704,9 @@ def _tool_tailnet_info(args: dict) -> dict:
         return _text("'port' must be an integer in 1..65535", is_error=True)
 
     status = detect_tailnet()
-    # Build a safe status line + setup hints without ever embedding the
-    # user's real bearer token. The hints block uses a `<proxy-key>`
-    # placeholder; the actual token is printed by the proxy itself.
+                                                                       
+                                                                    
+                                                                   
     lines: list[str] = []
     if status.usable:
         base = safe_base_url(status.ipv4 or "127.0.0.1", port)
@@ -729,7 +729,7 @@ def _tool_tailnet_info(args: dict) -> dict:
             "to its own console when it boots; do not paste provider keys here.)"
         )
     else:
-        # Degraded path: CLI missing / logged out / no IPv4 / malformed.
+                                                                        
         lines.append(f"Tailnet: {status.state}")
         if status.detail:
             lines.append(f"  detail: {status.detail}")
@@ -746,9 +746,9 @@ def _tool_quota_wise(pool: Pool) -> dict:
     active = current_mode(pool.env) == "wise"
     body = render_quota_wise_status(pool.providers, snapshot, active=active)
 
-    # Refuse to surface any wording that hints at account rotation / bypass /
-    # automatic paid fallback. The advisory lines below are the only acceptable
-    # set per the task contract.
+                                                                             
+                                                                               
+                                
     advice = [
         "",
         "advice (local counters only):",
@@ -780,11 +780,11 @@ def _tool_tokenmax(pool: Pool, args: dict, notify=None) -> dict:
     if not picks:
         return _text("no providers configured", is_error=True)
 
-    # Live progress for hosts that support it (Claude Code shows the message ticking up).
-    # This is the ONLY "it's alive" signal that reaches an MCP user: raw ANSI can't animate
-    # inside an MCP chat, so there is no rainbow throb here (it would only spew breadcrumbs
-    # into the host's stderr log). For the genuine flashing animation use the CLI
-        # (`sparrow tokenmax`); for a live in-harness graphic use the OpenCode TUI plugin.
+                                                                                         
+                                                                                           
+                                                                                           
+                                                                                 
+                                                                                          
     def progress(done: int, total: int, _label: str) -> None:
         if notify is not None:
             notify(done, total, f"🌈 TOKENMAXXING ▸ {done}/{total} models")
@@ -856,12 +856,12 @@ def _tool_route(pool: Pool, args: dict) -> dict:
 def _quota_summary(pool: Pool) -> str:
     from .savings import usd_saved
 
-    snap = pool.quota.snapshot()  # {provider::model: count} for today (UTC)
+    snap = pool.quota.snapshot()                                            
     used: dict[str, int] = {}
     for key, count in snap.items():
         pid = key.split("::", 1)[0]
         used[pid] = used.get(pid, 0) + count
-    # per-provider daily-limit hint = max rpd across its models (0 = unmetered)
+                                                                               
     limit: dict[str, int] = {}
     for p in pool.providers:
         rpds = [m.rpd for m in p.models if m.rpd > 0]
@@ -908,9 +908,9 @@ def _lifetime_summary(pool: Pool) -> str:
 
 
 def _make_notify(params: dict, send_notification):
-    """Build a progress callback that emits MCP `notifications/progress`, but only
-    when the client supplied a progressToken (per the MCP spec) and we have a
-    channel to send on. Otherwise return None so the tool runs silently."""
+                                                                                  
+                                                                             
+                                                                           
     if send_notification is None:
         return None
     token = (params.get("_meta") or {}).get("progressToken")
@@ -937,18 +937,18 @@ def _make_notify(params: dict, send_notification):
 def handle_message(
     pool: Pool, msg: dict, *, version: str = "0.0.0", send_notification=None
 ) -> dict | None:
-    """Handle one JSON-RPC message. Returns a response dict, or None for
-    notifications (which get no reply). `send_notification`, if given, is a
-    callback the server can use to emit out-of-band notifications (e.g. progress)
-    while a tool is still running."""
+                                                                        
+                                                                           
+                                                                                 
+                                     
     if not isinstance(msg, dict):
         return _error(None, -32600, "invalid request: not a JSON-RPC object")
     if "method" not in msg or not isinstance(msg["method"], str):
-        # A request (has id) without a valid method is an invalid request; a
-        # notification (no id) we simply drop.
+                                                                            
+                                              
         return _error(msg["id"], -32600, "invalid request: missing method") if "id" in msg else None
     method = msg["method"]
-    if "id" not in msg:  # notification (e.g. notifications/initialized)
+    if "id" not in msg:                                                 
         return None
     mid = msg["id"]
     try:
@@ -973,23 +973,23 @@ def handle_message(
             notify = _make_notify(params, send_notification)
             return _result(mid, _call_tool(pool, params, notify=notify))
         return _error(mid, -32601, f"method not found: {method}")
-    except Exception:  # noqa: BLE001 — never crash the loop
+    except Exception:                                       
         _log.exception("unexpected MCP request failure")
         return _error(mid, -32603, "internal error")
 
 
 def serve_stdio(pool: Pool, version: str = "0.0.0") -> None:
-    """Run the MCP server over stdio until stdin closes."""
+                                                           
     out = sys.stdout
-    # A lock guards every write so progress notifications emitted from tokenmax's
-    # worker threads can't interleave mid-line with the final response.
-    #
-    # Deadlock-safety invariant: the lock is only ever held for the duration of a
-    # single write_obj() call. handle_message() (which runs the tool's fan-out and
-    # all of its worker-thread progress notifications) is fully evaluated BEFORE
-    # emit()/write_obj() acquires the lock — so the main thread never holds the lock
-    # while workers are trying to acquire it. Do not move write_obj() to wrap a
-    # handle_message() call, or the workers' notifications would deadlock.
+                                                                                 
+                                                                       
+     
+                                                                                 
+                                                                                  
+                                                                                
+                                                                                    
+                                                                               
+                                                                          
     write_lock = threading.Lock()
 
     def write_obj(obj) -> None:
@@ -1002,9 +1002,9 @@ def serve_stdio(pool: Pool, version: str = "0.0.0") -> None:
             write_obj(resp)
 
     def send_notification(obj) -> None:
-        try:  # best-effort; a failed progress ping must never abort the tool
+        try:                                                                 
             write_obj(obj)
-        except Exception:  # noqa: BLE001
+        except Exception:                
             pass
 
     try:
@@ -1017,7 +1017,7 @@ def serve_stdio(pool: Pool, version: str = "0.0.0") -> None:
             except (json.JSONDecodeError, ValueError):
                 emit(_error(None, -32700, "parse error: invalid JSON"))
                 continue
-            if isinstance(msg, list):  # JSON-RPC batch
+            if isinstance(msg, list):                  
                 if not msg:
                     emit(_error(None, -32600, "invalid request: empty batch"))
                     continue
@@ -1031,8 +1031,8 @@ def serve_stdio(pool: Pool, version: str = "0.0.0") -> None:
                     )
                     if r
                 ]
-                # JSON-RPC 2.0: a batch gets a single response that is an array of the
-                # individual responses (omitting notifications). All-notifications → no reply.
+                                                                                      
+                                                                                              
                 if responses:
                     write_obj(responses)
                 continue

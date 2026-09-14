@@ -1,11 +1,11 @@
-"""Small TOML writing helpers for simple generated config files."""
+                                                                   
 
 from __future__ import annotations
 
-# TOML basic strings must escape backslash, double-quote, and control characters
-# (newline, CR, etc.). Tab is allowed literally. Anything generated from
-# untrusted input (e.g. the external provider catalog) is run through this so a
-# stray control character can't corrupt the file it's written into.
+                                                                                
+                                                                        
+                                                                               
+                                                                   
 _TOML_BASIC_ESCAPES = {
     "\\": "\\\\",
     '"': '\\"',

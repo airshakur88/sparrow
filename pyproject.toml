@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sparrow"
-version = "0.13.0"
+version = "0.0.0"
 description = "Free LLM gateway: 21 LLM providers, 167 enabled chat routes, 180 cataloged chat models; keyless start when available."
 license = "MIT"
 requires-python = ">=3.11"
@@ -24,9 +24,6 @@ keywords = [
     "cerebras",
     "openrouter",
     "gemini",
-    "mcp",
-    "model-context-protocol",
-    "cursor",
     "speech-to-text",
     "transcription",
     "rate-limiting",
@@ -86,18 +83,8 @@ packages = ["src/sparrow"]
 "src/sparrow/providers.toml" = "sparrow/providers.toml"
 "src/sparrow/capability_scores.json" = "sparrow/capability_scores.json"
 "src/sparrow/task_evidence.json" = "sparrow/task_evidence.json"
-"src/sparrow/recipes/second-opinion.json" = "sparrow/recipes/second-opinion.json"
-"src/sparrow/recipes/pr-review.json" = "sparrow/recipes/pr-review.json"
-"src/sparrow/recipes/repo-summary.json" = "sparrow/recipes/repo-summary.json"
-"src/sparrow/recipes/launch-copy-critic.json" = "sparrow/recipes/launch-copy-critic.json"
-"src/sparrow/recipes/metaswarm-worker-review.json" = "sparrow/recipes/metaswarm-worker-review.json"
 
 [tool.hatch.build.targets.sdist.force-include]
-"src/sparrow/recipes/second-opinion.json" = "src/sparrow/recipes/second-opinion.json"
-"src/sparrow/recipes/pr-review.json" = "src/sparrow/recipes/pr-review.json"
-"src/sparrow/recipes/repo-summary.json" = "src/sparrow/recipes/repo-summary.json"
-"src/sparrow/recipes/launch-copy-critic.json" = "src/sparrow/recipes/launch-copy-critic.json"
-"src/sparrow/recipes/metaswarm-worker-review.json" = "src/sparrow/recipes/metaswarm-worker-review.json"
 
 [tool.ruff]
 line-length = 100

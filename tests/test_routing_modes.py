@@ -1,4 +1,4 @@
-"""Shared routing-mode normalization across library/proxy/MCP."""
+                                                                 
 
 from __future__ import annotations
 

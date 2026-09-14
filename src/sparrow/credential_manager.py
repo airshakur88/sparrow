@@ -1,4 +1,4 @@
-"""In-memory credential selection backed by durable cooldown and cursor state."""
+                                                                                 
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from .credentials import (
 
 
 class CredentialManager:
-    """Resolve secrets and atomically reserve eligible configured slots."""
+                                                                           
 
     def __init__(
         self,

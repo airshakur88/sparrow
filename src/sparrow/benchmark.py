@@ -1,13 +1,13 @@
-"""Measure each configured provider with a tiny prompt and report a table.
+                                                                          
 
-Backs ``sparrow benchmark``. It calls the client directly — one model per
-provider (the first enabled one, or a pinned ``model``) — so it measures raw
-provider latency, and records the results into the given pool's
-:class:`~sparrow.metrics.Metrics`. In a long-running process (a library
-embedding, or a proxy that calls ``benchmark(pool)`` on its own pool) that warms
-``routing="fast"``; the one-shot ``sparrow benchmark`` CLI exits afterward, so
-there it only serves as a latency report.
-"""
+                                                                         
+                                                                            
+                                                               
+                                                                       
+                                                                                
+                                                                              
+                                         
+   
 
 from __future__ import annotations
 
@@ -47,11 +47,11 @@ def _pick_model(provider, model: str | None) -> str | None:
 def _pick_model_for_health(
     provider, model: str | None, pool: Pool, timeout: float, api_key: str | None = None
 ) -> tuple[str | None, str | None]:
-    """Pick a probe model, preferring ids currently listed by /models.
+                                                                      
 
-    The packaged/user catalog can drift. Health checks should report real health,
-    not burn a request on a retired model when the provider exposes discovery.
-    """
+                                                                                 
+                                                                              
+       
     discovered: set[str] | None = None
     if provider.adapter == "openai":
         try:
@@ -90,15 +90,15 @@ def benchmark(
     timeout: float = 30.0,
     workers: int = 8,
 ) -> list[BenchRow]:
-    """Time one call per configured provider, concurrently. Returns rows sorted
-    fastest-first (successes), then failures."""
+                                                                               
+                                                
     include = {p.strip() for p in providers} if providers else None
     candidates = [p for p in pool.providers if include is None or p.id in include]
 
     def run(provider) -> BenchRow | None:
-        # Model selection (incl. the /models discovery probe) runs INSIDE the worker so it's
-        # parallelized across the pool — not serialized before the threadpool, which would add
-        # up to N*min(timeout,10s) of preflight latency on slow endpoints.
+                                                                                            
+                                                                                              
+                                                                          
         manager = pool.credential_manager
         discovery_selection: CredentialSelection | None = None
         if manager is not None and provider.adapter == "openai":
@@ -116,7 +116,7 @@ def benchmark(
         if skip_note:
             return BenchRow(f"{provider.id}/{model}", False, None, None, skip_note)
         if not mname:
-            return None  # nothing probeable (no catalog model and no discovery) — omit, as before
+            return None                                                                           
         key = f"{provider.id}/{mname}"
         started = time.monotonic()
         selection: CredentialSelection | None = None
@@ -149,7 +149,7 @@ def benchmark(
                     manager.record_failure(selection, failure)
             pool.metrics.record_failure(key, str(exc))
             return BenchRow(key, False, None, None, str(exc))
-        except Exception as exc:  # noqa: BLE001 — report it, don't abort the sweep
+        except Exception as exc:                                                   
             pool.metrics.record_failure(key, f"{type(exc).__name__}: {exc}")
             return BenchRow(key, False, None, None, f"{type(exc).__name__}: {exc}")
         elapsed = (time.monotonic() - started) * 1000.0
@@ -168,7 +168,7 @@ def benchmark(
 
 
 def render_table(rows: list[BenchRow]) -> str:
-    """Format benchmark rows as a fixed-width table."""
+                                                       
     if not rows:
         return "No configured providers to benchmark (set an API key first)."
     width = max(len(r.target) for r in rows)

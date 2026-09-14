@@ -1,12 +1,12 @@
-"""Opt-in response cache (sqlite) — skip re-asking the same thing.
+                                                                  
 
-Off by default. Enable with a positive TTL via ``SPARROW_CACHE_TTL`` (seconds)
-or ``[settings] cache_ttl`` in config.toml. Handy for dev/test loops where the
-same prompts run repeatedly: it saves quota and answers instantly.
+                                                                              
+                                                                              
+                                                                  
 
-Keyed on a hash of the request and routing/task intent, so only *identical*
-requests hit the cache. Standard-library sqlite3, no deps.
-"""
+                                                                           
+                                                          
+   
 
 from __future__ import annotations
 
@@ -47,9 +47,9 @@ class Cache:
         self._clock = clock or time.time
         self.max_entries = default_max_entries() if max_entries is None else max(0, max_entries)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        # `with sqlite3.connect()` manages the transaction but NOT the connection,
-        # so every call must also close() it (via contextlib.closing) or it leaks a
-        # file handle until GC. `, con` keeps the transaction-commit behavior.
+                                                                                  
+                                                                                   
+                                                                              
         with closing(self._conn()) as con, con:
             con.execute("PRAGMA journal_mode=WAL")
             con.execute("PRAGMA busy_timeout=5000")
@@ -87,20 +87,20 @@ class Cache:
                     "temperature": temperature,
                     "tools": tools,
                     "tool_choice": tool_choice,
-                    # routing mode expresses an intent about answer source/quality, so
-                    # a quality request must not be served a cached fast-routed answer.
+                                                                                      
+                                                                                       
                     "routing": routing,
                     "response_format": response_format,
                     "protocol": protocol,
-                    # Explicit task intent can select a different model under the
-                    # same routing mode and therefore needs its own cache bucket.
+                                                                                 
+                                                                                 
                     "task": task,
                 },
                 sort_keys=True,
             )
         except TypeError:
-            # Non-JSON-native content (an enum, object, ...): don't cache rather
-            # than risk a lossy str() key that could collide on different requests.
+                                                                                
+                                                                                   
             return None
         return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -132,7 +132,7 @@ class Cache:
                     "INSERT OR REPLACE INTO cache (key, value, created) VALUES (?, ?, ?)",
                     (key, json.dumps(value), now),
                 )
-                # Reclaim expired rows on write so the table can't grow without bound.
+                                                                                      
                 con.execute("DELETE FROM cache WHERE created < ?", (now - self.ttl,))
                 if self.max_entries:
                     con.execute(
@@ -145,4 +145,4 @@ class Cache:
                         (self.max_entries,),
                     )
         except (sqlite3.Error, TypeError):
-            pass  # cache is best-effort — never break a request over it
+            pass                                                        

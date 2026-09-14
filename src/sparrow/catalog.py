@@ -1,8 +1,8 @@
-"""Advisory external provider catalog sync.
+                                           
 
-This imports metadata from mnfst/awesome-free-llm-apis into a local cache. It is
-advisory only: the executable provider configuration remains providers.toml.
-"""
+                                                                                
+                                                                            
+   
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from .toml_utils import toml_escape
 
 DEFAULT_SOURCE_URL = "https://raw.githubusercontent.com/mnfst/awesome-free-llm-apis/main/data.json"
 
-# Cap network reads so a huge/hostile body can't exhaust memory.
+                                                                
 _MAX_CATALOG_BYTES = 8 * 1024 * 1024
 _MAX_DISCOVER_BYTES = 4 * 1024 * 1024
 _MAX_EXTERNAL_NAME_CHARS = 128
@@ -31,13 +31,13 @@ _MAX_EXTERNAL_RATE_LIMIT_CHARS = 1_024
 
 
 def _validated_base_url(raw: str, *, https_only: bool, what: str, strip: bool = False) -> str:
-    """Validate a base URL before it becomes (or is queried as) a routing target.
+                                                                                 
 
-    Rejects empty values, embedded whitespace/control characters, and disallowed
-    schemes. ``strip=True`` trims surrounding whitespace first (friendly for
-    user-typed input); ``strip=False`` validates the raw value (untrusted catalog
-    data, so leading/trailing junk is rejected rather than silently normalized).
-    """
+                                                                                
+                                                                            
+                                                                                 
+                                                                                
+       
     url = (raw or "").strip() if strip else (raw or "")
     if not url.strip():
         raise ValueError(f"{what} requires a base URL")
@@ -60,11 +60,11 @@ def default_external_catalog_path() -> Path:
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Never auto-follow redirects — urllib raises HTTPError on a 3xx instead, so a
-    request carrying an Authorization header can't forward the key to a redirect
-    target (credential leak / SSRF)."""
+                                                                                   
+                                                                                
+                                       
 
-    def redirect_request(self, *args: Any, **kwargs: Any) -> None:  # noqa: D102
+    def redirect_request(self, *args: Any, **kwargs: Any) -> None:              
         return None
 
 
@@ -102,10 +102,10 @@ def sync_external_catalog(
     timeout: float = 20.0,
 ) -> tuple[Path, list[ExternalProvider]]:
     path = path or default_external_catalog_path()
-    # Validate the source: https-only, no file:// / SSRF even from a caller override.
+                                                                                     
     source_url = _validated_base_url(source_url, https_only=True, what="external catalog")
-    # Do not follow redirects: a caller-provided public URL must not be able to
-    # bounce this server-side fetch to a private network target.
+                                                                               
+                                                                
     request = urllib.request.Request(source_url, headers={"Accept": "application/json"})
     with _NO_REDIRECT_OPENER.open(request, timeout=timeout) as response:
         raw_bytes = response.read(_MAX_CATALOG_BYTES + 1)
@@ -188,12 +188,12 @@ def parse_external_catalog(data: Any) -> list[ExternalProvider]:
 
 
 def _external_text(value: Any, *, max_chars: int) -> str:
-    """Return bounded, single-line-safe text from an untrusted catalog field.
+                                                                             
 
-    JSON strings may contain terminal controls such as ESC, BEL, newlines, or
-    bidi-formatting characters. Render every non-printable code point as visible
-    ASCII and cap the final representation before it reaches CLI output.
-    """
+                                                                             
+                                                                                
+                                                                        
+       
     if value is None or max_chars <= 0:
         return ""
     raw = str(value)
@@ -266,7 +266,7 @@ def _parse_number(value: str) -> int:
 def match_local_provider(
     external: ExternalProvider, local_providers: Iterable[Any]
 ) -> str | None:
-    """Return the local provider id matching an external catalog row, if any."""
+                                                                                
     external_base = (external.base_url or "").rstrip("/").lower()
     for provider in local_providers:
         local_base = (provider.base_url or "").rstrip("/").lower()
@@ -300,7 +300,7 @@ def match_local_provider(
 def suggest_external_provider(
     query: str, providers: list[ExternalProvider]
 ) -> ExternalProviderMatch | None:
-    """Return the best external provider match from provider names or model ids."""
+                                                                                   
     needle = _external_lookup_slug(query)
     if not needle:
         return None
@@ -333,11 +333,11 @@ def suggest_external_provider(
 
 
 def import_external_provider_to_user_catalog(query: str) -> str:
-    """Create a user providers.toml stub from an external-only catalog provider.
+                                                                                
 
-    Returns the local provider id that was written. This is intentionally a
-    user-catalog append, not a change to the packaged providers.toml.
-    """
+                                                                           
+                                                                     
+       
     data_path = default_external_catalog_path()
     try:
         raw = json.loads(data_path.read_text(encoding="utf-8"))
@@ -358,8 +358,8 @@ def import_external_provider_to_user_catalog(query: str) -> str:
         safe_query = _external_text(query, max_chars=_MAX_EXTERNAL_NAME_CHARS)
         suggestion = f". Try one of: {available}" if available else ""
         raise ValueError(f"provider not found in external catalog: {safe_query}{suggestion}")
-    # Third-party catalog data; the imported provider becomes an executable
-    # routing target once its key is set, so validate the RAW value strictly.
+                                                                           
+                                                                             
     base_url = _validated_base_url(
         str(match.get("baseUrl") or ""), https_only=True, what=f"external provider {query}"
     )
@@ -412,7 +412,7 @@ def create_user_provider_stub(
     model: str,
     key_env: str | None = None,
 ) -> str:
-    """Append a minimal OpenAI-compatible provider to the user providers.toml."""
+                                                                                 
     provider_id = _slug(name).replace("-", "_")
     if not provider_id:
         raise ValueError("provider name is required")
@@ -449,8 +449,8 @@ def discover_openai_models(
     api_key: str | None = None,
     timeout: float = 10.0,
 ) -> list[str]:
-    """Discover model ids from an OpenAI-compatible /models endpoint."""
-    # base_url is user-supplied; only fetch http(s) (never file://, etc.).
+                                                                        
+                                                                          
     url = (
         _validated_base_url(base_url, https_only=False, what="model discovery", strip=True).rstrip(
             "/"
@@ -462,7 +462,7 @@ def discover_openai_models(
         headers["Authorization"] = f"Bearer {api_key}"
     request = urllib.request.Request(url, headers=headers)
     try:
-        # No-redirect opener: never forward the Bearer key to a 3xx target.
+                                                                           
         with _NO_REDIRECT_OPENER.open(request, timeout=timeout) as response:
             raw_bytes = response.read(_MAX_DISCOVER_BYTES + 1)
         if len(raw_bytes) > _MAX_DISCOVER_BYTES:
@@ -532,7 +532,7 @@ def _levenshtein(left: str, right: str) -> int:
 
 
 def _user_provider_catalog_path() -> Path:
-    """Return the providers.toml path used for user provider definitions."""
+                                                                            
     override = os.environ.get("SPARROW_CONFIG")
     if override:
         return Path(override).expanduser()

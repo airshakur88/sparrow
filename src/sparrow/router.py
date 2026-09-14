@@ -1,10 +1,10 @@
-"""The Pool: provider selection and failover.
+                                             
 
-A :class:`Pool` holds the configured providers, a quota store, and the
-strategy for ordering candidate (provider, model) targets. :meth:`ask` walks
-that ordered list, calling each target until one succeeds, recording quota use
-and per-day budgets as it goes.
-"""
+                                                                      
+                                                                            
+                                                                              
+                               
+   
 
 from __future__ import annotations
 
@@ -72,27 +72,27 @@ from .task_quality import (
     validate_task,
 )
 
-# A parsed "context limit" below this is treated as garbled/implausible and not
-# learned, so one bad provider error can't poison routing pool-wide.
+                                                                               
+                                                                    
 _MIN_LEARNABLE_CONTEXT = 256
-# Learned limits expire so a transient/edge provider error can't park a model for
-# the whole process lifetime (providers drift; some report per-request limits).
-_CTX_LIMIT_TTL = 1800.0  # seconds (30 min)
-# Quality-routing latency tuning. A target whose smoothed latency reaches
-# _QUALITY_SLOW_S counts as fully slow (penalty 1.0); interactive coding wants
-# sub-handful-of-seconds, so 8s is "slow". An unmeasured target gets a neutral mid
-# penalty (~2.7s-equivalent) so it is still sampled but loses to a proven-fast model.
-# Both stay well under the capability under-power penalty (>=5), so latency only
-# breaks ties among models that already clear the difficulty bar.
+                                                                                 
+                                                                               
+_CTX_LIMIT_TTL = 1800.0                    
+                                                                         
+                                                                              
+                                                                                  
+                                                                                     
+                                                                                
+                                                                 
 _QUALITY_SLOW_S = 8.0
 _QUALITY_UNKNOWN_LAT = 0.34
 _QUALITY_UNKNOWN_TASK = 0.5
 _QUALITY_TASK_WEIGHT = 1.0
-# "spread" routing groups providers into coarse usage tiers of this many requests, so the
-# least-used tier is served first (spreading load across the WHOLE pool to avoid one
-# provider hitting its rate limit), while within a tier the fastest/healthiest is preferred.
-# Small bucket => stronger spread; large => more latency-greedy. 8 balances both for
-# sustained agentic loops on free tiers.
+                                                                                         
+                                                                                    
+                                                                                            
+                                                                                    
+                                        
 _SPREAD_BUCKET = 8
 _AGENT_CAPABILITY_TIER = 0.05
 _ACCOUNT_BACKOFF_SECONDS = 15 * 60
@@ -117,25 +117,25 @@ def _positive_float_setting(
 
 
 def _is_health_failure(exc: Exception) -> bool:
-    """Whether an exception reflects provider *availability* (so it should count
-    against the target's health metrics) vs a client/capability error that says
-    nothing about whether the provider is up.
+                                                                                
+                                                                               
+                                             
 
-    429 / 408 / 5xx and raw network errors are availability failures. Other 4xx
-    (400 bad request, 401/403 auth, 402 payment/capability, 404 unknown model,
-    and the gemini "tools unsupported" 400) are not — counting them would let a
-    tool request poison routing for later non-tool traffic.
-    """
+                                                                               
+                                                                              
+                                                                               
+                                                           
+       
     if isinstance(exc, ProviderHTTPError):
         return exc.status in (429, 408) or exc.status >= 500
-    return True  # connection error, timeout, etc.
+    return True                                   
 
 
 def _is_account_quota_exhaustion(
     exc: ProviderHTTPError,
     provider_id: str | None = None,
 ) -> bool:
-    """Recognize provider-wide credit exhaustion, not model/request errors."""
+                                                                              
     if exc.status not in (402, 429):
         return False
     message = str(exc).lower()
@@ -155,7 +155,7 @@ def _is_account_quota_exhaustion(
 
 
 def _health_failure_class(exc: Exception, provider_id: str | None = None) -> str:
-    """Reduce failures to a privacy-safe class suitable for persistent state."""
+                                                                                
     if isinstance(exc, ProviderHTTPError):
         if _is_account_quota_exhaustion(exc, provider_id):
             return "provider_quota"
@@ -179,12 +179,12 @@ def _health_failure_class(exc: Exception, provider_id: str | None = None) -> str
 
 @dataclass(frozen=True)
 class Target:
-    """A concrete (provider, model) pair the router can call."""
+                                                                
 
     provider: Provider
     model: str
     rpd: int
-    context: int | None = None  # declared context-window size (tokens), if known
+    context: int | None = None                                                   
 
     @property
     def name(self) -> str:
@@ -200,7 +200,7 @@ class _ChatAttempt:
 
 
 def _provider_first_wave(targets: list[Target]) -> tuple[list[Target], list[Target]]:
-    """Split an ordered route list into one target per provider, then the rest."""
+                                                                                  
     seen: set[str] = set()
     first: list[Target] = []
     remaining: list[Target] = []
@@ -213,7 +213,7 @@ def _provider_first_wave(targets: list[Target]) -> tuple[list[Target], list[Targ
 
 @dataclass
 class _ProviderOrderStats:
-    """Precomputed routing stats for one provider in a candidate set."""
+                                                                        
 
     targets: list[Target]
     used: int = 0
@@ -292,36 +292,36 @@ class Pool:
         self.conformance = conformance
         self._credential_manager = credential_manager
         self.credential_manager = credential_manager
-        # "fair"   — least-used provider first, then least-used model in provider.
-        # "fast"   — lowest measured provider latency / failure penalty first.
-        # "quality"— match prompt difficulty to model capability (benchmark-scored),
-        #            so hard prompts get strong models and easy ones get light ones.
-        # "legacy"/"model" keep the old per-(provider, model) balancing behavior.
+                                                                                  
+                                                                              
+                                                                                    
+                                                                                    
+                                                                                 
         self.routing = normalize_routing_mode(routing)
         self._on_event = on_event
-        # provider_id -> monotonic time until which to deprioritize after a 429
+                                                                               
         self._cooldown_until: dict[str, float] = {}
         self._cooldown_lock = threading.Lock()
-        # Provider-account quota failures apply to every model on that account.
-        # Remember them longer than a transient 429 so sustained agent loops do
-        # not retry a known-depleted catalog on every turn.
+                                                                               
+                                                                               
+                                                           
         self._account_backoff_until: dict[str, float] = {}
-        # cumulative usage for the estimated-cost metric. `self.stats` is the
-        # in-memory session counter; `_stats_store` (optional) persists lifetime
-        # totals across restarts so the served-free / estimated-cost number grows.
+                                                                             
+                                                                                
+                                                                                  
         self.stats = {"requests": 0, "prompt_tokens": 0, "completion_tokens": 0, "cache_hits": 0}
         self._stats_store = stats_store
-        self._stats_lock = threading.Lock()  # the proxy serves requests on many threads
-        # Context-window limits learned from provider errors, keyed by provider/model.
-        # Lets the pool stop routing oversized requests to models it has seen reject
-        # them, without a hand-maintained per-model context table.
-        self._ctx_limits: dict[str, tuple[int, float]] = {}  # name -> (limit, learned_at)
+        self._stats_lock = threading.Lock()                                             
+                                                                                      
+                                                                                    
+                                                                  
+        self._ctx_limits: dict[str, tuple[int, float]] = {}                               
         self._ctx_lock = threading.Lock()
 
     def _bump_stats(self, **deltas: int) -> None:
-        """Thread-safe read-modify-write of the session stats counters, plus a
-        write-through to the persistent lifetime store (outside the in-memory lock
-        so disk I/O never serializes request accounting)."""
+                                                                              
+                                                                                  
+                                                            
         with self._stats_lock:
             for key, delta in deltas.items():
                 self.stats[key] = self.stats.get(key, 0) + delta
@@ -329,26 +329,26 @@ class Pool:
             self._stats_store.add(**deltas)
 
     def stats_snapshot(self) -> dict:
-        """A consistent copy of the session stats counters, read under the lock so
-        readers (/status, MCP, CLI) never see a torn requests/tokens pair."""
+                                                                                  
+                                                                             
         with self._stats_lock:
             return dict(self.stats)
 
     def flush(self) -> None:
-        """Persist any batched quota, aggregate-stat, and route-health updates."""
+                                                                                  
         for store in (self.quota, self._stats_store, self.route_health):
             flush = getattr(store, "flush", None)
             if callable(flush):
                 flush()
 
     def _chat_post_once(self, url: str, headers: dict, body: dict, timeout: float):
-        """Use one built-in transport attempt while preserving injected post APIs."""
+                                                                                     
         if self._post is default_post:
             return default_post(url, headers, body, timeout, max_attempts=1)
         return self._post(url, headers, body, timeout)
 
     def cooldown_snapshot(self, now: float) -> dict[str, float]:
-        """Provider -> seconds remaining for transient or account-quota backoff."""
+                                                                                   
         with self._cooldown_lock:
             provider_ids = self._cooldown_until.keys() | self._account_backoff_until.keys()
             result = {
@@ -365,22 +365,22 @@ class Pool:
         return result
 
     def lifetime_stats(self) -> dict:
-        """Persistent lifetime totals (+ first_seen), or the in-memory session
-        totals if no persistent store is wired."""
+                                                                              
+                                                  
         if self._stats_store is not None:
             return self._stats_store.snapshot()
         return {**self.stats_snapshot(), "first_seen": None}
 
     def route_health_snapshot(self):
-        """Persistent health rows for status surfaces, or an empty mapping."""
+                                                                              
         return self.route_health.snapshot() if self.route_health is not None else {}
 
     def route_cooldown_snapshot(self) -> dict[str, float]:
-        """Persistent per-model circuit reset times for readiness surfaces."""
+                                                                              
         return self.route_health.route_cooldowns() if self.route_health is not None else {}
 
     def conformance_snapshot(self) -> dict:
-        """Sanitized per-model protocol evidence for status/model surfaces."""
+                                                                              
 
         return self.conformance.snapshot() if self.conformance is not None else {
             "version": 1,
@@ -459,7 +459,7 @@ class Pool:
             self.route_health.record_failure(target.name, "empty", lease=lease)
 
     def _refresh_route_lease(self, lease: HealthLease) -> HealthLease:
-        """Keep one deferred retry authorized after its failure is persisted."""
+                                                                                
         if self.route_health is None:
             return lease
         return self.route_health.refresh_lease(lease)
@@ -467,7 +467,7 @@ class Pool:
     def _release_local_saturation(
         self, target: Target, lease: HealthLease
     ) -> None:
-        """Release a half-open probe that never reached the provider."""
+                                                                        
         if self.route_health is not None:
             self.route_health.release_many(
                 (f"{target.provider.id}/*", target.name), lease=lease
@@ -482,10 +482,10 @@ class Pool:
         providers: Iterable[str] | None = None,
         task: str | None = None,
     ) -> list[Target]:
-        """Public: the ordered candidate (provider, model) targets for ``messages``,
-        using the same ordering the failover loop would. Powers the MCP route
-        explainer and multi-model panel (which fan out across the top targets) without
-        re-implementing routing. Read-only — does not call any provider."""
+                                                                                    
+                                                                             
+                                                                                      
+                                                                           
         provider_list = list(providers) if providers else None
         eff = normalize_routing_mode(routing, self.routing)
         difficulty = prompt_difficulty(messages) if eff in ("quality", "adaptive") else None
@@ -523,11 +523,11 @@ class Pool:
         with self._cooldown_lock:
             return self._account_backoff_until.get(provider_id, 0.0) > now
 
-    # ---- context-window awareness -------------------------------------
+                                                                         
 
     def _effective_context(self, target: Target) -> int | None:
-        """The tightest known context window for a target: the smaller of its
-        declared size and any (non-expired) limit learned from a prior error."""
+                                                                             
+                                                                                
         learned = None
         with self._ctx_lock:
             entry = self._ctx_limits.get(target.name)
@@ -537,23 +537,23 @@ class Pool:
         return min(sizes) if sizes else None
 
     def _learn_context_limit(self, target_name: str, limit: int) -> None:
-        """Record a context-window limit revealed by a provider error (tighter wins,
-        with a TTL). Implausibly small figures are ignored so a garbled error can't
-        park a model."""
+                                                                                    
+                                                                                   
+                        
         if limit < _MIN_LEARNABLE_CONTEXT:
             return
         now = self._clock()
         with self._ctx_lock:
             prev = self._ctx_limits.get(target_name)
-            # Keep a still-fresh, equal-or-tighter prior untouched — so a looser (or
-            # repeated) value can't keep refreshing the tight limit's clock and defeat
-            # the TTL. Only a strictly tighter new observation (or an expired/absent
-            # prior) updates the entry and its timestamp.
+                                                                                    
+                                                                                      
+                                                                                    
+                                                         
             if prev is not None and now - prev[1] < _CTX_LIMIT_TTL and prev[0] <= limit:
                 return
             self._ctx_limits[target_name] = (limit, now)
 
-    # ---- construction -------------------------------------------------
+                                                                         
 
     @classmethod
     def from_default_config(
@@ -564,13 +564,13 @@ class Pool:
         post: PostFn = default_post,
         on_event: EventHook | None = None,
     ) -> Pool:
-        from .plugins import registered_providers  # lazy: avoids import cycle
+        from .plugins import registered_providers                             
 
-        # Merge config.toml [keys] underneath the real environment.
+                                                                   
         env = effective_env(env)
-        # Merge plugin providers by id (a plugin reusing a built-in id overrides
-        # it, same as user-catalog overrides) — never two providers with one id,
-        # which would split quota/metrics/cooldown.
+                                                                                
+                                                                                
+                                                   
         by_id = {p.id: p for p in load_catalog()}
         for p in registered_providers():
             by_id[p.id] = p
@@ -656,7 +656,7 @@ class Pool:
         providers: Iterable[str] | None = None,
         timeout: float = 90.0,
     ) -> EmbedReply:
-        """Embed one or more texts, failing over across configured embedders."""
+                                                                                
         inputs = [texts] if isinstance(texts, str) else list(texts)
         if not self.embedders:
             raise NoProvidersConfigured(
@@ -710,7 +710,7 @@ class Pool:
                         timeout=timeout,
                         post=self._post,
                     )
-                except Exception as exc:  # noqa: BLE001 — try the next embedder
+                except Exception as exc:                                        
                     attempts.append((target.name, f"{type(exc).__name__}: {exc}"))
                     if selected_credential is not None and isinstance(exc, ProviderHTTPError):
                         failure = classify_credential_failure(
@@ -735,8 +735,8 @@ class Pool:
                     ):
                         client_error = exc
                     continue
-                # Account for embeddings like chat: per-day quota + lifetime stats, so
-                # a heavy embedding workload doesn't bypass RPD pacing / usage totals.
+                                                                                      
+                                                                                      
                 self._record_route_success(
                     target,
                     max(0.0, (self._clock() - started) * 1000.0),
@@ -745,7 +745,7 @@ class Pool:
                 self.quota.record(emb.id, m.name)
                 self._bump_stats(requests=1, prompt_tokens=reply.prompt_tokens or 0)
                 return reply
-        if not attempts:  # provider/model pins matched no configured embedder
+        if not attempts:                                                      
             raise NoProvidersConfigured("no candidate embedder/model matched the given filters")
         if client_error is not None:
             raise AllProvidersExhausted(
@@ -766,7 +766,7 @@ class Pool:
         response_format: str = "json",
         timeout: float = 90.0,
     ) -> TranscribeReply:
-        """Transcribe audio→text, failing over across configured transcribers (Whisper)."""
+                                                                                           
         if not self.transcribers:
             raise NoProvidersConfigured(
                 "no transcriber configured; set a key for groq"
@@ -821,7 +821,7 @@ class Pool:
                         timeout=timeout,
                         post=self._transcribe_post,
                     )
-                except Exception as exc:  # noqa: BLE001 — try the next transcriber
+                except Exception as exc:                                           
                     attempts.append((target.name, f"{type(exc).__name__}: {exc}"))
                     if selected_credential is not None and isinstance(exc, ProviderHTTPError):
                         failure = classify_credential_failure(
@@ -856,7 +856,7 @@ class Pool:
                 self.quota.record(tr.id, m.name)
                 self._bump_stats(requests=1, prompt_tokens=reply.prompt_tokens or 0)
                 return reply
-        if not attempts:  # provider/model pins matched no configured transcriber
+        if not attempts:                                                         
             raise NoProvidersConfigured("no candidate transcriber/model matched the given filters")
         if client_error is not None:
             raise AllProvidersExhausted(
@@ -866,7 +866,7 @@ class Pool:
             )
         raise AllProvidersExhausted(attempts)
 
-    # ---- candidate ordering -------------------------------------------
+                                                                         
 
     def _all_targets(
         self,
@@ -886,7 +886,7 @@ class Pool:
         *,
         exact_pin: bool,
     ) -> list[Target]:
-        """Restrict feature requests to verified targets while preserving exact pins."""
+                                                                                        
 
         wanted = frozenset(features)
         if not wanted or exact_pin or self.conformance is None:
@@ -900,37 +900,37 @@ class Pool:
         routing: str | None = None,
         task: str = TASK_GENERAL,
     ) -> list[Target]:
-        """Order candidate targets for failover.
+                                                
 
-        ``fair`` (default): least-used provider first, then least-used model inside
-        that provider. This prevents wide catalogs from getting extra traffic only
-        because they expose more models.
+                                                                                   
+                                                                                  
+                                        
 
-        ``fast``: lowest measured provider latency / failure penalty first, then
-        least-used provider.
+                                                                                
+                            
 
-        ``spread``: least-used *tier* first (usage bucketed by ``_SPREAD_BUCKET``) so load
-        spreads across the WHOLE pool — no single provider hits its rate limit first — then
-        fastest/healthiest within a tier. Best for sustained agentic loops on free tiers:
-        the breadth of ``fair`` with the speed of ``fast``.
+                                                                                          
+                                                                                           
+                                                                                         
+                                                           
 
-        ``quality``: match the request's ``difficulty`` (0–1) and bounded validated
-        task evidence to each model's benchmark-scored capability — strong models
-        for hard prompts, proven task fits when available, and light models for easy
-        ones (rationing scarce strong-model quota). Ordered globally, not
-        provider-grouped, since capability match is the opted-in intent.
+                                                                                   
+                                                                                 
+                                                                                    
+                                                                         
+                                                                        
 
-        ``agent``: keep every turn on the strongest available benchmark capability
-        tier, then spread usage and prefer healthy/fast targets within that tier.
-        This avoids weak-model stalls in long tool loops without parking on one
-        provider until its free quota is exhausted.
+                                                                                  
+                                                                                 
+                                                                               
+                                                   
 
-        ``legacy``/``model`` preserve the previous per-target balancing. Either way
-        the ordering is a hint — failover still reaches all.
-        """
+                                                                                   
+                                                            
+           
 
-        # One quota and metrics snapshot instead of locked reads per target (matters
-        # for large catalogs and route explanations).
+                                                                                    
+                                                     
         snap = self.quota.snapshot()
         metrics = self.metrics
         msnap = metrics.snapshot()
@@ -1068,13 +1068,13 @@ class Pool:
             )
 
             def lat_pen(t: Target) -> float:
-                # Latency penalty in [0,1]: a measured target's smoothed latency
-                # scaled so anything >= _QUALITY_SLOW_S counts as fully slow; an
-                # unmeasured one gets a neutral mid value so it is still sampled.
-                # Because the capability under-power penalty is >=5 for any model
-                # below the difficulty bar, this term only re-orders models that
-                # *already clear* the bar — so quality stops parking on a giant that
-                # takes tens of seconds when a comparably-capable model answers in ~1s.
+                                                                                
+                                                                                
+                                                                                 
+                                                                                 
+                                                                                
+                                                                                    
+                                                                                       
                 st = stat_of(t)
                 latency = st.ewma_ms if st is not None else None
                 if latency is None:
@@ -1085,9 +1085,9 @@ class Pool:
                 return min(latency / 1000.0, _QUALITY_SLOW_S) / _QUALITY_SLOW_S
 
             def quality_key(t: Target) -> tuple[int, int, float, int]:
-                # over-budget, then known-failing sink to the back (still reachable);
-                # then capability/task fit blended with latency; then least-used.
-                # With no valid task evidence the added term is exactly zero.
+                                                                                     
+                                                                                 
+                                                                             
                 task_penalty = 0.0
                 if has_task_evidence:
                     measured = model_task_score(t.model, task_table)
@@ -1135,7 +1135,7 @@ class Pool:
             return (over_of(t), score_of(t), used_of(t))
 
         def target_spread_key(t: Target) -> tuple[int, int, int, float]:
-            # least-used TIER first (spread across the whole pool), then fastest within tier.
+                                                                                             
             return (
                 over_of(t),
                 1 if failing_of(t) else 0,
@@ -1154,8 +1154,8 @@ class Pool:
         elif mode == "spread":
 
             def provider_spread_key(provider_id: str) -> tuple[int, int, int, float]:
-                # group providers into usage tiers (least-used tier first → load spreads
-                # across ALL providers), then prefer the fastest/healthiest within a tier.
+                                                                                        
+                                                                                          
                 stats = by_provider[provider_id]
                 return (
                     1 if stats.all_over else 0,
@@ -1184,7 +1184,7 @@ class Pool:
             ordered.extend(sorted(by_provider[provider_id].targets, key=target_key))
         return ordered
 
-    # ---- the main entrypoint ------------------------------------------
+                                                                         
 
     def ask(
         self,
@@ -1201,13 +1201,13 @@ class Pool:
         routing: str | None = None,
         task: str | None = None,
     ) -> Reply:
-        """Send ``prompt`` to the first provider that succeeds.
+                                                               
 
-        ``model`` / ``providers`` optionally restrict the candidate set.
-        ``routing`` overrides the pool's default routing mode for this request.
-        Raises :class:`NoProvidersConfigured` if nothing is usable, or
-        :class:`AllProvidersExhausted` if every candidate failed.
-        """
+                                                                        
+                                                                               
+                                                                      
+                                                                 
+           
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})
@@ -1241,10 +1241,10 @@ class Pool:
         routing: str | None = None,
         task: str | None = None,
     ) -> Reply:
-        """Like :meth:`ask` but takes raw OpenAI-style ``messages``.
+                                                                    
 
-        ``timeout`` is one overall deadline shared by every failover attempt.
-        """
+                                                                             
+           
         if not self.providers:
             raise NoProvidersConfigured(
                 "no provider has an API key set; see .env.example for the env vars"
@@ -1265,9 +1265,9 @@ class Pool:
             features,
             exact_pin=exact_pin,
         )
-        # Resolve the effective routing mode *before* the cache key so that a
-        # per-request override (fast/quality/fair/…) keys its own cache bucket and
-        # never serves a reply produced under a different mode's intent.
+                                                                             
+                                                                                  
+                                                                        
         eff = normalize_routing_mode(routing, self.routing)
         if eff in ("quality", "adaptive"):
             resolved_task = resolve_task(messages, task)
@@ -1332,10 +1332,10 @@ class Pool:
         if not targets:
             raise NoProvidersConfigured("no candidate (provider, model) matched the given filters")
 
-        # Providers recently rate-limited (429) are tried last, not skipped — so
-        # a transient cooldown never makes a request fail outright. Read each
-        # target's cooldown state exactly once so a concurrent 429 can't place the
-        # same target in both buckets.
+                                                                                
+                                                                             
+                                                                                  
+                                      
         now = self._clock()
         deadline = now + max(0.0, timeout)
         states = [
@@ -1364,11 +1364,11 @@ class Pool:
         deferred: deque[_ChatAttempt] = deque()
 
         attempts: list[tuple[str, str]] = []
-        unavailable_providers: set[str] = set()  # provider-wide quota failures this request
+        unavailable_providers: set[str] = set()                                             
         credential_exclusions: dict[str, set[str]] = {}
-        client_error: ProviderHTTPError | None = None  # first non-retryable 4xx seen
-        # Context-window awareness: estimate the request size once, skip models we
-        # already know are too small, and fail loudly if nothing fits.
+        client_error: ProviderHTTPError | None = None                                
+                                                                                  
+                                                                      
         est_tokens = estimate_input_tokens(messages, tools)
         needed = est_tokens + max_tokens
         ctx_overflow = False
@@ -1399,8 +1399,8 @@ class Pool:
                     continue
                 time.sleep(delay)
             if target.provider.id in unavailable_providers and not is_deferred:
-                # A provider-wide quota failure already occurred this request; do
-                # not waste calls on another model backed by the same account.
+                                                                                 
+                                                                              
                 attempts.append((target.name, "skipped (provider quota unavailable this request)"))
                 continue
             cap = self._effective_context(target)
@@ -1433,7 +1433,7 @@ class Pool:
                 api_key = selection.secret
             else:
                 api_key = target.provider.api_key(self.env)
-                if api_key is None and not target.provider.keyless:  # pragma: no cover
+                if api_key is None and not target.provider.keyless:                    
                     non_ctx_failure = True
                     attempts.append((target.name, "missing api key"))
                     continue
@@ -1504,20 +1504,20 @@ class Pool:
                 if account_exhausted:
                     self._mark_account_backoff(target.provider.id, self._clock())
                     unavailable_providers.add(target.provider.id)
-                # Any non-context failure (incl. a rate-limit, which might have fit)
-                # means "too long" isn't provably the whole story — stay generic.
+                                                                                    
+                                                                                 
                 non_ctx_failure = True
-                # A non-retryable 4xx usually means the request itself is invalid;
-                # remember the first one so an exhausted pool can surface the real
-                # client error instead of a generic 502. (Failover still proceeds —
-                # another provider may accept it.)
+                                                                                  
+                                                                                  
+                                                                                   
+                                                  
                 if not exc.retryable and not account_exhausted and client_error is None:
                     client_error = exc
                 if _is_health_failure(exc) and credential_failure is None:
                     self.metrics.record_failure(target.name, str(exc))
-                # Failure and circuit transitions are durable before another
-                # provider is tried. The refreshed lease authorizes only this
-                # request's deferred retry and cannot override a newer generation.
+                                                                            
+                                                                             
+                                                                                  
                 if credential_failure is None or credential_failure.reason.value == "quota_group":
                     self._record_route_failure(target, exc, lease)
                 if defer_retry:
@@ -1531,7 +1531,7 @@ class Pool:
                 emit(self._on_event, "error", target=target.name, reason=str(exc))
                 attempts.append((target.name, str(exc)))
                 continue
-            except Exception as exc:  # network error, etc. — try the next one
+            except Exception as exc:                                          
                 non_ctx_failure = True
                 defer_retry = attempt.allow_defer and _client._retryable_transport_exception(exc)
                 local_saturation = _client._is_local_pool_timeout(exc)
@@ -1619,14 +1619,14 @@ class Pool:
         routing: str | None = None,
         task: str | None = None,
     ):
-        """Stream content deltas with token-level streaming.
+                                                            
 
-        Yields a meta dict ``{"provider", "model"}`` first, then content-delta
-        strings. Failover happens *before* the first token (on a non-200); once
-    tokens flow, sparrow is committed to that provider. Gemini-adapter
-        providers are skipped (no OpenAI-shape stream). ``timeout`` is one
-        overall deadline shared by every pre-stream failover attempt.
-        """
+                                                                              
+                                                                               
+                                                                      
+                                                                          
+                                                                     
+           
         if not self.providers:
             raise NoProvidersConfigured("no provider has an API key set")
         eff = normalize_routing_mode(routing, self.routing)
@@ -1735,7 +1735,7 @@ class Pool:
                 usage_callback=stream_usage.update,
             )
             try:
-                first = next(gen)  # triggers connection + status check
+                first = next(gen)                                      
             except StopIteration:
                 non_ctx_failure = True
                 self.metrics.record_failure(target.name, "empty stream")
@@ -1775,8 +1775,8 @@ class Pool:
                 if account_exhausted:
                     self._mark_account_backoff(target.provider.id, self._clock())
                     unavailable_providers.add(target.provider.id)
-                # Any non-context failure (incl. a rate-limit, which might have fit)
-                # means "too long" isn't provably the whole story — stay generic.
+                                                                                    
+                                                                                 
                 non_ctx_failure = True
                 if not exc.retryable and not account_exhausted and client_error is None:
                     client_error = exc
@@ -1786,7 +1786,7 @@ class Pool:
                 emit(self._on_event, "error", target=target.name, reason=str(exc))
                 attempts.append((target.name, str(exc)))
                 continue
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:                
                 non_ctx_failure = True
                 self.metrics.record_failure(target.name, f"{type(exc).__name__}: {exc}")
                 self._record_route_failure(target, exc, lease)
@@ -1794,7 +1794,7 @@ class Pool:
                 attempts.append((target.name, f"{type(exc).__name__}: {exc}"))
                 continue
 
-            # First byte arrived — count it a success (latency to first token).
+                                                                               
             latency_ms = max(0.0, (self._clock() - started) * 1000.0)
             self.metrics.record_success(target.name, latency_ms)
             emit(
@@ -1811,11 +1811,11 @@ class Pool:
                 "model": target.model,
                 "attempts": len(attempts) + 1,
             }
-            # Accumulate the streamed text so we can record token usage when the stream
-            # ends. Providers rarely send a usage block on a stream, so without this the
-            # session + lifetime token / savings totals — and the dashboard's tok/s — never
-            # move for streaming clients (e.g. OpenCode). chars/4 ≈ tokens, matching
-            # estimate_tokens; prompt size reuses est_tokens computed above.
+                                                                                       
+                                                                                        
+                                                                                           
+                                                                                    
+                                                                            
             streamed: list[str] = [first] if isinstance(first, str) else []
             drained = False
             try:
@@ -1841,11 +1841,11 @@ class Pool:
                 drained = True
                 self._record_route_success(target, latency_ms, lease)
             finally:
-                # The manual loop (vs `yield from`) doesn't auto-delegate close(), so on an
-                # early consumer disconnect we must close the upstream stream ourselves to
-                # release the provider HTTP connection promptly. Guard for iterators that
-                # aren't generators. Only count a fully-drained stream — a disconnected/
-                # truncated one isn't a completed response.
+                                                                                           
+                                                                                          
+                                                                                         
+                                                                                        
+                                                           
                 closer = getattr(gen, "close", None)
                 if callable(closer):
                     closer()

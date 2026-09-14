@@ -1,9 +1,9 @@
-"""Role presets for the sparrow CLI.
+                                    
 
-A role bundles a routing mode, output/token defaults, and an optional system
-prompt prefix so users can say ``sparrow ask --role coder ...`` instead of
-manually tuning flags. Roles are intentionally lightweight and stdlib-only.
-"""
+                                                                            
+                                                                          
+                                                                           
+   
 
 from __future__ import annotations
 
@@ -12,11 +12,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class RoleSpec:
-    """A named ask-role preset.
+                               
 
-    Explicit user flags always beat role defaults; ``None`` here means "do not
-    override the user's value or the pool default for this field".
-    """
+                                                                              
+                                                                  
+       
 
     name: str
     description: str
@@ -113,12 +113,12 @@ ROLE_SPECS = _ROLE_SPECS
 
 
 def valid_roles() -> tuple[str, ...]:
-    """Return the names of all registered roles."""
+                                                   
     return tuple(role.name for role in ROLE_SPECS)
 
 
 def get_role(name: str) -> RoleSpec | None:
-    """Look up a role by name, returning ``None`` for unknown roles."""
+                                                                       
     lowered = (name or "").lower()
     for role in ROLE_SPECS:
         if role.name == lowered:
@@ -127,7 +127,7 @@ def get_role(name: str) -> RoleSpec | None:
 
 
 def format_roles() -> str:
-    """Return a human-readable list of available roles."""
+                                                          
     lines: list[str] = ["Available roles:"]
     for role in ROLE_SPECS:
         extras: list[str] = []

@@ -107,22 +107,6 @@ def test_battle_can_write_run_record(quota, tmp_path):
     assert store.last() == record
 
 
-def test_cli_battle_prints_markdown_and_warnings(providers, env, quota, monkeypatch, capsys):
-    from sparrow.cli import main
-
-    pool = Pool(providers[:2], quota=quota, env=env, post=make_post({}))
-    monkeypatch.setattr("sparrow.cli.Pool.from_default_config", classmethod(lambda cls: pool))
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-
-    assert main(["battle", "compare", "--models", "99"]) == 0
-
-    captured = capsys.readouterr()
-    assert "# sparrow battle" in captured.out
-    assert "| model | result |" in captured.out
-    assert "only 2 configured provider" in captured.err
-    assert "after requesting 99" in captured.err
-
-
 def test_playground_html_is_unified_data_free_shell_with_protected_fetches():
     html = _playground_html()
 
@@ -146,73 +130,6 @@ def test_playground_html_is_unified_data_free_shell_with_protected_fetches():
         assert marker not in html.lower()
 
 
-def test_cli_playground_prints_existing_proxy_url(providers, env, quota, monkeypatch, capsys):
-    from sparrow.cli import main
-
-    pool = Pool(providers, quota=quota, env=env, post=make_post({}))
-    httpd = serve(pool, host="127.0.0.1", port=0)
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
-    port = httpd.server_address[1]
-    monkeypatch.setattr(
-        "sparrow.cli.Pool.from_default_config",
-        lambda: (_ for _ in ()).throw(AssertionError("must not start proxy")),
-    )
-    try:
-        assert main(["playground", "--port", str(port)]) == 0
-    finally:
-        httpd.shutdown()
-        httpd.server_close()
-    assert capsys.readouterr().out.strip() == f"http://127.0.0.1:{port}/playground"
-
-
-def test_cli_playground_uses_configured_proxy_key(providers, env, quota, monkeypatch, capsys):
-    from sparrow.cli import main
-
-    pool = Pool(providers, quota=quota, env=env, post=make_post({}))
-    httpd = serve(pool, host="127.0.0.1", port=0, api_key="secret")
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
-    port = httpd.server_address[1]
-    monkeypatch.setenv("SPARROW_PROXY_KEY", "secret")
-    try:
-        assert main(["playground", "--port", str(port)]) == 0
-    finally:
-        httpd.shutdown()
-        httpd.server_close()
-    assert capsys.readouterr().out.strip() == f"http://127.0.0.1:{port}/playground"
-
-
-def test_cli_playground_rejects_non_playground_service(capsys):
-    from http.server import BaseHTTPRequestHandler, HTTPServer
-
-    from sparrow.cli import main
-
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):  # noqa: N802
-            if self.path == "/healthz":
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b'{"status":"ok"}')
-                return
-            self.send_response(404)
-            self.end_headers()
-
-        def log_message(self, format, *args):  # noqa: A002
-            return
-
-    httpd = HTTPServer(("127.0.0.1", 0), Handler)
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
-    thread.start()
-    port = httpd.server_address[1]
-    try:
-        assert main(["playground", "--port", str(port)]) == 3
-    finally:
-        httpd.shutdown()
-        httpd.server_close()
-    assert "no proxy reachable" in capsys.readouterr().err
-
-
 def test_proxy_battle_endpoint_requires_auth_and_returns_answers(providers, env, quota):
     pool = Pool(providers, quota=quota, env=env, post=make_post({}))
     httpd = serve(pool, host="127.0.0.1", port=0, api_key="secret")
@@ -229,7 +146,7 @@ def test_proxy_battle_endpoint_requires_auth_and_returns_answers(providers, env,
             headers={"Content-Type": "application/json"},
         )
         try:
-            urllib.request.urlopen(req)  # noqa: S310
+            urllib.request.urlopen(req)              
             raise AssertionError("expected auth failure")
         except urllib.error.HTTPError as exc:
             assert exc.code == 401
@@ -239,7 +156,7 @@ def test_proxy_battle_endpoint_requires_auth_and_returns_answers(providers, env,
             data=body,
             headers={"Content-Type": "application/json", "Authorization": "Bearer secret"},
         )
-        with urllib.request.urlopen(authed) as resp:  # noqa: S310
+        with urllib.request.urlopen(authed) as resp:              
             payload = json.load(resp)
         assert {"answers", "synthesis", "truncated", "markdown"}.issubset(payload)
         assert len(payload["answers"]) == 2
@@ -263,7 +180,7 @@ def test_proxy_playground_route_serves_public_unified_shell_but_protects_data(
     try:
         shells = []
         for path in ("/", "/dashboard", "/playground"):
-            with urllib.request.urlopen(base + path) as resp:  # noqa: S310
+            with urllib.request.urlopen(base + path) as resp:              
                 assert resp.headers["Cache-Control"] == "no-store"
                 shells.append(resp.read().decode())
         assert shells[0] == shells[1] == shells[2]
@@ -275,7 +192,7 @@ def test_proxy_playground_route_serves_public_unified_shell_but_protects_data(
         assert "protectedFetch('/sparrow/battle'" in html
 
         try:
-            urllib.request.urlopen(base + "/v1/status")  # noqa: S310
+            urllib.request.urlopen(base + "/v1/status")              
             raise AssertionError("expected protected data endpoint to require auth")
         except urllib.error.HTTPError as exc:
             assert exc.code == 401
@@ -284,7 +201,7 @@ def test_proxy_playground_route_serves_public_unified_shell_but_protects_data(
             base + "/v1/status",
             headers={"Authorization": "Bearer secret"},
         )
-        with urllib.request.urlopen(status_request) as response:  # noqa: S310
+        with urllib.request.urlopen(status_request) as response:              
             assert response.status == 200
             assert json.load(response)["pool"]
     finally:

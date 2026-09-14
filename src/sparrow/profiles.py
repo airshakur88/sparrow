@@ -1,9 +1,9 @@
-"""Installable agent profiles for `sparrow profile` and `sparrow code`.
+                                                                       
 
-Each profile records how to wire a coding agent, an orchestration framework, or a
-Metaswarm lane to sparrow. Profiles are stdlib-only dataclasses and stay
-independent of provider SDKs.
-"""
+                                                                                 
+                                                                        
+                             
+   
 
 from __future__ import annotations
 
@@ -30,20 +30,20 @@ _DEFAULT_PROXY = "http://localhost:8080"
 
 @dataclass(frozen=True)
 class DoctorCheck:
-    """One sanity check a profile doctor can report (dry-run) or perform.
+                                                                         
 
-    Attributes:
-        kind: ``binary`` (executable on PATH), ``env`` (env var set),
-            or ``url`` (HTTP GET reachable).
-        name: Human label for the check.
-        target: Executable name, env var name, or full URL.
-        path: Optional path appended to ``target`` when ``kind == "url"`` and
-            ``target`` is a base URL. Ignored for other kinds.
-        optional: If True, a failure is reported but does not make the doctor exit non-zero.
-        method: HTTP method for URL checks. POST checks use an empty JSON body by
-            default; 400 means the route exists and rejected an intentionally
-            minimal request.
-    """
+               
+                                                                     
+                                            
+                                        
+                                                           
+                                                                             
+                                                              
+                                                                                            
+                                                                                 
+                                                                             
+                            
+       
 
     kind: Literal["binary", "env", "url"]
     name: str
@@ -54,7 +54,7 @@ class DoctorCheck:
     body: Mapping[str, object] | None = None
 
     def url(self) -> str:
-        """Return the full URL this check would request."""
+                                                           
         if self.kind != "url":
             raise ValueError(f"{self.kind} check has no URL")
         if self.path:
@@ -64,22 +64,22 @@ class DoctorCheck:
 
 @dataclass(frozen=True)
 class Profile:
-    """A reusable wiring recipe for a coding agent or orchestration client.
+                                                                           
 
-    Attributes:
-        name: Short profile id used on the CLI (e.g. ``opencode``).
-        label: Human-readable name.
-        client_kind: Whether the tool speaks OpenAI, Anthropic, MCP, or shell.
-        base_url: The base URL the tool should point at.
-            OpenAI profiles include ``/v1``; Anthropic profiles do not.
-        model_family: Logical model family or routing keyword (e.g. ``auto``).
-        cost_class: Who pays: ``free`` (sparrow pool), ``metered``, or ``paid``.
-        role_map: Mapping from ask-role / orchestration role to a one-line note
-            explaining why the profile fits the role.
-        config_snippets: Copy-pastable config blocks keyed by a short label.
-        doctor_checks: Checks the doctor reports or runs for this profile.
-        notes: Optional caveat / extra context.
-    """
+               
+                                                                   
+                                   
+                                                                              
+                                                        
+                                                                       
+                                                                              
+                                                                                
+                                                                               
+                                                     
+                                                                            
+                                                                          
+                                               
+       
 
     name: str
     label: str
@@ -415,23 +415,23 @@ def _profile_by_role_sort_key(profile: Profile) -> tuple[int, str]:
 
 
 def profile_names() -> tuple[str, ...]:
-    """Return all registered profile names."""
+                                              
     return tuple(PROFILES.keys())
 
 
 def get_profile(name: str) -> Profile | None:
-    """Look up a profile by id, returning ``None`` if it is unknown."""
+                                                                       
     return PROFILES.get(name.lower())
 
 
 def compatible_profiles(
     role: str, *, profiles: Iterable[Profile] | None = None
 ) -> tuple[Profile, ...]:
-    """Return all profiles that advertise a given role, cheapest first.
+                                                                       
 
-    ``cost_class`` ordering is ``free < metered < paid`` so roles never silently
-    upgrade to a more expensive profile.
-    """
+                                                                                
+                                        
+       
     if profiles is None:
         profiles = _PROFILES
     role = role.lower()
@@ -446,16 +446,16 @@ def resolve_profile_for_role(
     explicit_profile: str | None = None,
     profiles: Iterable[Profile] | None = None,
 ) -> Profile | None:
-    """Pick the safest (cheapest) profile for a role.
+                                                     
 
-    Rules:
+          
 
-    * If the user passed an explicit model or profile name, use that profile
-      when it exists.  This is the escape hatch.
-    * Otherwise choose the cheapest compatible profile.
-    * Paid profiles are never chosen silently; if the only matches are paid,
-      return ``None`` so the caller can ask the user to pick explicitly.
-    """
+                                                                            
+                                                
+                                                       
+                                                                            
+                                                                        
+       
     if explicit_profile:
         return get_profile(explicit_profile)
     if explicit_model:
@@ -470,7 +470,7 @@ def resolve_profile_for_role(
 
 
 def render_profile(profile: Profile) -> str:
-    """Render a profile for ``sparrow profile show <name>``."""
+                                                               
     lines = [
         f"Profile: {profile.name}",
         f"  label:        {profile.label}",
@@ -504,7 +504,7 @@ def render_profile(profile: Profile) -> str:
 
 
 def render_profile_quickstart(profile: Profile) -> str:
-    """Render the concise copy-paste block used by ``sparrow code <agent>``."""
+                                                                               
     lines = [f"Wire {profile.label} to free models via sparrow:\n"]
     lines.extend(
         (
@@ -519,7 +519,7 @@ def render_profile_quickstart(profile: Profile) -> str:
         for ln in profile.config_snippets["shell"].splitlines():
             lines.append(f"      {ln}")
     else:
-        # Fall back to the first snippet if no shell block exists.
+                                                                  
         first_key = next(iter(profile.config_snippets))
         lines.append(f"    {first_key}:")
         for ln in profile.config_snippets[first_key].splitlines():
@@ -531,7 +531,7 @@ def render_profile_quickstart(profile: Profile) -> str:
 
 
 def render_profile_list() -> str:
-    """Render ``sparrow profile list``."""
+                                          
     lines = ["Available profiles:", ""]
     lines.append(f"  {'name':<12} {'kind':<10} {'cost':<8} {'label'}")
     for name in sorted(PROFILES):
@@ -541,7 +541,7 @@ def render_profile_list() -> str:
 
 
 def _root_base_url(base_url: str) -> str:
-    """Validate and return a proxy origin from a root or OpenAI ``/v1`` URL."""
+                                                                               
     if (
         not isinstance(base_url, str)
         or not base_url
@@ -569,7 +569,7 @@ def _root_base_url(base_url: str) -> str:
 
 
 def profile_with_base_url(profile: Profile, base_url: str) -> Profile:
-    """Return ``profile`` with its proxy base URL and URL checks overridden."""
+                                                                               
     root = _root_base_url(base_url)
     if profile.client_kind in {"openai", "mcp"}:
         profile_base = f"{root}/v1"
@@ -583,7 +583,7 @@ def profile_with_base_url(profile: Profile, base_url: str) -> Profile:
 
 
 def render_doctor_plan(profile: Profile) -> str:
-    """Render the checks ``doctor --dry-run`` would perform."""
+                                                               
     lines = [f"doctor plan for '{profile.name}' (dry-run; no network calls):"]
     for check in profile.doctor_checks:
         suffix = " optional" if check.optional else ""
@@ -594,14 +594,14 @@ def render_doctor_plan(profile: Profile) -> str:
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Keep a configured proxy token on the exact endpoint the user selected."""
+                                                                                
 
-    def redirect_request(self, *args, **kwargs):  # noqa: D102
+    def redirect_request(self, *args, **kwargs):              
         return None
 
 
 def _build_doctor_opener() -> urllib.request.OpenerDirector:
-    """Build a direct opener so environment proxies cannot receive proxy credentials."""
+                                                                                        
     return urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
 
 
@@ -616,12 +616,12 @@ def run_doctor_check(
     env: Mapping[str, str] | None = None,
     proxy_key: str | None = None,
 ) -> tuple[DoctorStatus, str]:
-    """Execute a single doctor check and return ``(status, message)``.
+                                                                      
 
-    URL checks distinguish an authenticated success from a reachable endpoint
-    whose authentication could not be verified. Secrets are sent only to the
-    exact requested URL (redirects are disabled) and are never returned.
-    """
+                                                                             
+                                                                            
+                                                                        
+       
     if check.kind == "binary":
         path = shutil.which(check.target)
         ok = path is not None
@@ -631,7 +631,7 @@ def run_doctor_check(
     if check.kind == "env":
         value = (env if env is not None else os.environ).get(check.target)
         ok = value is not None and value != ""
-        # Never echo the real value.
+                                    
         msg = "set" if ok else "not set"
         return ("ok" if ok else "fail"), msg
 
@@ -667,8 +667,8 @@ def run_doctor_check(
                 return "fail", f"responded HTTP {exc.code}"
             if exc.code in {401, 403}:
                 return "warn", f"reachable; authentication unverified (HTTP {exc.code})"
-            # A minimal POST may be rejected before a provider call while still
-            # proving that the expected proxy route is present.
+                                                                               
+                                                               
             if check.method == "POST" and exc.code == 400:
                 return "ok", "reachable (HTTP 400 rejected minimal probe)"
             return "fail", f"responded HTTP {exc.code}"
@@ -688,10 +688,10 @@ def run_doctor(
     env: Mapping[str, str] | None = None,
     proxy_key: str | None = None,
 ) -> tuple[int, list[str]]:
-    """Run every doctor check for a profile and return ``(exit_code, lines)``.
+                                                                              
 
-    Optional checks do not affect the exit code. Messages never include secrets.
-    """
+                                                                                
+       
     lines = [f"doctor results for '{profile.name}':"]
     failed = 0
     warned = 0

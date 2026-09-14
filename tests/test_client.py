@@ -1,4 +1,4 @@
-"""Adapter behavior: thinking-model handling, header shaping, stream lifecycle."""
+                                                                                  
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ def test_thinking_model_bumps_max_tokens():
         max_tokens=512,
         post=post,
     )
-    assert seen["max_tokens"] >= 4096  # reasoning model got headroom
+    assert seen["max_tokens"] >= 4096                                
 
 
 def test_thinking_model_floor_can_be_disabled_for_strictly_bounded_canary():
@@ -148,7 +148,7 @@ def test_retry_after_parser_supports_standard_and_legacy_reset_headers(monkeypat
 
     assert C._retry_after_seconds({"RateLimit-Reset": "45"}) == 45.0
     assert C._retry_after_seconds({"X-RateLimit-Reset": "1700000075"}) == 75.0
-    # Retry-After is authoritative when a provider returns both.
+                                                                
     assert (
         C._retry_after_seconds(
             {"Retry-After": "12", "X-RateLimit-Reset": "1700000075"}
@@ -216,8 +216,8 @@ def test_tools_forwarded_and_tool_calls_preserved():
         tools=[{"type": "function", "function": {"name": "f"}}],
         post=post,
     )
-    assert "tools" in seen  # forwarded to the provider
-    assert reply.message["tool_calls"] == tc  # preserved on the reply
+    assert "tools" in seen                             
+    assert reply.message["tool_calls"] == tc                          
     assert reply.text == ""
 
 
@@ -252,11 +252,11 @@ def test_think_tags_stripped():
     assert reply.text == "final answer"
 
 
-# ---- streaming connection lifecycle (the real _StreamLines.close path) ----
+                                                                             
 
 
 class _SpyLines:
-    """A closeable line iterator that records whether close() was called."""
+                                                                            
 
     def __init__(self, lines):
         self._lines = list(lines)
@@ -285,8 +285,8 @@ def test_stream_call_closes_on_non_200():
         P, "m", [{"role": "user", "content": "hi"}], api_key="k", env={}, stream_post=stream_post
     )
     with pytest.raises(ProviderHTTPError):
-        next(gen)  # status check happens on first iteration
-    assert spy.closed is True  # connection released before the error propagated
+        next(gen)                                           
+    assert spy.closed is True                                                   
 
 
 def test_stream_call_closes_on_early_break():
@@ -299,8 +299,8 @@ def test_stream_call_closes_on_early_break():
         P, "m", [{"role": "user", "content": "hi"}], api_key="k", env={}, stream_post=stream_post
     )
     assert next(gen) == "a"
-    gen.close()  # consumer abandons the stream early
-    assert spy.closed is True  # try/finally released the connection
+    gen.close()                                      
+    assert spy.closed is True                                       
 
 
 def test_stream_call_closes_on_exhaustion():
@@ -323,17 +323,17 @@ def test_stream_call_closes_on_exhaustion():
     assert spy.closed is True
 
 
-# ---- connection pooling plumbing (no network) ----
+                                                    
 
 
 def test_shared_client_is_singleton():
-    assert C._client() is C._client()  # one pooled client reused across calls
+    assert C._client() is C._client()                                         
 
 
 def test_timeout_has_fast_connect():
     to = C._timeout(90.0)
-    assert to.read == 90.0 and to.connect == 10.0  # fast-fail connect
-    assert C._timeout(3.0).connect == 3.0  # connect never exceeds the overall timeout
+    assert to.read == 90.0 and to.connect == 10.0                     
+    assert C._timeout(3.0).connect == 3.0                                             
 
 
 class _CM:
@@ -460,7 +460,7 @@ def test_default_post_does_not_retry_read_error(monkeypatch):
 
         def iter_bytes(self):
             raise httpx.ReadError("read failed")
-            yield b""  # pragma: no cover
+            yield b""                    
 
     class Client:
         def stream(self, *args, **kwargs):
@@ -476,7 +476,7 @@ def test_default_post_does_not_retry_read_error(monkeypatch):
 def test_client_singleton_under_concurrency():
     import threading as _t
 
-    C._shared = None  # force re-init
+    C._shared = None                 
     results = []
 
     def grab():
@@ -487,4 +487,56 @@ def test_client_singleton_under_concurrency():
         x.start()
     for x in threads:
         x.join()
-    assert len({id(r) for r in results}) == 1  # all threads got the same client
+    assert len({id(r) for r in results}) == 1                                   
+
+
+def test_opencode_headers_sent_for_keyless_provider():
+    seen_headers = {}
+
+    def post(url, headers, body, timeout):
+        seen_headers.update(headers)
+        return C.HTTPResult(200, openai_body("ok"), "ok")
+
+    opencode_provider = Provider(
+        id="opencode",
+        label="OpenCode Zen",
+        adapter="openai",
+        base_url="https://opencode.ai/zen/v1",
+        auth="none",
+        models=(Model("mimo-v2.5-free"),),
+    )
+    C.call(
+        opencode_provider,
+        "mimo-v2.5-free",
+        [{"role": "user", "content": "hi"}],
+        api_key=None,
+        env={},
+        max_tokens=256,
+        post=post,
+    )
+    assert seen_headers["User-Agent"].startswith("opencode/sparrow/")
+    assert "x-opencode-project" in seen_headers
+    assert "x-opencode-session" in seen_headers
+    assert "x-opencode-request" in seen_headers
+    assert "x-opencode-client" in seen_headers
+    assert "Authorization" not in seen_headers
+
+
+def test_opencode_headers_not_sent_for_other_providers():
+    seen_headers = {}
+
+    def post(url, headers, body, timeout):
+        seen_headers.update(headers)
+        return C.HTTPResult(200, openai_body("ok"), "ok")
+
+    C.call(
+        P,
+        "zai-glm-4.7",
+        [{"role": "user", "content": "hi"}],
+        api_key="test-key",
+        env={},
+        max_tokens=256,
+        post=post,
+    )
+    assert "x-opencode-session" not in seen_headers
+    assert seen_headers.get("Authorization") == "Bearer test-key"

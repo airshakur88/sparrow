@@ -1,7 +1,7 @@
-"""AsyncPool: async failover, gemini shape, and shared metrics/quota bookkeeping.
+                                                                                 
 
-Driven with asyncio.run so no pytest-asyncio dependency is needed.
-"""
+                                                                  
+   
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from sparrow.router import Pool
 
 
 def _async_post(script):
-    """Adapt the sync fake transport into an async one (await apost(...))."""
+                                                                             
     sync = make_post(script)
 
     async def apost(url, headers, body, timeout):
@@ -42,7 +42,7 @@ def test_async_failover_skips_500(providers, env, quota):
     reply = asyncio.run(
         pool.achat([{"role": "user", "content": "hi"}], providers=["alpha", "beta"])
     )
-    assert reply.provider_id == "beta"  # alpha 500'd, failed over to beta
+    assert reply.provider_id == "beta"                                    
     assert pool.metrics.get("alpha/alpha-small").fail >= 1
     assert pool.metrics.get("beta/beta-1").ok == 1
 
@@ -200,7 +200,7 @@ def test_async_uses_response_cache(providers, env, quota, tmp_path):
     from sparrow.cache import Cache
 
     apost = _async_post({})
-    cache = Cache(ttl=60, path=tmp_path / "cache.sqlite")  # isolated, not the shared default
+    cache = Cache(ttl=60, path=tmp_path / "cache.sqlite")                                    
     pool = AsyncPool(Pool(providers, quota=quota, env=env, cache=cache), apost=apost)
 
     async def run():
@@ -210,9 +210,9 @@ def test_async_uses_response_cache(providers, env, quota, tmp_path):
 
     first, second = asyncio.run(run())
     assert first.cached is False
-    assert second.cached is True  # served from cache, no second upstream call
+    assert second.cached is True                                              
     assert pool.stats["cache_hits"] == 1
-    # only one real upstream call happened
+                                          
     assert len(apost.calls) == 1
 
 
@@ -261,7 +261,7 @@ def test_async_custom_adapter_runs_via_thread(quota):
         )
         pool = AsyncPool(Pool([prov], quota=quota, env={}), apost=_async_post({}))
         reply = asyncio.run(pool.aask("hi"))
-        assert reply.text == "from-plugin"  # plugin adapter reached on the async path
+        assert reply.text == "from-plugin"                                            
     finally:
         plugins._reset_for_tests()
 

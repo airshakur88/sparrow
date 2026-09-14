@@ -53,7 +53,7 @@ def test_stream_pre_content_auth_failure_rotates_to_another_managed_key(provider
         providers,
         env={"ALPHA_KEY": "legacy-secret"},
         stream_post=stream_post,
-        credential_manager=manager,  # type: ignore[arg-type]
+        credential_manager=manager,                          
     )
 
     output = list(pool.stream_chat([{"role": "user", "content": "hello"}], providers=["alpha"]))

@@ -1,13 +1,13 @@
-"""Persistent, per-provider/model/day request counters.
+                                                       
 
-Counters live in a JSON file (default ``~/.config/sparrow/quota.json``) and
-    reset at UTC midnight. They are advisory: sparrow uses them to spread load
-and to skip providers that have hit their free-tier daily hint, but it never
-guarantees a provider's real server-side limit.
+                                                                           
+                                                                              
+                                                                            
+                                               
 
-The store is intentionally tiny and dependency-free so it can be embedded in
-tests with an explicit path and a fixed clock.
-"""
+                                                                            
+                                              
+   
 
 from __future__ import annotations
 
@@ -22,8 +22,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 try:
-    import fcntl  # POSIX advisory file locks
-except ImportError:  # pragma: no cover - non-POSIX (Windows)
+    import fcntl                             
+except ImportError:                                          
     fcntl = None
 
 _LIVE_STORES: weakref.WeakSet[QuotaStore] = weakref.WeakSet()
@@ -51,7 +51,7 @@ def default_quota_path() -> Path:
 
 
 class QuotaStore:
-    """A small JSON-backed counter keyed by (day, provider_id, model)."""
+                                                                         
 
     def __init__(
         self,
@@ -62,7 +62,7 @@ class QuotaStore:
     ):
         self.path = path or default_quota_path()
         self._clock = clock or (lambda: datetime.now(UTC))
-        self._lock = threading.Lock()  # the proxy is threaded; guard read-modify-write
+        self._lock = threading.Lock()                                                  
         if flush_every is None:
             try:
                 flush_every = int(os.environ.get("SPARROW_QUOTA_FLUSH_EVERY", "1"))
@@ -87,7 +87,7 @@ class QuotaStore:
             atexit.register(self.flush)
 
     def _after_fork_child(self) -> None:
-        """Drop parent-owned batches and locks in a freshly forked child."""
+                                                                            
         self._lock = threading.Lock()
         self._pending_counts = {}
         self._pending_ops = 0
@@ -107,7 +107,7 @@ class QuotaStore:
             return {}
 
     def _load_for_write(self) -> dict:
-        """Load a writable object, quarantining a present corrupt file first."""
+                                                                                
         try:
             with self.path.open("r", encoding="utf-8") as fh:
                 data = json.load(fh)
@@ -124,9 +124,9 @@ class QuotaStore:
 
     @contextlib.contextmanager
     def _file_lock(self):
-        """Cross-process exclusive lock around a read-modify-write of the quota
-        file, so a second process (proxy + CLI + MCP all share one file) can't
-        clobber another's increments. No-op where flock is unavailable."""
+                                                                               
+                                                                              
+                                                                          
         if fcntl is None:
             yield
             return
@@ -135,7 +135,7 @@ class QuotaStore:
         try:
             fh = open(lock_path, "w")
         except OSError:
-            yield  # best-effort — fall back to in-process locking only
+            yield                                                      
             return
         try:
             fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
@@ -147,7 +147,7 @@ class QuotaStore:
 
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        # Unique temp name so concurrent savers never clobber each other's temp.
+                                                                                
         tmp = self.path.with_suffix(f"{self.path.suffix}.{os.getpid()}.{threading.get_ident()}.tmp")
         try:
             with tmp.open("w", encoding="utf-8") as fh:
@@ -160,7 +160,7 @@ class QuotaStore:
         day = _utc_day(self._clock())
         bucket = self._data.get(day)
         if bucket is None:
-            # New UTC day → drop stale buckets to keep the file small.
+                                                                      
             self._data = {day: {}}
             bucket = self._data[day]
         return bucket
@@ -196,8 +196,8 @@ class QuotaStore:
 
     def _record_and_save_locked(self, provider_id: str, model: str, n: int) -> int:
         with self._file_lock():
-            # Reload under the lock so concurrent processes' increments survive
-            # (we'd otherwise write a stale whole-file snapshot over theirs).
+                                                                               
+                                                                             
             self._data = self._load_for_write()
             bucket = self._today()
             key = self._key(provider_id, model)
@@ -206,13 +206,13 @@ class QuotaStore:
             try:
                 self._save()
             except OSError:
-                # Quota is advisory — never let a persistence hiccup abort an
-                # otherwise-successful completion.
+                                                                             
+                                                  
                 pass
             return count
 
     def flush(self) -> None:
-        """Persist any locally batched quota increments."""
+                                                           
         with self._lock:
             self._prepare_after_fork_locked()
             self._cancel_flush_timer_locked()
@@ -255,16 +255,16 @@ class QuotaStore:
             self._cancel_flush_timer_locked()
 
     def over_budget(self, provider_id: str, model: str, rpd: int) -> bool:
-        """True if a positive rpd hint exists and today's use meets/exceeds it."""
+                                                                                  
         if rpd <= 0:
             return False
         return self.used(provider_id, model) >= rpd
 
     def snapshot(self) -> dict[str, int]:
-        """Today's counters as a flat {provider::model: count} dict.
+                                                                    
 
-        Reloads from disk so a long-running proxy reflects other processes, then
-        overlays local pending increments in memory. Reading never forces a write."""
+                                                                                
+                                                                                     
         with self._lock:
             self._prepare_after_fork_locked()
             current_day = _utc_day(self._clock())

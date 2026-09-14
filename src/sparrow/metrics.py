@@ -1,36 +1,36 @@
-"""In-process per-target performance metrics: latency and success rate.
+                                                                       
 
-Every (provider, model) call records a success (with its wall-clock latency) or a
-failure here. The router reads it back to keep load off providers that are slow or
-currently failing, and ``sparrow benchmark`` prints it as a table.
+                                                                                 
+                                                                                  
+                                                                  
 
-This is live routing signal, not persistence: it lives in memory, is thread-safe,
-and resets on restart. Latency is smoothed with an EWMA so one slow call doesn't
-banish a provider and one fast call doesn't crown it.
-"""
+                                                                                 
+                                                                                
+                                                     
+   
 
 from __future__ import annotations
 
 import threading
 from dataclasses import dataclass
 
-_ALPHA = 0.3  # EWMA weight on the newest latency sample
-_FAIL_MIN_SAMPLES = 3  # don't judge a target failing until it has a few calls
-_FAIL_RATE = 0.5  # success rate below this (with enough samples) = "failing"
-# Routing penalty for a target we've never measured. Sits *behind* any healthy
-# measured target (whose penalty is latency_s * 0.1, i.e. < 0.5 under ~5s) but
-# *ahead* of a failing one (penalty >= ~5), so `fast` routing prefers known-fast
-# providers, samples unknowns next, and tries failing ones last.
+_ALPHA = 0.3                                            
+_FAIL_MIN_SAMPLES = 3                                                         
+_FAIL_RATE = 0.5                                                             
+                                                                              
+                                                                              
+                                                                                
+                                                                
 _UNKNOWN_SCORE = 0.5
 
 
 @dataclass
 class Stat:
-    """Accumulated metrics for one (provider, model) target."""
+                                                               
 
     ok: int = 0
     fail: int = 0
-    ewma_ms: float | None = None  # smoothed latency of successful calls
+    ewma_ms: float | None = None                                        
     last_ms: float | None = None
     last_error: str | None = None
 
@@ -44,12 +44,12 @@ class Stat:
 
     @property
     def failing(self) -> bool:
-        """True once a target has enough samples and is mostly failing."""
+                                                                          
         return self.total >= _FAIL_MIN_SAMPLES and self.success_rate < _FAIL_RATE
 
 
 class Metrics:
-    """Thread-safe store of per-target :class:`Stat`s."""
+                                                         
 
     def __init__(self, alpha: float = _ALPHA):
         self._alpha = alpha
@@ -88,12 +88,12 @@ class Metrics:
             return bool(st and st.failing)
 
     def score(self, key: str) -> float:
-        """Routing penalty for a target — lower is better.
+                                                          
 
-        Unmeasured targets get a neutral baseline (:data:`_UNKNOWN_SCORE`) that
-        sits behind healthy measured targets but ahead of failing ones. Known
-        targets are penalized mostly by failure rate, with latency as a tiebreak.
-        """
+                                                                               
+                                                                             
+                                                                                 
+           
         with self._lock:
             return score_stat(self._stats.get(key))
 
@@ -103,7 +103,7 @@ def _copy(st: Stat) -> Stat:
 
 
 def score_stat(st: Stat | None) -> float:
-    """Routing penalty for a copied :class:`Stat`; mirrors :meth:`Metrics.score`."""
+                                                                                    
     if st is None or st.total == 0:
         return _UNKNOWN_SCORE
     lat_s = (st.ewma_ms or 0.0) / 1000.0

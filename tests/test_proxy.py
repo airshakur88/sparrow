@@ -1,4 +1,4 @@
-"""OpenAI-compatible proxy: routes, response shape, model parsing."""
+                                                                     
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ from sparrow.router import Pool
 def server(providers, env, quota):
     post = make_post({})
     pool = Pool(providers, quota=quota, env=env, post=post, stream_post=make_stream_post({}))
-    httpd = serve(pool, host="127.0.0.1", port=0)  # port 0 = ephemeral
+    httpd = serve(pool, host="127.0.0.1", port=0)                      
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
     port = httpd.server_address[1]
@@ -51,7 +51,7 @@ def _post_json(url, payload):
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310 (localhost test)
+    with urllib.request.urlopen(req) as resp:                               
         return resp.status, json.load(resp)
 
 
@@ -108,7 +108,7 @@ def test_effective_agent_route_leaves_client_deadline_margin_for_buffered_and_st
             data=json.dumps({**payload, "stream": True}).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310 (localhost test)
+        with urllib.request.urlopen(req) as resp:                               
             assert resp.status == 200
             resp.read()
     finally:
@@ -149,7 +149,7 @@ def test_agent_route_enforces_one_overall_failover_budget(providers, env, quota)
             headers={"Content-Type": "application/json"},
         )
         with pytest.raises(urllib.error.HTTPError) as exc_info:
-            urllib.request.urlopen(req)  # noqa: S310 (localhost test)
+            urllib.request.urlopen(req)                               
         assert exc_info.value.code == 502
     finally:
         httpd.shutdown()
@@ -194,7 +194,7 @@ def test_agent_stream_fallback_shares_one_overall_budget(providers, env, quota):
             data=json.dumps(payload).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310 (localhost test)
+        with urllib.request.urlopen(req) as resp:                               
             assert resp.status == 200
             resp.read()
     finally:
@@ -238,7 +238,7 @@ def test_text_protocol_stream_fallback_shares_one_overall_budget(
             data=json.dumps(_stream_request_body(path)).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as response:  # noqa: S310
+        with urllib.request.urlopen(req) as response:              
             assert response.status == 200
             response.read()
     finally:
@@ -249,7 +249,7 @@ def test_text_protocol_stream_fallback_shares_one_overall_budget(
 
 
 def test_proxy_server_header_uses_package_version(server):
-    with urllib.request.urlopen(server + "/v1/models") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/v1/models") as resp:              
         assert f"sparrow/{__version__}" in resp.headers["Server"]
 
 
@@ -375,7 +375,7 @@ def test_server_close_flushes_all_batched_telemetry(providers, env, tmp_path):
 
 
 def test_models_route(server):
-    with urllib.request.urlopen(server + "/v1/models") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/v1/models") as resp:              
         body = json.load(resp)
     ids = {m["id"] for m in body["data"]}
     assert "auto" in ids
@@ -383,7 +383,7 @@ def test_models_route(server):
 
 
 def test_models_route_accepts_query_string(server):
-    with urllib.request.urlopen(server + "/v1/models?limit=100") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/v1/models?limit=100") as resp:              
         body = json.load(resp)
     assert body["object"] == "list"
     assert any(m["id"] == "auto" for m in body["data"])
@@ -394,7 +394,7 @@ def test_anthropic_model_discovery_shape(server):
         server + "/v1/models?limit=100",
         headers={"anthropic-version": "2023-06-01", "User-Agent": "claude-code"},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         body = json.load(resp)
     assert body["has_more"] is False
     assert body["data"][0]["type"] == "model"
@@ -413,7 +413,7 @@ def test_anthropic_model_discovery_shape(server):
 )
 def test_anthropic_model_discovery_triggers_are_independent(server, headers):
     req = urllib.request.Request(server + "/v1/models?limit=100", headers=headers)
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         body = json.load(resp)
     assert body["has_more"] is False
     assert body["data"][0]["type"] == "model"
@@ -424,14 +424,14 @@ def test_openai_model_discovery_ignores_loose_claude_user_agent(server):
         server + "/v1/models?limit=100",
         headers={"User-Agent": "my-claude-tool"},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         body = json.load(resp)
     assert body["object"] == "list"
     assert body["data"][0]["object"] == "model"
 
 
 def test_dashboard(server):
-    with urllib.request.urlopen(server + "/dashboard") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/dashboard") as resp:              
         assert resp.status == 200
         assert "text/html" in resp.headers["Content-Type"]
         body = resp.read().decode()
@@ -449,7 +449,7 @@ def test_authenticated_proxy_serves_public_secret_free_unified_shell_with_securi
     try:
         bodies = []
         for path in ("/", "/dashboard", "/playground"):
-            with urllib.request.urlopen(base + path) as resp:  # noqa: S310
+            with urllib.request.urlopen(base + path) as resp:              
                 assert resp.status == 200
                 assert resp.headers["Cache-Control"] == "no-store"
                 assert resp.headers["X-Frame-Options"] == "DENY"
@@ -649,7 +649,7 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   console.log('ok');
 }})().catch(error => {{ console.error(error.stack); process.exitCode = 1; }});
 """
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(              
         [shutil.which("node"), "-e", program],
         capture_output=True,
         text=True,
@@ -670,13 +670,13 @@ def test_unified_shell_contract_keeps_data_and_battle_behind_header_auth(
     try:
         for path in ("/v1/status", "/v1/providers", "/v1/models?ready=true"):
             with pytest.raises(urllib.error.HTTPError) as exc_info:
-                urllib.request.urlopen(  # noqa: S310
+                urllib.request.urlopen(              
                     urllib.request.Request(base + path, headers=wrong)
                 )
             assert exc_info.value.code == 401
             assert "wrong" not in exc_info.value.read().decode()
 
-            with urllib.request.urlopen(  # noqa: S310
+            with urllib.request.urlopen(              
                 urllib.request.Request(base + path, headers=correct)
             ) as resp:
                 assert resp.status == 200
@@ -692,16 +692,16 @@ def test_unified_shell_contract_keeps_data_and_battle_behind_header_auth(
 
 
 def test_healthz(server):
-    with urllib.request.urlopen(server + "/healthz") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/healthz") as resp:              
         assert resp.status == 200
         assert json.load(resp) == {"status": "ok"}
-    with urllib.request.urlopen(server + "/livez/") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/livez/") as resp:              
         assert resp.status == 200
         assert json.load(resp) == {"status": "ok"}
 
 
 def test_readyz_and_provider_inventory(server):
-    with urllib.request.urlopen(server + "/readyz") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/readyz") as resp:              
         assert resp.status == 200
         body = json.load(resp)
     assert body["schema_version"] == 1
@@ -710,7 +710,7 @@ def test_readyz_and_provider_inventory(server):
     assert body["ready_providers"] == 4
     assert body["total_providers"] == 4
 
-    with urllib.request.urlopen(server + "/v1/providers/") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/v1/providers/") as resp:              
         providers = json.load(resp)
     assert providers["schema_version"] == 1
     assert providers["object"] == "list"
@@ -741,7 +741,7 @@ def test_readyz_and_provider_inventory(server):
 @pytest.mark.parametrize("value", ["wat", "", "true&ready=false"])
 def test_models_ready_query_rejects_invalid_or_repeated_values(server, value):
     with pytest.raises(urllib.error.HTTPError) as exc:
-        urllib.request.urlopen(server + f"/v1/models?ready={value}")  # noqa: S310
+        urllib.request.urlopen(server + f"/v1/models?ready={value}")              
     assert exc.value.code == 400
     assert json.load(exc.value)["error"]["type"] == "invalid_request_error"
 
@@ -753,7 +753,7 @@ def test_models_ready_filter_preserves_content_negotiation(providers, env, quota
     pool._mark_cooldown("gee", pool._clock())
     httpd, base = _serve(pool)
     try:
-        with urllib.request.urlopen(base + "/v1/models?ready=1") as resp:  # noqa: S310
+        with urllib.request.urlopen(base + "/v1/models?ready=1") as resp:              
             openai_body = json.load(resp)
         ids = {item["id"] for item in openai_body["data"]}
         assert "auto" in ids
@@ -764,7 +764,7 @@ def test_models_ready_filter_preserves_content_negotiation(providers, env, quota
             base + "/v1/models/?ready=true",
             headers={"anthropic-version": "2023-06-01"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             anthropic_body = json.load(resp)
         assert anthropic_body["data"][0]["type"] == "model"
         anthropic_ids = {item["id"] for item in anthropic_body["data"]}
@@ -785,7 +785,7 @@ def test_readyz_503_is_public_and_does_not_call_or_mutate(providers, quota):
     try:
         for path in ("/healthz", "/livez", "/readyz"):
             try:
-                response = urllib.request.urlopen(base + path)  # noqa: S310
+                response = urllib.request.urlopen(base + path)              
             except urllib.error.HTTPError as exc:
                 response = exc
             with response:
@@ -798,19 +798,19 @@ def test_readyz_503_is_public_and_does_not_call_or_mutate(providers, quota):
                 assert response.status == 200
 
         with pytest.raises(urllib.error.HTTPError) as exc:
-            urllib.request.urlopen(base + "/v1/providers")  # noqa: S310
+            urllib.request.urlopen(base + "/v1/providers")              
         assert exc.value.code == 401
         req = urllib.request.Request(
             base + "/v1/providers",
             headers={"x-api-key": "secret"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             assert json.load(resp)["data"][0]["status"] == "unconfigured"
         req = urllib.request.Request(
             base + "/v1/models?ready=true",
             headers={"Authorization": "Bearer secret"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             assert json.load(resp) == {"object": "list", "data": []}
     finally:
         httpd.shutdown()
@@ -820,24 +820,24 @@ def test_readyz_503_is_public_and_does_not_call_or_mutate(providers, quota):
 
 
 def test_status_requires_auth_while_health_stays_public(providers, env, quota):
-    """Monitoring may prove reachability without exposing usage or inventory."""
+                                                                                
     pool = Pool(providers, quota=quota, env=env, post=make_post({}))
     httpd, base = _serve(pool, api_key="secret")
     try:
-        with urllib.request.urlopen(base + "/healthz") as resp:  # noqa: S310
+        with urllib.request.urlopen(base + "/healthz") as resp:              
             assert resp.status == 200
             assert json.load(resp) == {"status": "ok"}
 
         for path in ("/status", "/v1/status"):
             with pytest.raises(urllib.error.HTTPError) as exc:
-                urllib.request.urlopen(base + path)  # noqa: S310
+                urllib.request.urlopen(base + path)              
             assert exc.value.code == 401
 
             req = urllib.request.Request(
                 base + path,
                 headers={"Authorization": "Bearer secret"},
             )
-            with urllib.request.urlopen(req) as resp:  # noqa: S310
+            with urllib.request.urlopen(req) as resp:              
                 assert resp.status == 200
                 body = json.load(resp)
                 assert "providers" in body
@@ -852,7 +852,7 @@ def test_tokenmax_route(server):
     assert status == 200
     assert body["total"] >= 1
     assert isinstance(body["answers"], list)
-    assert any(a["text"] == "ok" for a in body["answers"])  # openai-adapter fakes answer "ok"
+    assert any(a["text"] == "ok" for a in body["answers"])                                    
 
 
 def test_tokenmax_requires_prompt(server):
@@ -862,14 +862,14 @@ def test_tokenmax_requires_prompt(server):
 
 
 def test_status_has_tokenmax_field_idle(server):
-    with urllib.request.urlopen(server + "/status") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/status") as resp:              
         s = json.load(resp)
-    assert s["tokenmax"]["active"] is False  # default snapshot before any run
+    assert s["tokenmax"]["active"] is False                                   
 
 
 def test_status_tokenmax_active_during_run(providers, env, quota):
-    """A barrier-blocked swarm lets /status observe tokenmax.active live (the signal the
-    OpenCode TUI throbs on), then settle to done==total when it finishes."""
+                                                                                        
+                                                                            
     import time
 
     from helpers import openai_body
@@ -879,7 +879,7 @@ def test_status_tokenmax_active_during_run(providers, env, quota):
     release = threading.Event()
 
     def slow_post(url, headers, json_body, timeout):
-        release.wait(2.0)  # hold every fan-out call open until the test releases it
+        release.wait(2.0)                                                           
         return HTTPResult(status=200, body=openai_body("ok"), text="ok")
 
     pool = Pool(providers, quota=quota, env=env, post=slow_post, stream_post=make_stream_post({}))
@@ -894,8 +894,8 @@ def test_status_tokenmax_active_during_run(providers, env, quota):
         )
         runner.start()
         active_seen = False
-        for _ in range(100):  # poll until the swarm is in flight
-            with urllib.request.urlopen(base + "/status") as resp:  # noqa: S310
+        for _ in range(100):                                     
+            with urllib.request.urlopen(base + "/status") as resp:              
                 tm = json.load(resp)["tokenmax"]
             if tm.get("active"):
                 active_seen = True
@@ -905,7 +905,7 @@ def test_status_tokenmax_active_during_run(providers, env, quota):
         release.set()
         runner.join(timeout=3)
         assert active_seen, "tokenmax.active was never observable during the run"
-        with urllib.request.urlopen(base + "/status") as resp:  # noqa: S310
+        with urllib.request.urlopen(base + "/status") as resp:              
             tm2 = json.load(resp)["tokenmax"]
         assert tm2["active"] is False
         assert tm2["done"] == tm2["total"] == 3
@@ -939,7 +939,7 @@ def test_streaming_sse(server):
         ).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         assert resp.headers["Content-Type"] == "text/event-stream"
         raw = resp.read().decode()
     assert raw.strip().endswith("[DONE]")
@@ -949,16 +949,16 @@ def test_streaming_sse(server):
         if ln.startswith("data: ") and "[DONE]" not in ln
     ]
     assert all(c["object"] == "chat.completion.chunk" for c in chunks)
-    assert chunks[0]["choices"][0]["delta"].get("role") == "assistant"  # role delta first
-    assert chunks[-1]["choices"][0]["finish_reason"] == "stop"  # stop chunk last
+    assert chunks[0]["choices"][0]["delta"].get("role") == "assistant"                    
+    assert chunks[-1]["choices"][0]["finish_reason"] == "stop"                   
     content = "".join(c["choices"][0]["delta"].get("content", "") for c in chunks)
     assert content == "ok"
 
 
 def test_streaming_counts_tokens(providers, env, quota):
-    """Streamed responses must accrue token usage (else estimated savings / tokens / tok/s never
-    move for streaming clients like OpenCode). Tokens are estimated from the streamed
-    text, so /status reflects the stream after it drains."""
+                                                                                                
+                                                                                     
+                                                            
     stream = make_stream_post({"alpha": ["Hello there, ", "this is a ", "streamed answer."]})
     pool = Pool(providers, quota=quota, env=env, post=make_post({}), stream_post=stream)
     httpd = serve(pool, host="127.0.0.1", port=0)
@@ -970,18 +970,18 @@ def test_streaming_counts_tokens(providers, env, quota):
             base + "/v1/chat/completions",
             data=json.dumps(
                 {
-                    "model": "alpha/alpha-small",  # pin the openai-adapter provider
+                    "model": "alpha/alpha-small",                                   
                     "stream": True,
                     "messages": [{"role": "user", "content": "hello there"}],
                 }
             ).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
-            resp.read()  # drain the whole stream so end-of-stream accounting runs
-        with urllib.request.urlopen(base + "/status") as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
+            resp.read()                                                           
+        with urllib.request.urlopen(base + "/status") as resp:              
             pool_stats = json.load(resp)["pool"]
-        assert pool_stats["completion_tokens"] > 0  # streamed output is now counted
+        assert pool_stats["completion_tokens"] > 0                                  
         assert pool_stats["prompt_tokens"] > 0
     finally:
         httpd.shutdown()
@@ -995,7 +995,7 @@ def _expect_status(url, payload, headers=None):
         headers={"Content-Type": "application/json", **(headers or {})},
     )
     try:
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             return resp.status
     except urllib.error.HTTPError as e:
         return e.code
@@ -1023,11 +1023,11 @@ def _raw_http(base: str, request: bytes, *, shutdown_write: bool = False) -> byt
 
 
 def test_malformed_body_returns_400_not_crash(server):
-    # non-object body
+                     
     assert _expect_status(server + "/v1/chat/completions", [1, 2, 3]) == 400
-    # missing messages
+                      
     assert _expect_status(server + "/v1/chat/completions", {"model": "auto"}) == 400
-    # bad types
+               
     assert (
         _expect_status(
             server + "/v1/chat/completions",
@@ -1035,7 +1035,7 @@ def test_malformed_body_returns_400_not_crash(server):
         )
         == 400
     )
-    # server still alive afterward
+                                  
     assert (
         _post_json(
             server + "/v1/chat/completions",
@@ -1211,7 +1211,7 @@ def test_proxy_auth(providers, env, quota):
     base = f"http://127.0.0.1:{httpd.server_address[1]}"
     body = {"model": "auto", "messages": [{"role": "user", "content": "hi"}]}
     try:
-        assert _expect_status(base + "/v1/chat/completions", body) == 401  # no token
+        assert _expect_status(base + "/v1/chat/completions", body) == 401            
         assert (
             _expect_status(base + "/v1/chat/completions", body, {"Authorization": "Bearer secret"})
             == 200
@@ -1404,7 +1404,7 @@ def test_text_protocol_stream_emits_first_delta_before_upstream_finishes(
             data=payload,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=2.0) as response:  # noqa: S310
+        with urllib.request.urlopen(req, timeout=2.0) as response:              
             events = []
             while True:
                 event = _next_sse_event(response)
@@ -1508,7 +1508,7 @@ def test_text_protocol_stream_can_fail_over_before_downstream_commit(
             data=json.dumps(_stream_request_body(path)).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as response:  # noqa: S310
+        with urllib.request.urlopen(req) as response:              
             pairs = _sse_event_pairs(response.read().decode())
     finally:
         httpd.shutdown()
@@ -1565,7 +1565,7 @@ def test_text_protocol_stream_failure_after_commit_emits_error_without_success_t
             data=json.dumps(_stream_request_body(path)).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as response:  # noqa: S310
+        with urllib.request.urlopen(req) as response:              
             pairs = _sse_event_pairs(response.read().decode())
     finally:
         httpd.shutdown()
@@ -1642,7 +1642,7 @@ def test_rich_protocol_streams_retain_buffered_compatibility_path(
             data=json.dumps(body).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as response:  # noqa: S310
+        with urllib.request.urlopen(req) as response:              
             pairs = _sse_event_pairs(response.read().decode())
     finally:
         httpd.shutdown()
@@ -1696,7 +1696,7 @@ def test_anthropic_tool_stream_retains_buffered_structured_events(providers, env
             data=json.dumps(body).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as response:  # noqa: S310
+        with urllib.request.urlopen(req) as response:              
             pairs = _sse_event_pairs(response.read().decode())
     finally:
         httpd.shutdown()
@@ -1711,7 +1711,7 @@ def test_anthropic_tool_stream_retains_buffered_structured_events(providers, env
 
 
 def _assert_responses_stream_accumulates(raw):
-    """Replay the SDK's output accumulation invariants over a Responses stream."""
+                                                                                  
 
     events = _responses_stream_events(raw)
     assert [event["sequence_number"] for event in events] == list(range(len(events)))
@@ -1748,7 +1748,7 @@ def test_responses_shim_streaming(server):
         data=json.dumps({"model": "auto", "stream": True, "input": "hi"}).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         raw = resp.read().decode()
     assert "event: response.created" in raw
     assert "event: response.output_text.delta" in raw
@@ -1871,7 +1871,7 @@ def test_responses_stream_includes_function_call_events(providers, env, quota):
             ).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             raw = resp.read().decode()
     finally:
         httpd.shutdown()
@@ -1944,7 +1944,7 @@ def test_responses_missing_input_400(server):
 
 
 def test_proxy_alias_routes(server):
-    # an OpenAI model name the pool doesn't have still routes (alias → auto)
+                                                                            
     status, body = _post_json(
         server + "/v1/chat/completions",
         {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "hi"}]},
@@ -1961,7 +1961,7 @@ def test_proxy_observability_headers(server):
         ).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         assert resp.headers.get("X-Sparrow-Provider")
         assert resp.headers.get("X-Sparrow-Model")
         assert resp.headers.get("X-Sparrow-Attempts")
@@ -2049,7 +2049,7 @@ def test_anthropic_messages_route_accepts_query_string(server):
 
 
 def test_gemini_adapter_via_proxy(providers, env, quota):
-    # 'gee' is a gemini-adapter provider; routing model="gee" must use the gemini body shape
+                                                                                            
     post = make_post({"gee.test": (200, gemini_body("hi from gemini"))})
     pool = Pool(providers, quota=quota, env=env, post=post)
     httpd, base = _serve(pool)
@@ -2061,7 +2061,7 @@ def test_gemini_adapter_via_proxy(providers, env, quota):
         assert status == 200
         assert body["choices"][0]["message"]["content"] == "hi from gemini"
         gee_call = next(c for c in post.calls if "gee.test" in c["url"])
-        assert "contents" in gee_call["body"]  # gemini shape, not OpenAI
+        assert "contents" in gee_call["body"]                            
     finally:
         httpd.shutdown()
         httpd.server_close()
@@ -2074,7 +2074,7 @@ def test_parse_model():
     assert _parse_model("groq", ids) == (["groq"], None)
     assert _parse_model("groq/llama-3.1-8b", ids) == (["groq"], "llama-3.1-8b")
     assert _parse_model("llama-3.3-70b", ids) == (None, "llama-3.3-70b")
-    # catalog model names with '/' whose prefix isn't a provider id stay whole
+                                                                              
     assert _parse_model("openai/gpt-oss-120b", ids) == (None, "openai/gpt-oss-120b")
     assert _parse_model("qwen/qwen3-coder:free", ids) == (None, "qwen/qwen3-coder:free")
 
@@ -2088,16 +2088,16 @@ def test_data_routes_stay_gated_while_secret_free_shell_is_public(providers, env
     t.start()
     base = f"http://127.0.0.1:{httpd.server_address[1]}"
     try:
-        with urllib.request.urlopen(base + "/dashboard") as response:  # noqa: S310
+        with urllib.request.urlopen(base + "/dashboard") as response:              
             assert response.status == 200
             assert "secret" not in response.read().decode()
 
         req = urllib.request.Request(base + "/v1/models")
         with pytest.raises(urllib.error.HTTPError) as exc_info:
-            urllib.request.urlopen(req)  # noqa: S310
+            urllib.request.urlopen(req)              
         assert exc_info.value.code == 401
-        # healthz stays open
-        with urllib.request.urlopen(base + "/healthz") as r:  # noqa: S310
+                            
+        with urllib.request.urlopen(base + "/healthz") as r:              
             assert r.status == 200
     finally:
         httpd.shutdown()
@@ -2105,7 +2105,7 @@ def test_data_routes_stay_gated_while_secret_free_shell_is_public(providers, env
 
 
 def test_streaming_request_with_tools_carries_tool_calls(providers, env, quota):
-    # stream:true + tools uses the buffered SSE path; tool_calls must survive.
+                                                                              
     tc = [{"id": "c1", "type": "function", "function": {"name": "f", "arguments": "{}"}}]
     post = make_post(
         {"alpha.test": (200, {"choices": [{"message": {"content": None, "tool_calls": tc}}]})}
@@ -2125,7 +2125,7 @@ def test_streaming_request_with_tools_carries_tool_calls(providers, env, quota):
             ).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             raw = resp.read().decode()
         chunks = [
             json.loads(ln[len("data: ") :])
@@ -2135,7 +2135,7 @@ def test_streaming_request_with_tools_carries_tool_calls(providers, env, quota):
         tc_deltas = [c for c in chunks if c["choices"][0]["delta"].get("tool_calls")]
         assert tc_deltas, "no tool_calls delta emitted"
         streamed = tc_deltas[0]["choices"][0]["delta"]["tool_calls"]
-        assert streamed[0]["index"] == 0  # OpenAI streaming requires per-call index
+        assert streamed[0]["index"] == 0                                            
         assert streamed[0]["id"] == "c1"
         assert chunks[-1]["choices"][0]["finish_reason"] == "tool_calls"
     finally:
@@ -2158,11 +2158,11 @@ def test_messages_empty_error_envelope_is_anthropic(providers, env, quota):
             headers={"Content-Type": "application/json"},
         )
         try:
-            urllib.request.urlopen(req)  # noqa: S310
+            urllib.request.urlopen(req)              
             raise AssertionError("expected 400")
         except urllib.error.HTTPError as e:
             body = json.load(e)
-        assert body["type"] == "error"  # Anthropic envelope, not OpenAI
+        assert body["type"] == "error"                                  
         assert body["error"]["type"] == "invalid_request_error"
     finally:
         httpd.shutdown()
@@ -2170,7 +2170,7 @@ def test_messages_empty_error_envelope_is_anthropic(providers, env, quota):
 
 
 def test_null_assistant_content_not_stringified():
-    # OpenAI sends content:null on assistant tool-call turns; it must not become "None"
+                                                                                       
     from sparrow.proxy import _normalize_messages
 
     out = _normalize_messages([{"role": "assistant", "content": None, "tool_calls": [{"id": "x"}]}])
@@ -2191,12 +2191,12 @@ def test_multimodal_content_is_preserved_for_vision_routing():
     ]
 
 
-# ---- JSON /status endpoint + per-request routing control ----
+                                                               
 
 
 def _get_json(url, headers=None):
     req = urllib.request.Request(url, headers=headers or {})
-    with urllib.request.urlopen(req) as resp:  # noqa: S310 (localhost test)
+    with urllib.request.urlopen(req) as resp:                               
         return resp.status, json.load(resp)
 
 
@@ -2228,14 +2228,14 @@ def test_status_records_served_target(server):
 
 
 def test_models_route_includes_routing_aliases(server):
-    with urllib.request.urlopen(server + "/v1/models") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/v1/models") as resp:              
         ids = {m["id"] for m in json.load(resp)["data"]}
     assert {"auto", "agent", "fast", "quality", "fair", "spread"} <= ids
 
 
 def test_spread_alias_routes(server):
-    # bare + provider-qualified aliases all route and serve (incl. sparrow/auto, which
-    # must NOT be treated as a literal provider filter → 503)
+                                                                                      
+                                                             
     for name in (
         "agent",
         "sparrow/agent",
@@ -2254,7 +2254,7 @@ def test_spread_alias_routes(server):
 
 
 def test_model_name_is_treated_as_routing_keyword(server):
-    # "fast" is a routing keyword, not a literal model id → served as auto + fast routing
+                                                                                         
     status, body = _post_json(
         server + "/v1/chat/completions",
         {"model": "fast", "messages": [{"role": "user", "content": "hi"}]},
@@ -2306,12 +2306,12 @@ def test_parse_multipart_form_unit():
     )
     f = _parse_multipart_form(ct, body)
     assert f["model"] == "m1"
-    assert f["file"] == ("a.wav", b"AUDIO\x00\x01")  # binary bytes preserved
+    assert f["file"] == ("a.wav", b"AUDIO\x00\x01")                          
 
 
 def test_parse_multipart_form_binary_safe_embedded_boundary():
-    # Audio bytes that contain "--XB" (NOT preceded by CRLF) must NOT be treated as a
-    # delimiter — the payload must survive intact.
+                                                                                     
+                                                  
     from sparrow.proxy import _parse_multipart_form
 
     audio = b"PRE--XB-and-more\x00\xff"
@@ -2326,8 +2326,8 @@ def test_parse_multipart_form_binary_safe_embedded_boundary():
 
 
 def test_parse_multipart_form_filename_not_mistaken_for_name():
-    # A part with ONLY filename= (no name=) must NOT be parsed as a named field — the `name`
-    # inside `filename=` must not match the name= parameter.
+                                                                                            
+                                                            
     from sparrow.proxy import _parse_multipart_form
 
     ct = "multipart/form-data; boundary=XB"
@@ -2337,7 +2337,7 @@ def test_parse_multipart_form_filename_not_mistaken_for_name():
         b"--XB--\r\n"
     )
     f = _parse_multipart_form(ct, body)
-    # the real file part wins; the no-name part is skipped (not stored under "file")
+                                                                                    
     assert f["file"] == ("a.wav", b"AUDIO")
 
 
@@ -2345,7 +2345,7 @@ def test_parse_multipart_form_missing_closing_boundary_raises():
     from sparrow.proxy import _parse_multipart_form
 
     ct = "multipart/form-data; boundary=XB"
-    # no trailing "--XB--"
+                          
     body = b'--XB\r\nContent-Disposition: form-data; name="file"; filename="a.wav"\r\n\r\nAUDIO'
     with pytest.raises(ValueError, match="closing"):
         _parse_multipart_form(ct, body)
@@ -2411,7 +2411,7 @@ def test_audio_transcription_route(providers, env, quota):
             data=body,
             headers={"Content-Type": "multipart/form-data; boundary=BOUND1"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             d = json.load(resp)
         assert d["text"] == "the transcript"
         assert d["x_sparrow"]["provider"] == "groq"
@@ -2439,7 +2439,7 @@ def test_audio_transcription_classifies_upstream_error_status(
             headers={"Content-Type": "multipart/form-data; boundary=BOUND1"},
         )
         with pytest.raises(urllib.error.HTTPError) as exc_info:
-            urllib.request.urlopen(req)  # noqa: S310
+            urllib.request.urlopen(req)              
         assert exc_info.value.code == expected_status
         payload = json.load(exc_info.value)
         expected_type = (
@@ -2462,7 +2462,7 @@ def test_audio_transcription_missing_file_400(providers, env, quota):
             headers={"Content-Type": "multipart/form-data; boundary=BOUND1"},
         )
         with pytest.raises(urllib.error.HTTPError) as exc:
-            urllib.request.urlopen(req)  # noqa: S310
+            urllib.request.urlopen(req)              
         assert exc.value.code == 400
     finally:
         httpd.shutdown()
@@ -2470,7 +2470,7 @@ def test_audio_transcription_missing_file_400(providers, env, quota):
 
 
 def test_audio_transcription_unsupported_format_400(providers, env, quota):
-    # srt/vtt aren't accepted upstream — the proxy must reject them with 400, not 502.
+                                                                                      
     httpd, base = _transcribe_server(providers, env, quota)
     try:
         b = "BOUND1"
@@ -2488,7 +2488,7 @@ def test_audio_transcription_unsupported_format_400(providers, env, quota):
             headers={"Content-Type": f"multipart/form-data; boundary={b}"},
         )
         with pytest.raises(urllib.error.HTTPError) as exc:
-            urllib.request.urlopen(req)  # noqa: S310
+            urllib.request.urlopen(req)              
         assert exc.value.code == 400
     finally:
         httpd.shutdown()
@@ -2501,15 +2501,15 @@ def _post_json_with_headers(url, payload, headers):
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", **headers},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310 (localhost test)
+    with urllib.request.urlopen(req) as resp:                               
         return resp.status, json.load(resp)
 
 
-# ---- shareable SVG badge / summary + lifetime stats ----
+                                                          
 
 
 def test_badge_svg_route(server):
-    with urllib.request.urlopen(server + "/badge.svg") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/badge.svg") as resp:              
         assert resp.status == 200
         assert resp.headers.get("Content-Type", "").startswith("image/svg+xml")
         body = resp.read().decode()
@@ -2518,7 +2518,7 @@ def test_badge_svg_route(server):
 
 
 def test_summary_svg_route(server):
-    with urllib.request.urlopen(server + "/summary.svg") as resp:  # noqa: S310
+    with urllib.request.urlopen(server + "/summary.svg") as resp:              
         assert resp.status == 200
         body = resp.read().decode()
     assert "<svg" in body
@@ -2547,7 +2547,7 @@ def test_badge_requires_auth_when_keyed(providers, env, quota, monkeypatch):
     httpd, base = _serve(pool, api_key="secret")
     try:
         with pytest.raises(urllib.error.HTTPError) as exc:
-            urllib.request.urlopen(base + "/badge.svg")  # noqa: S310
+            urllib.request.urlopen(base + "/badge.svg")              
         assert exc.value.code == 401
     finally:
         httpd.shutdown()
@@ -2561,8 +2561,8 @@ def test_badge_public_when_opted_in(providers, env, quota, monkeypatch):
     )
     httpd, base = _serve(pool, api_key="secret")
     try:
-        with urllib.request.urlopen(base + "/badge.svg") as resp:  # noqa: S310
-            assert resp.status == 200  # public despite the proxy key
+        with urllib.request.urlopen(base + "/badge.svg") as resp:              
+            assert resp.status == 200                                
     finally:
         httpd.shutdown()
         httpd.server_close()
@@ -2611,7 +2611,7 @@ def test_max_completion_tokens_reaches_live_stream(providers, env, quota):
             ).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             assert resp.status == 200
             resp.read()
     finally:
@@ -2672,7 +2672,7 @@ def test_live_stream_records_real_failover_attempts(providers, env, quota):
             ).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             resp.read()
         _, status = _get_json(base + "/status")
     finally:
@@ -2775,7 +2775,7 @@ def test_chat_sse_chunks_include_integer_created_timestamp(
             data=json.dumps(payload).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req) as resp:  # noqa: S310
+        with urllib.request.urlopen(req) as resp:              
             raw = resp.read().decode()
     finally:
         httpd.shutdown()

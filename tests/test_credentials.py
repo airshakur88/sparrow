@@ -1,4 +1,4 @@
-"""Tests for immutable credential contracts."""
+                                               
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from sparrow.models import Model, Provider
 
 
 class TestCredentialEnums:
-    """Test enum values match spec exactly."""
+                                              
 
     def test_credential_operation_values(self) -> None:
         assert CredentialOperation.CHAT.value == "chat"
@@ -51,7 +51,7 @@ class TestCredentialEnums:
 
 
 class TestCredentialSlot:
-    """Test CredentialSlot frozen dataclass."""
+                                               
 
     def test_credential_slot_creation(self) -> None:
         slot = CredentialSlot(
@@ -102,7 +102,7 @@ class TestCredentialSlot:
 
 
 class TestCredentialSelection:
-    """Test CredentialSelection frozen dataclass with safe repr."""
+                                                                   
 
     def test_credential_selection_creation(self) -> None:
         selection = CredentialSelection(
@@ -141,7 +141,7 @@ class TestCredentialSelection:
             generation="gen-1",
         )
         assert selection.attempt_id != ""
-        assert len(selection.attempt_id) == 32  # uuid4().hex
+        assert len(selection.attempt_id) == 32               
 
     def test_credential_selection_repr_redacts_secret(self) -> None:
         selection = CredentialSelection(
@@ -196,7 +196,7 @@ class TestCredentialSelection:
 
 
 class TestCredentialUnavailable:
-    """Test CredentialUnavailable frozen dataclass."""
+                                                      
 
     def test_credential_unavailable_creation(self) -> None:
         unavailable = CredentialUnavailable(
@@ -230,7 +230,7 @@ class TestCredentialUnavailable:
 
 
 class TestLegacyProviderCompatibility:
-    """Test that Provider class remains fully backward compatible."""
+                                                                     
 
     def test_provider_is_configured_with_key(self) -> None:
         provider = Provider(
@@ -423,10 +423,10 @@ class TestLegacyProviderCompatibility:
 
 
 class TestCredentialSelectionSecretHandling:
-    """Tests specifically for secret handling - these should fail initially (RED)."""
+                                                                                     
 
     def test_secret_not_in_repr(self) -> None:
-        """Secret value must never appear in repr."""
+                                                     
         selection = CredentialSelection(
             credential_id="slot-1",
             provider_id="groq",
@@ -440,7 +440,7 @@ class TestCredentialSelectionSecretHandling:
         assert "very-secret" not in repr_str
 
     def test_secret_not_in_str(self) -> None:
-        """Secret value must never appear in str."""
+                                                    
         selection = CredentialSelection(
             credential_id="slot-1",
             provider_id="groq",
@@ -454,7 +454,7 @@ class TestCredentialSelectionSecretHandling:
         assert "another-secret" not in str_repr
 
     def test_secret_field_accessible_directly(self) -> None:
-        """Secret field should be accessible directly for actual use."""
+                                                                        
         selection = CredentialSelection(
             credential_id="slot-1",
             provider_id="groq",

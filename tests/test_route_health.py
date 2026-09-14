@@ -1,4 +1,4 @@
-"""Persistent per-route health and circuit-breaker behavior."""
+                                                               
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ def test_restart_preserves_open_circuit_and_half_open_recovery(tmp_path):
     now[0] = 1_031.0
     assert restarted.allow("alpha/model")
     assert restarted.state("alpha/model").state == "half_open"
-    # A second process cannot consume the same half-open probe lease.
+                                                                     
     competing = RouteHealthStore(path=path, clock=lambda: now[0], failure_threshold=1)
     assert not competing.allow("alpha/model")
 

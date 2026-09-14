@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Enforce package line and branch coverage floors independently."""
+                                                                    
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ METRICS = {"lines", "branches"}
 
 
 class CoverageInputError(ValueError):
-    """Raised when coverage or threshold input cannot be trusted."""
+    pass
 
 
 def _load_object(path: Path, label: str) -> dict[str, Any]:

@@ -1,4 +1,4 @@
-"""TDD tests for credential_store.py — versioned SQLite credential store with WAL mode."""
+                                                                                          
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from sparrow.credentials import CooldownReason, CredentialState
 
 
 class TestDefaultPath:
-    """Test default credential store path resolution."""
+                                                        
 
     def test_default_path_structure(self):
         path = default_credential_store_path()
@@ -40,7 +40,7 @@ class TestDefaultPath:
 
 
 class TestSchemaVersioning:
-    """Test schema creation, versioning, and migration support."""
+                                                                  
 
     def test_bootstrap_creates_tables_and_sets_version(self, tmp_path):
         db_path = tmp_path / "test.db"
@@ -49,7 +49,7 @@ class TestSchemaVersioning:
             version = get_user_version(con)
             assert version == SCHEMA_VERSION
 
-            # Verify all required tables exist
+                                              
             tables = con.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()
@@ -63,14 +63,14 @@ class TestSchemaVersioning:
         db_path = tmp_path / "test.db"
         with sqlite3.connect(db_path) as con:
             bootstrap_schema(con)
-            # Should not raise
+                              
             assert check_schema_version(con) == SCHEMA_VERSION
 
     def test_check_schema_version_raises_for_future_version(self, tmp_path):
         db_path = tmp_path / "test.db"
         with sqlite3.connect(db_path) as con:
             bootstrap_schema(con)
-            # Manually set a future version
+                                           
             con.execute(f"PRAGMA user_version={SCHEMA_VERSION + 1}")
             con.commit()
 
@@ -89,7 +89,7 @@ class TestSchemaVersioning:
         db_path = tmp_path / "test.db"
         with sqlite3.connect(db_path) as con:
             bootstrap_schema(con)
-            # Check WAL mode is set
+                                   
             row = con.execute("PRAGMA journal_mode").fetchone()
             assert row[0].lower() == "wal"
 
@@ -105,12 +105,12 @@ class TestSchemaVersioning:
         with sqlite3.connect(db_path) as con:
             bootstrap_schema(con)
             row = con.execute("PRAGMA synchronous").fetchone()
-            # SQLite returns 2 for FULL mode (0=OFF, 1=NORMAL, 2=FULL)
+                                                                      
             assert row[0] == 2
 
 
 class TestCredentialStoreInit:
-    """Test CredentialStore initialization and connection management."""
+                                                                        
 
     def test_init_creates_database_and_schema(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -118,7 +118,7 @@ class TestCredentialStoreInit:
         assert store.path == db_path
         assert db_path.exists()
 
-        # Verify schema was created
+                                   
         with sqlite3.connect(db_path) as con:
             version = get_user_version(con)
             assert version == SCHEMA_VERSION
@@ -145,7 +145,7 @@ class TestCredentialStoreInit:
 
 
 class TestCredentialStoreContextManager:
-    """Test context manager (__enter__/__exit__) for connection management."""
+                                                                              
 
     def test_context_manager_returns_self(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -156,7 +156,7 @@ class TestCredentialStoreContextManager:
         db_path = tmp_path / "store.db"
         with CredentialStore(path=db_path) as store:
             store.set_cursor("groq", "key1")
-        # Should not raise, connection cleaned up
+                                                 
 
     def test_context_manager_handles_exception(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -166,14 +166,14 @@ class TestCredentialStoreContextManager:
                 raise ValueError("test error")
         except ValueError:
             pass
-        # Store should still be usable after exception
+                                                      
         with CredentialStore(path=db_path) as store:
             cursor = store.get_cursor("groq")
             assert cursor == "key1"
 
 
 class TestCursorOperations:
-    """Test cursor get/set operations for round-robin selection."""
+                                                                   
 
     def test_get_cursor_returns_none_for_new_provider(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -211,7 +211,7 @@ class TestCursorOperations:
 
 
 class TestCooldownOperations:
-    """Test cooldown get/set with max(existing, new) semantics."""
+                                                                  
 
     def test_get_cooldown_returns_none_for_new(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -225,7 +225,7 @@ class TestCooldownOperations:
         store.set_cooldown("groq", "key", "key1", future, CooldownReason.KEY_AUTH)
         result = store.get_cooldown("groq", "key", "key1")
         assert result is not None
-        assert abs(result - future) < 1.0  # Allow small clock drift
+        assert abs(result - future) < 1.0                           
 
     def test_cooldown_max_semantics_extends_only(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -235,11 +235,11 @@ class TestCooldownOperations:
         even_later = now + 7200
 
         store.set_cooldown("groq", "key", "key1", later, CooldownReason.KEY_AUTH)
-        store.set_cooldown("groq", "key", "key1", now, CooldownReason.KEY_TEMP)  # Earlier - should not update
+        store.set_cooldown("groq", "key", "key1", now, CooldownReason.KEY_TEMP)                               
         result = store.get_cooldown("groq", "key", "key1")
         assert abs(result - later) < 1.0
 
-        store.set_cooldown("groq", "key", "key1", even_later, CooldownReason.KEY_TEMP)  # Later - should update
+        store.set_cooldown("groq", "key", "key1", even_later, CooldownReason.KEY_TEMP)                         
         result = store.get_cooldown("groq", "key", "key1")
         assert abs(result - even_later) < 1.0
 
@@ -271,7 +271,7 @@ class TestCooldownOperations:
 
 
 class TestAttemptOperations:
-    """Test attempt insert and CAS update operations."""
+                                                        
 
     def test_insert_attempt(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -321,7 +321,7 @@ class TestAttemptOperations:
         store = CredentialStore(path=db_path)
         store.insert_attempt("attempt-1", "key1", "groq", "groq", "chat", CredentialState.RESERVED)
         store.update_attempt("attempt-1", CredentialState.SUCCEEDED)
-        # Second update should fail (already terminal)
+                                                      
         result = store.update_attempt("attempt-1", CredentialState.FAILED)
         assert result is False
 
@@ -332,7 +332,7 @@ class TestAttemptOperations:
         result = store.update_attempt("attempt-1", CredentialState.DISPATCHED)
         assert result is True
 
-        # Can then transition to terminal
+                                         
         result = store.update_attempt("attempt-1", CredentialState.SUCCEEDED)
         assert result is True
 
@@ -344,7 +344,7 @@ class TestAttemptOperations:
 
 
 class TestDailyUsageOperations:
-    """Test daily usage increment and retrieval."""
+                                                   
 
     def test_get_daily_usage_returns_zero_for_new(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -379,7 +379,7 @@ class TestDailyUsageOperations:
             return 1704153600.0
 
         store._clock = next_day_clock
-        assert store.get_daily_usage("groq", "model1") == 0  # New day, zero
+        assert store.get_daily_usage("groq", "model1") == 0                 
         store.update_daily_usage("groq", "model1", 1)
         assert store.get_daily_usage("groq", "model1") == 1
 
@@ -392,7 +392,7 @@ class TestDailyUsageOperations:
 
 
 class TestCredentialStateCRUD:
-    """Test the required CRUD operations: upsert, get, list_by_provider, update_state, record_success, record_failure."""
+                                                                                                                         
 
     def test_upsert_credential_state(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -407,7 +407,7 @@ class TestCredentialStateCRUD:
         assert state["total_failures"] == 0
 
     def test_upsert_credential_state_idempotent(self, tmp_path):
-        """Upsert should be idempotent - second call doesn't create duplicate."""
+                                                                                 
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
         store.upsert_credential_state("key1", "groq", "active")
@@ -504,18 +504,18 @@ class TestCredentialStateCRUD:
 
 
 class TestAtomicRoundRobin:
-    """Test atomic round-robin selection within a provider."""
+                                                              
 
     def test_round_robin_selects_next_credential(self, tmp_path):
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
-        # First selection should return first credential
+                                                        
         selected = store.select_next_credential("groq", ["key1", "key2", "key3"])
         assert selected == "key1"
-        # Second selection should return next
+                                             
         selected = store.select_next_credential("groq", ["key1", "key2", "key3"])
         assert selected == "key2"
-        # Third selection should return next
+                                            
         selected = store.select_next_credential("groq", ["key1", "key2", "key3"])
         assert selected == "key3"
 
@@ -524,14 +524,14 @@ class TestAtomicRoundRobin:
         store = CredentialStore(path=db_path)
         store.select_next_credential("groq", ["key1", "key2"])
         store.select_next_credential("groq", ["key1", "key2"])
-        # Should wrap around to first
+                                     
         selected = store.select_next_credential("groq", ["key1", "key2"])
         assert selected == "key1"
 
     def test_round_robin_skips_unavailable(self, tmp_path):
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
-        # Exclude key2, should select key1 then key3
+                                                    
         selected = store.select_next_credential("groq", ["key1", "key2", "key3"], excluded={"key2"})
         assert selected == "key1"
         selected = store.select_next_credential("groq", ["key1", "key2", "key3"], excluded={"key2"})
@@ -548,13 +548,13 @@ class TestAtomicRoundRobin:
         store = CredentialStore(path=db_path)
         store.select_next_credential("groq", ["key1", "key2"])
         store.select_next_credential("cerebras", ["keyA", "keyB"])
-        # Each provider has independent cursor
+                                              
         assert store.select_next_credential("groq", ["key1", "key2"]) == "key2"
         assert store.select_next_credential("cerebras", ["keyA", "keyB"]) == "keyB"
 
 
 class TestSchemaVersionProperty:
-    """Test schema_version property and migration support."""
+                                                             
 
     def test_schema_version_property(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -565,29 +565,29 @@ class TestSchemaVersionProperty:
     def test_migration_support(self, tmp_path):
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
-        # Should not raise
+                          
         store.migrate()
 
 
 class TestCrashRecovery:
-    """Test crash recovery and WAL replay."""
+                                             
 
     def test_wal_replay_after_crash(self, tmp_path):
-        """Simulate crash by not closing connection properly, then reopen."""
+                                                                             
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
         store.set_cursor("groq", "key1")
         store.set_cooldown("groq", "key", "key1", time.time() + 3600, CooldownReason.KEY_AUTH)
         store.update_daily_usage("groq", "model1", 5)
 
-        # Simulate crash: create new store instance (new connection)
+                                                                    
         store2 = CredentialStore(path=db_path)
         assert store2.get_cursor("groq") == "key1"
         assert store2.get_cooldown("groq", "key", "key1") is not None
         assert store2.get_daily_usage("groq", "model1") == 5
 
     def test_concurrent_access_with_wal(self, tmp_path):
-        """Test multiple connections can read/write concurrently with WAL."""
+                                                                             
         db_path = tmp_path / "store.db"
         store1 = CredentialStore(path=db_path)
         store2 = CredentialStore(path=db_path)
@@ -597,21 +597,21 @@ class TestCrashRecovery:
 
         assert store1.get_cursor("groq") == "key1"
         assert store2.get_cursor("cerebras") == "keyA"
-        assert store1.get_cursor("cerebras") == "keyA"  # Visible to store1
-        assert store2.get_cursor("groq") == "key1"  # Visible to store2
+        assert store1.get_cursor("cerebras") == "keyA"                     
+        assert store2.get_cursor("groq") == "key1"                     
 
     def test_locked_store_error_on_contention(self, tmp_path):
-        """Test LockedStoreError is raised when database is locked."""
+                                                                      
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
 
-        # Hold a connection with a long write transaction
+                                                         
         con = sqlite3.connect(db_path, timeout=0.1, isolation_level=None)
         con.execute("BEGIN IMMEDIATE")
         con.execute("INSERT INTO cursor (provider, last_id, updated_at) VALUES ('locktest', 'x', 0)")
 
         try:
-            # This should raise LockedStoreError after retries (write conflicts with write)
+                                                                                           
             with pytest.raises(LockedStoreError):
                 store.set_cursor("groq", "key1")
         finally:
@@ -619,32 +619,32 @@ class TestCrashRecovery:
             con.close()
 
     def test_round_robin_persists_after_crash(self, tmp_path):
-        """Round-robin cursor position persists after simulated crash."""
+                                                                         
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
-        store.select_next_credential("groq", ["key1", "key2", "key3"])  # -> key1
-        store.select_next_credential("groq", ["key1", "key2", "key3"])  # -> key2
+        store.select_next_credential("groq", ["key1", "key2", "key3"])           
+        store.select_next_credential("groq", ["key1", "key2", "key3"])           
 
-        # Simulate crash
+                        
         store2 = CredentialStore(path=db_path)
-        # Cursor is at key2, next should be key3
+                                                
         selected = store2.select_next_credential("groq", ["key1", "key2", "key3"])
         assert selected == "key3"
-        # Next should wrap to key1
+                                  
         selected = store2.select_next_credential("groq", ["key1", "key2", "key3"])
         assert selected == "key1"
 
 
 class TestPruning:
-    """Test pruning of old records."""
+                                      
 
     def test_prune_old_attempts(self, tmp_path):
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
         now = time.time()
-        old = now - (40 * 86400)  # 40 days ago
+        old = now - (40 * 86400)               
 
-        # Insert old attempt directly
+                                     
         with sqlite3.connect(db_path) as con:
             con.execute(
                 "INSERT INTO attempts (attempt_id, credential_id, provider_id, quota_group, operation, state, started_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -693,8 +693,8 @@ class TestPruning:
     def test_prune_old_daily_usage(self, tmp_path):
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
-        # Use fixed clock for deterministic days
-        store._clock = lambda: 1704067200.0  # 2024-01-01
+                                                
+        store._clock = lambda: 1704067200.0              
 
         with sqlite3.connect(db_path) as con:
             con.execute(
@@ -717,13 +717,13 @@ class TestPruning:
 
 
 class TestConnectionCleanup:
-    """Test deterministic connection closure and no leaks."""
+                                                             
 
     def test_connection_closed_after_operation(self, tmp_path):
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
         store.set_cursor("groq", "key1")
-        # Connection should be closed after operation
+                                                     
 
     def test_multiple_operations_dont_leak(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -731,21 +731,21 @@ class TestConnectionCleanup:
         for i in range(10):
             store.set_cursor(f"provider{i}", f"key{i}")
             store.get_cursor(f"provider{i}")
-        # No connection leaks
+                             
 
     def test_context_manager_closes_on_exit(self, tmp_path):
         db_path = tmp_path / "store.db"
         with CredentialStore(path=db_path) as store:
             store.set_cursor("groq", "key1")
-        # Connection closed on exit
+                                   
 
 
 class TestErrorHandling:
-    """Test typed error handling for corrupt/locked/version mismatch."""
+                                                                        
 
     def test_corrupt_store_error(self, tmp_path):
         db_path = tmp_path / "store.db"
-        # Create a corrupt database file
+                                        
         db_path.write_bytes(b"not a sqlite database")
 
         with pytest.raises(CorruptStoreError):
@@ -755,13 +755,13 @@ class TestErrorHandling:
         db_path = tmp_path / "store.db"
         store = CredentialStore(path=db_path)
 
-        # Hold exclusive write lock
+                                   
         con = sqlite3.connect(db_path, timeout=0.1, isolation_level=None)
         con.execute("BEGIN IMMEDIATE")
         con.execute("INSERT INTO cursor (provider, last_id, updated_at) VALUES ('lock', 'x', 0)")
 
         try:
-            # Write operation should conflict with held write lock
+                                                                  
             with pytest.raises(LockedStoreError):
                 store.set_cursor("groq", "key1")
         finally:
@@ -780,10 +780,10 @@ class TestErrorHandling:
 
 
 class TestCredentialStateTable:
-    """Test the credential state table with required fields:
-    credential_id, provider_id, state, cooldown_until, last_success, last_failure,
-    consecutive_failures, total_successes, total_failures
-    """
+                                                            
+                                                                                  
+                                                         
+       
 
     def test_credential_state_table_exists(self, tmp_path):
         db_path = tmp_path / "store.db"
@@ -793,8 +793,8 @@ class TestCredentialStateTable:
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()
             table_names = {t[0] for t in tables}
-            # The task requires a credential state table with specific fields
-            # This test will fail until the schema is updated
+                                                                             
+                                                             
             assert "credential_state" in table_names
 
     def test_credential_state_table_has_required_columns(self, tmp_path):
@@ -811,4 +811,4 @@ class TestCredentialStateTable:
             assert required.issubset(col_names), f"Missing columns: {required - col_names}"
 
 
-# Run with: python -m pytest tests/test_credential_store.py -v
+                                                              

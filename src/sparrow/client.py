@@ -1,16 +1,16 @@
-"""HTTP client and per-adapter request/response shaping.
+                                                        
 
-Three adapters cover every provider in the catalog:
+                                                   
 
-* ``openai``     — standard ``/chat/completions`` (Groq, Cerebras, OpenRouter,
-                   Kilo, Mistral, Cohere, SambaNova, ...).
-* ``cloudflare`` — Cloudflare Workers AI, which exposes an OpenAI-compatible
-                   route once ``{account_id}`` is substituted into the URL.
-* ``gemini``     — Google Generative Language API (different body shape).
+                                                                              
+                                                          
+                                                                            
+                                                                           
+                                                                         
 
-All network access goes through a single injectable ``post`` callable so the
-router and adapters can be unit-tested without touching the network.
-"""
+                                                                            
+                                                                    
+   
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ import re
 import sys
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
@@ -31,8 +32,8 @@ from .models import EmbedReply, Provider, Reply, TranscribeReply
 Message = dict[str, str]
 
 _THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
-# Reasoning models burn output budget on hidden reasoning; give them headroom
-# if the caller left max_tokens at a small default.
+                                                                             
+                                                   
 _THINKING_HINTS = (
     "glm-4.7",
     "-r1",
@@ -41,11 +42,11 @@ _THINKING_HINTS = (
     "magistral",
     "deepseek-r1",
     "nemotron",
-    "gpt-oss",  # emits reasoning; needs token headroom or content comes back empty
+    "gpt-oss",                                                                     
     "gemini-3.6",
     "gemini-3.7",
 )
-_THINKING_FLOOR = 4096  # room for reasoning, but under caps like Groq's gpt-oss limit
+_THINKING_FLOOR = 4096                                                                
 
 
 def _is_thinking(model: str) -> bool:
@@ -53,14 +54,29 @@ def _is_thinking(model: str) -> bool:
     return any(h in m for h in _THINKING_HINTS)
 
 
+_OPENCODE_USER_AGENT = f"opencode/sparrow/{__version__}"
+
+
+def _opencode_headers(session_id: str | None = None) -> dict[str, str]:
+                                                                          
+    sid = session_id or str(uuid.uuid4())
+    return {
+        "User-Agent": _OPENCODE_USER_AGENT,
+        "x-opencode-project": "sparrow",
+        "x-opencode-session": sid,
+        "x-opencode-request": str(uuid.uuid4()),
+        "x-opencode-client": "sparrow",
+    }
+
+
 def _strip_think(text: str) -> str:
     return _THINK_RE.sub("", text).strip()
 
 
 def _content_text(content) -> str:
-    """Coerce an OpenAI-style ``content`` to text. Providers may return a plain
-    string, a list of content-part dicts (``[{"type":"text","text":...}]``), or
-    null — none of which should crash response parsing."""
+                                                                               
+                                                                               
+                                                          
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -77,9 +93,9 @@ class HTTPResult:
 
 
 PostFn = Callable[[str, dict, dict, float], HTTPResult]
-# A streaming transport returns (status, iterable-of-SSE-lines). The iterable
-# keeps the connection open until exhausted/closed.
-from collections.abc import Iterable, Iterator  # noqa: E402
+                                                                             
+                                                   
+from collections.abc import Iterable, Iterator              
 
 StreamPostFn = Callable[
     [str, dict, dict, float],
@@ -88,26 +104,26 @@ StreamPostFn = Callable[
 
 _USER_AGENT = f"sparrow/{__version__} (+https://github.com/airshakur88/sparrow)"
 
-_CONNECT_TIMEOUT = 10.0  # fail fast on dead/unreachable providers so failover is quick
-# Cap a single upstream reply so a broken/malicious provider can't OOM the proxy.
-_MAX_RESPONSE_BYTES = 32 * 1024 * 1024  # 32 MiB
-# Bound one decoded SSE line. Python strings can consume multiple bytes per
-# character, so a character cap also bounds the in-process line buffer.
+_CONNECT_TIMEOUT = 10.0                                                                
+                                                                                 
+_MAX_RESPONSE_BYTES = 32 * 1024 * 1024          
+                                                                           
+                                                                       
 _MAX_STREAM_LINE_CHARS = 1 * 1024 * 1024
 _MAX_TRANSPORT_ATTEMPTS = 2
 _RETRY_BACKOFF_S = 0.2
-_shared = None  # one pooled, keep-alive httpx.Client shared across calls/threads
+_shared = None                                                                   
 _shared_lock = threading.Lock()
 
 
 def _client():
-    """A process-wide pooled httpx.Client. Reusing connections (keep-alive) avoids
-    a TCP+TLS handshake on every request — a big win for repeated calls to the
-    same provider (agent loops). httpx.Client is thread-safe."""
+                                                                                  
+                                                                              
+                                                                
     global _shared
-    if _shared is None:  # fast path: avoid the lock once initialized
+    if _shared is None:                                              
         with _shared_lock:
-            if _shared is None:  # double-checked under the threaded proxy
+            if _shared is None:                                           
                 import atexit
 
                 import httpx
@@ -117,10 +133,10 @@ def _client():
                     limits=httpx.Limits(
                         max_keepalive_connections=20, max_connections=100, keepalive_expiry=30.0
                     ),
-                    # Don't follow redirects: a validated public base_url could 3xx to
-                    # a loopback/internal host and we'd resend the provider API key to
-                    # the redirect target (SSRF / key exfil). Chat APIs don't redirect;
-                    # a 3xx is treated as a failed attempt and fails over.
+                                                                                      
+                                                                                      
+                                                                                       
+                                                                          
                     follow_redirects=False,
                 )
                 atexit.register(_shared.close)
@@ -141,13 +157,13 @@ def default_post(
     *,
     max_attempts: int | None = None,
 ) -> HTTPResult:
-    """Real network POST via the pooled httpx client.
+                                                     
 
-    Streams the response so we can (1) cap it at ``_MAX_RESPONSE_BYTES`` — a broken
-    or malicious provider can't OOM the proxy — and (2) enforce a wall-clock deadline
-    so a slow-drip upstream (one byte before each per-read timeout) can't pin a worker
-    indefinitely. Either guard raises, which the router treats as a failed attempt and
-    fails over."""
+                                                                                   
+                                                                                     
+                                                                                      
+                                                                                      
+                  
     import httpx
 
     deadline = time.monotonic() + timeout
@@ -180,7 +196,7 @@ def default_post(
                 time.sleep(delay)
                 continue
         return result
-    if last_exc is not None:  # pragma: no cover - loop structure guard
+    if last_exc is not None:                                           
         raise last_exc
     if last_result is not None:
         return last_result
@@ -251,9 +267,9 @@ def _retry_after_seconds(headers: dict | None) -> float | None:
         except (TypeError, ValueError, OSError):
             pass
 
-    # RFC RateLimit-Reset is a delay in seconds. The widespread legacy
-    # X-RateLimit-Reset convention is usually a Unix timestamp, though some
-    # providers return a delay; distinguish epoch-shaped values conservatively.
+                                                                      
+                                                                           
+                                                                               
     reset = _header(headers, "RateLimit-Reset")
     if reset:
         try:
@@ -286,7 +302,7 @@ def _retry_delay_monotonic(
 def _retry_delay_seconds(
     retry_after: float | None, attempt: int, deadline: float, now
 ) -> float | None:
-    """Return one bounded retry delay from already-parsed provider guidance."""
+                                                                               
     base = retry_after
     if base is None:
         base = _RETRY_BACKOFF_S * (attempt + 1)
@@ -306,17 +322,17 @@ def _retryable_transport_exception(exc: Exception) -> bool:
 
 
 def _is_local_pool_timeout(exc: Exception) -> bool:
-    """A connection-pool wait timeout is local saturation, not provider health."""
+                                                                                  
     import httpx
 
     return isinstance(exc, httpx.PoolTimeout)
 
 
 class _StreamLines:
-    """An explicitly-closeable line iterator over a streaming response, so the
-    connection is released back to the pool on exhaustion, early close, OR non-200
-    (where the caller closes it before ever iterating). Does NOT close the shared
-    client — only the response/stream."""
+                                                                              
+                                                                                  
+                                                                                 
+                                         
 
     def __init__(
         self,
@@ -327,15 +343,15 @@ class _StreamLines:
     ):
         self._cm, self._resp = cm, resp
         self._closed = False
-        self._deadline = deadline  # monotonic wall-clock cap on the whole stream
+        self._deadline = deadline                                                
         self._max_line_chars = max_line_chars
 
     def __iter__(self) -> Iterator[str]:
-        # Iterate raw text chunks (not iter_lines) and split lines ourselves, so the
-        # deadline is checked on EVERY chunk received — a slow-drip upstream that
-        # trickles bytes *without a newline* would block iter_lines forever and never
-        # reach a between-lines check. The per-read httpx timeout bounds idle gaps;
-        # this total deadline bounds steady slow-drip that would pin a worker.
+                                                                                    
+                                                                                 
+                                                                                     
+                                                                                   
+                                                                              
         parts: list[str] = []
         buffered_chars = 0
         try:
@@ -377,18 +393,18 @@ class _StreamLines:
             return
         self._closed = True
         try:
-            self._cm.__exit__(None, None, None)  # releases the connection to the pool
-        except Exception:  # noqa: BLE001 — best-effort cleanup
+            self._cm.__exit__(None, None, None)                                       
+        except Exception:                                      
             pass
 
 
 def default_stream_post(url: str, headers: dict, json_body: dict, timeout: float):
-    """Open a streaming POST and retain response headers for reset guidance."""
+                                                                               
     deadline = time.monotonic() + timeout
     cm = _client().stream("POST", url, headers=headers, json=json_body, timeout=_timeout(timeout))
     try:
         resp = cm.__enter__()
-    except BaseException:  # opening the stream failed — release the connection
+    except BaseException:                                                      
         cm.__exit__(*sys.exc_info())
         raise
     return (
@@ -411,18 +427,20 @@ def stream_call(
     stream_post: StreamPostFn = default_stream_post,
     usage_callback: Callable[[dict], None] | None = None,
 ) -> Iterator[str]:
-    """Stream content deltas from an OpenAI-shape provider.
+                                                           
 
-    Raises :class:`ProviderHTTPError` on the first iteration if the provider did
-    not return 200 — so the router can still fail over *before* any bytes are
-    sent to the client. Once tokens start flowing there is no mid-stream failover.
-    """
+                                                                                
+                                                                             
+                                                                                  
+       
     base_url = provider.base_url
     if provider.adapter == "cloudflare":
         base_url = base_url.replace("{account_id}", env.get("CLOUDFLARE_ACCOUNT_ID", ""))
     url = f"{base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
-    if api_key:
+    if provider.id == "opencode":
+        headers.update(_opencode_headers())
+    elif api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     body = {
         "model": model,
@@ -439,8 +457,8 @@ def stream_call(
         status, response_headers, line_iter = opened
     close = getattr(line_iter, "close", lambda: None)
     if status != 200:
-        # Drain a *bounded* prefix of the error body so the router can classify it
-        # — e.g. a context-length 400 — instead of seeing only a bare status code.
+                                                                                  
+                                                                                  
         parts: list[str] = []
         total = 0
         try:
@@ -449,7 +467,7 @@ def stream_call(
                 total += len(chunk)
                 if total >= 500:
                     break
-        except Exception:  # noqa: BLE001 — best-effort; fall back to the status
+        except Exception:                                                       
             pass
         finally:
             close()
@@ -520,9 +538,9 @@ def stream_call(
 
 
 def _retryable(status: int) -> bool:
-    # 429 (rate limit) and 5xx are worth trying another provider for.
-    # 408 request timeout too. 4xx config errors are not retryable per-call but
-    # the router still advances to a different provider regardless.
+                                                                     
+                                                                               
+                                                                   
     return status == 429 or status == 408 or 500 <= status < 600
 
 
@@ -536,7 +554,7 @@ def _err_message(result: HTTPResult) -> str:
 
 
 def _provider_http_error(result: HTTPResult) -> ProviderHTTPError:
-    """Build an HTTP error without discarding provider backoff guidance."""
+                                                                           
     error = result.body.get("error") if isinstance(result.body, dict) else None
     error_type = error.get("type") if isinstance(error, dict) else None
     if not isinstance(error_type, str) or len(error_type) > 128:
@@ -551,7 +569,7 @@ def _provider_http_error(result: HTTPResult) -> ProviderHTTPError:
 
 
 def _to_gemini_contents(messages: list[Message]) -> tuple[dict | None, list[dict]]:
-    """Split OpenAI-style messages into (systemInstruction, contents)."""
+                                                                         
     system: str | None = None
     contents: list[dict] = []
     for msg in messages:
@@ -567,11 +585,11 @@ def _to_gemini_contents(messages: list[Message]) -> tuple[dict | None, list[dict
 
 
 def _gemini_generation_config(model: str, max_tokens: int, temperature: float) -> dict:
-    """Build the supported Gemini generation config for the selected family.
+                                                                            
 
-    Gemini 3.6 and 3.7 removed sampling controls such as ``temperature``;
-    sending the legacy field makes otherwise valid requests fail.
-    """
+                                                                         
+                                                                 
+       
     config: dict = {"maxOutputTokens": max_tokens}
     if not model.startswith(("gemini-3.6-", "gemini-3.7-")):
         config["temperature"] = temperature
@@ -624,8 +642,8 @@ def _adapter_gemini(
     response_format,
     post,
 ) -> Reply:
-    # Gemini uses a different tool schema; skip tools for now (the router will
-    # fail over to an openai-shape provider that supports them).
+                                                                              
+                                                                
     if tools:
         raise ProviderHTTPError(400, "gemini adapter does not support tools", retryable=True)
     if response_format is not None:
@@ -646,17 +664,17 @@ def _adapter_gemini(
     )
 
 
-# Built-in request/response shapes. Plugins can register more via
-# sparrow.plugins.register_adapter; an unknown adapter name falls back to openai.
+                                                                 
+                                                                                 
 _BUILTIN_ADAPTERS = {
     "openai": _adapter_openai,
-    "cloudflare": _adapter_openai,  # OpenAI-compatible once {account_id} is filled
+    "cloudflare": _adapter_openai,                                                 
     "gemini": _adapter_gemini,
 }
 
 
 def _resolve_adapter(name: str):
-    from .plugins import registered_adapters  # lazy: avoids import cycle
+    from .plugins import registered_adapters                             
 
     custom = registered_adapters()
     if name in custom:
@@ -680,16 +698,16 @@ def call(
     enforce_thinking_floor: bool = True,
     post: PostFn = default_post,
 ) -> Reply:
-    """Dispatch one completion to ``provider`` and normalize the response.
+                                                                          
 
-    Routes through the adapter named by ``provider.adapter`` (built-in or
-    plugin-registered). Raises :class:`ProviderHTTPError` on a non-200 status.
-    Strictly quota-bounded maintenance probes may set
-    ``enforce_thinking_floor=False``; normal callers retain reasoning headroom.
-    """
+                                                                         
+                                                                              
+                                                     
+                                                                               
+       
     if enforce_thinking_floor and _is_thinking(model) and max_tokens < _THINKING_FLOOR:
-        # Give reasoning models room so hidden reasoning doesn't eat the whole
-        # budget and return empty content.
+                                                                              
+                                          
         max_tokens = _THINKING_FLOOR
     adapter = _resolve_adapter(provider.adapter)
     kwargs = {
@@ -702,9 +720,9 @@ def call(
         "tool_choice": tool_choice,
         "post": post,
     }
-    # Keep custom adapters source-compatible for ordinary calls. A structured-output
-    # request opts into the new adapter keyword and cleanly fails over if an older
-    # custom adapter does not support it.
+                                                                                    
+                                                                                  
+                                         
     if response_format is not None or adapter in _BUILTIN_ADAPTERS.values():
         kwargs["response_format"] = response_format
     return adapter(
@@ -737,7 +755,9 @@ def _call_openai(
 
     url = f"{base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
-    if api_key:  # keyless providers (e.g. OVH anonymous) send no auth header
+    if provider.id == "opencode":
+        headers.update(_opencode_headers())
+    elif api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     body = {
         "model": model,
@@ -746,7 +766,7 @@ def _call_openai(
         "temperature": temperature,
         "stream": False,
     }
-    if tools:  # function/tool calling — passed through to providers that support it
+    if tools:                                                                       
         body["tools"] = tools
         if tool_choice is not None:
             body["tool_choice"] = tool_choice
@@ -787,19 +807,21 @@ def embed(
     timeout: float = 90.0,
     post: PostFn = default_post,
 ) -> EmbedReply:
-    """Dispatch an embeddings request (OpenAI ``/embeddings`` shape)."""
+                                                                        
     base_url = provider.base_url
     if provider.adapter == "cloudflare" or "{account_id}" in base_url:
         base_url = base_url.replace("{account_id}", env.get("CLOUDFLARE_ACCOUNT_ID", ""))
     url = f"{base_url}/embeddings"
     headers = {"Content-Type": "application/json"}
-    if api_key:
+    if provider.id == "opencode":
+        headers.update(_opencode_headers())
+    elif api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     body = {"model": model, "input": inputs, "encoding_format": "float"}
     if provider.id == "nvidia":
-        # NVIDIA's asymmetric embedding NIMs require the caller to declare
-        # whether inputs are queries or passages. Pool.embed is a general
-        # lookup surface, so use the query form; symmetric NIMs accept it too.
+                                                                          
+                                                                         
+                                                                              
         body["input_type"] = "query"
     result = post(url, headers, body, timeout)
     if result.status != 200:
@@ -819,19 +841,19 @@ def embed(
     )
 
 
-# A multipart transport: (url, headers, files, data, timeout) -> HTTPResult. Separate from
-# PostFn because audio uploads are multipart/form-data, not a JSON body. Injectable for tests.
+                                                                                          
+                                                                                              
 MultipartPostFn = Callable[[str, dict, dict, dict, float], HTTPResult]
 
 
 def default_multipart_post(
     url: str, headers: dict, files: dict, data: dict, timeout: float
 ) -> HTTPResult:
-    """Real network multipart POST (file upload) via the pooled httpx client. httpx sets the
-    multipart Content-Type + boundary from ``files`` itself. Inherits ``follow_redirects=False``
-    so a redirect can't exfiltrate the API key (SSRF). Streams + caps the response like
-    ``default_post`` so a broken provider can't OOM the proxy and a slow-drip upstream can't
-    pin a worker past the deadline."""
+                                                                                            
+                                                                                                
+                                                                                       
+                                                                                            
+                                      
     import httpx
 
     deadline = time.monotonic() + timeout
@@ -861,7 +883,7 @@ def default_multipart_post(
                 time.sleep(delay)
                 continue
         return result
-    if last_exc is not None:  # pragma: no cover - loop structure guard
+    if last_exc is not None:                                           
         raise last_exc
     if last_result is not None:
         return last_result
@@ -882,11 +904,11 @@ def _multipart_once(
         try:
             body = json.loads(raw) if raw else {}
         except (json.JSONDecodeError, ValueError):
-            body = {"text": text}  # non-JSON despite the header → treat text as the result
-        if not isinstance(body, dict):  # provider returned a JSON list/scalar
-            body = {}  # keep _err_message safe; transcribe() falls back to result.text
+            body = {"text": text}                                                          
+        if not isinstance(body, dict):                                        
+            body = {}                                                                  
     else:
-        body = {"text": text}  # response_format=text returns the transcription as plain text
+        body = {"text": text}                                                                
     return HTTPResult(status=status, body=body, text=text, headers=response_headers)
 
 
@@ -903,12 +925,12 @@ def transcribe(
     timeout: float = 90.0,
     post: MultipartPostFn = default_multipart_post,
 ) -> TranscribeReply:
-    """Dispatch an audio-transcription request (OpenAI ``/audio/transcriptions`` shape)."""
+                                                                                           
     base_url = provider.base_url
     if provider.adapter == "cloudflare" or "{account_id}" in base_url:
         base_url = base_url.replace("{account_id}", env.get("CLOUDFLARE_ACCOUNT_ID", ""))
     url = f"{base_url}/audio/transcriptions"
-    headers = {}  # NOTE: no Content-Type — the transport sets the multipart boundary
+    headers = {}                                                                     
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
     files = {"file": (filename or "audio", audio, "application/octet-stream")}
@@ -920,13 +942,13 @@ def transcribe(
         raise _provider_http_error(result)
     body = result.body if isinstance(result.body, dict) else {}
     raw_text = body.get("text")
-    # `default_multipart_post` always lands the transcript under body["text"] (plain-text
-    # responses too), so a missing/non-string text field means a malformed response — retry
-    # another provider rather than passing a raw JSON blob through as the transcript.
+                                                                                         
+                                                                                           
+                                                                                     
     if not isinstance(raw_text, str):
         raise ProviderHTTPError(502, "malformed transcription response (no text)", retryable=True)
-    # A present `text` field is a successful result — an empty string means the clip was silent,
-    # NOT a failure. Returning "" avoids needless failover/exhaustion for legitimately silent audio.
+                                                                                                
+                                                                                                    
     text = raw_text.strip()
     usage = body.get("usage") or {}
     return TranscribeReply(
@@ -952,7 +974,7 @@ def _call_gemini(
     system_instruction, contents = _to_gemini_contents(messages)
     url = f"{provider.base_url}/models/{model}:generateContent"
     headers = {"Content-Type": "application/json"}
-    if api_key:  # keyless gemini-shape providers (if any) send no auth header
+    if api_key:                                                               
         headers["x-goog-api-key"] = api_key
     body: dict = {
         "contents": contents,

@@ -1,13 +1,13 @@
-"""Local task classification and validated task-specific model evidence.
+                                                                        
 
-Task fit is orthogonal to generic benchmark capability. The first deliberately
-narrow task is grounded document reading: requests that ask a model to extract
-or summarize supplied Markdown without inventing details.
+                                                                              
+                                                                              
+                                                         
 
-Evidence is provider-neutral and exact-model only. It must come from repeated
-runs of the current sanitized fixture; production prompts are never learned
-from or persisted.
-"""
+                                                                             
+                                                                           
+                  
+   
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ class TaskResolution:
 
 
 def _routing_text(messages: object) -> str:
-    """Bounded user/tool text only; system and prior assistant prose cannot steer it."""
+                                                                                        
     parts: list[str] = []
     if not isinstance(messages, list):
         return ""
@@ -74,7 +74,7 @@ def _routing_text(messages: object) -> str:
 
 
 def classify_task(messages: object) -> str:
-    """Return a high-confidence local task class without making a model call."""
+                                                                                
     text = _routing_text(messages)
     if not _GROUNDED_INTENT_RE.search(text):
         return TASK_GENERAL
@@ -85,7 +85,7 @@ def classify_task(messages: object) -> str:
 
 
 def task_resolution(messages: object, task: str | None = None) -> TaskResolution:
-    """Resolve explicit intent before automatic classification."""
+                                                                  
     validate_task(task)
     if task is None or task == TASK_AUTO:
         return TaskResolution(classify_task(messages), "auto")
@@ -176,7 +176,7 @@ def _evidence_cached(
 
 
 def task_evidence_table(task: str) -> Mapping[str, float]:
-    """Return exact model identities with current, repeated task evidence."""
+                                                                             
     if task == TASK_GENERAL:
         return MappingProxyType({})
     if task not in TASK_HINTS or task == TASK_AUTO:
@@ -192,12 +192,12 @@ def task_evidence_table(task: str) -> Mapping[str, float]:
 def model_task_score(
     model: str, table: Mapping[str, float]
 ) -> float | None:
-    """Exact identity lookup: no family, provider, or semantic alias borrowing."""
+                                                                                  
     return table.get(model)
 
 
 def grounded_answer_passes(answer: str, case: Mapping[str, object]) -> bool:
-    """Deterministic fixture rubric used to aggregate bounded benchmark trials."""
+                                                                                  
     lowered = answer.casefold()
     must_include = case.get("must_include")
     must_not_invent = case.get("must_not_invent")

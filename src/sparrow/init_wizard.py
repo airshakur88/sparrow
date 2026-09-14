@@ -1,4 +1,4 @@
-"""First-run detection and setup-plan rendering for ``sparrow init``."""
+                                                                        
 
 from __future__ import annotations
 

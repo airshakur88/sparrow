@@ -1,4 +1,4 @@
-"""Opt-in, loopback-only local OpenAI-compatible runtime discovery."""
+                                                                      
 
 from __future__ import annotations
 

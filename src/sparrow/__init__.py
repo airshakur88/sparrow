@@ -1,13 +1,13 @@
-"""sparrow — pool free-tier LLM APIs behind one OpenAI-compatible endpoint.
+                                                                           
 
-Public API:
+           
 
-    from sparrow import Pool
+                            
 
-    pool = Pool.from_default_config()
-    reply = pool.ask("Explain CAP theorem in one sentence.")
-    print(reply.text)
-"""
+                                     
+                                                            
+                     
+   
 
 from ._version import __version__
 from .errors import (
@@ -23,8 +23,8 @@ from .router import Pool
 
 
 def __getattr__(name: str):
-    # Lazy so importing sparrow never imports the async stack (httpx.AsyncClient)
-    # unless someone actually asks for AsyncPool.
+                                                                                 
+                                                 
     if name == "AsyncPool":
         from .aio import AsyncPool
 

@@ -1,4 +1,4 @@
-"""Router selection + failover behavior."""
+                                           
 
 from __future__ import annotations
 
@@ -11,11 +11,11 @@ from sparrow.router import Pool
 
 
 def test_ask_returns_first_success(providers, env, quota):
-    post = make_post({})  # everything returns 200 "ok"
+    post = make_post({})                               
     pool = Pool(providers, quota=quota, env=env, post=post)
     reply = pool.ask("hello")
     assert reply.text == "ok"
-    assert len(post.calls) == 1  # stopped at the first success
+    assert len(post.calls) == 1                                
 
 
 def test_failover_skips_429(providers, env, quota):
@@ -29,8 +29,8 @@ def test_failover_skips_429(providers, env, quota):
     reply = pool.ask("hello", providers=["alpha", "beta"])
     assert reply.text == "from beta"
     assert reply.provider_id == "beta"
-    # alpha-small 429s → alpha's other model is skipped this request → beta wins.
-    # So only 2 calls (alpha-small, beta), not 3.
+                                                                                 
+                                                 
     assert len(post.calls) == 2
 
 
@@ -46,7 +46,7 @@ def test_all_exhausted_raises(providers, env, quota):
     pool = Pool(providers, quota=quota, env=env, post=post)
     with pytest.raises(AllProvidersExhausted) as exc:
         pool.ask("hello")
-    assert exc.value.attempts  # every target recorded a reason
+    assert exc.value.attempts                                  
 
 
 def test_no_providers_configured():
@@ -76,20 +76,20 @@ def test_pool_owned_quota_uses_bounded_success_batch_defaults(tmp_path, monkeypa
 def test_least_used_first_ordering(providers, env, quota):
     post = make_post({})
     pool = Pool(providers, quota=quota, env=env, post=post)
-    # Pre-load alpha usage so beta should be picked first.
+                                                          
     quota.record("alpha", "alpha-small", 5)
     quota.record("alpha", "alpha-big", 5)
     reply = pool.ask("hello")
-    assert reply.provider_id != "alpha"  # not the heavily-used alpha
+    assert reply.provider_id != "alpha"                              
 
 
 def test_over_budget_sinks_to_back(providers, env, quota):
-    # alpha-small has rpd=2; record 2 so it is over budget and other models win.
+                                                                                
     quota.record("alpha", "alpha-small", 2)
     post = make_post({})
     pool = Pool(providers, quota=quota, env=env, post=post)
     reply = pool.ask("hi", model="alpha-small", providers=["alpha"])
-    # only candidate is the over-budget one → still served (best-effort), recorded 3rd
+                                                                                      
     assert reply.text == "ok"
     assert quota.used("alpha", "alpha-small") == 3
 
@@ -107,13 +107,13 @@ def test_gemini_adapter_shape(providers, env, quota):
     reply = pool.ask("hello", system="be terse", providers=["gee"])
     assert reply.text == "hi from gemini"
     body = post.calls[0]["body"]
-    assert "contents" in body and "systemInstruction" in body  # gemini shape
+    assert "contents" in body and "systemInstruction" in body                
     assert post.calls[0]["headers"].get("x-goog-api-key") == "g"
 
 
 def test_keyless_provider_sends_no_auth_header(providers, env, quota):
     post = make_post({"free.test": (200, openai_body("free!"))})
-    # empty env: only the keyless provider is usable
+                                                    
     pool = Pool(providers, quota=quota, env={}, post=post)
     reply = pool.ask("hello", providers=["free"])
     assert reply.text == "free!"
@@ -133,7 +133,7 @@ def test_429_triggers_cooldown(providers, env, quota):
     )
     r1 = pool.ask("hi", providers=["alpha", "beta"])
     assert r1.provider_id == "beta"
-    assert pool._cooldown_until["alpha"] == 160.0  # 100 + 60s cooldown
+    assert pool._cooldown_until["alpha"] == 160.0                      
 
 
 def test_cooldown_deprioritizes_within_window(providers, env, quota):
@@ -141,21 +141,21 @@ def test_cooldown_deprioritizes_within_window(providers, env, quota):
     pool = Pool(
         providers, quota=quota, env=env, post=post, cooldown_seconds=60.0, clock=lambda: 20.0
     )
-    pool.ask("hi", providers=["alpha", "beta"])  # alpha 429 → cooled until t=80
-    # at t=20 alpha is still cooling; even though it's now usable + least-used,
-    # beta is tried first because alpha is in its cooldown window.
+    pool.ask("hi", providers=["alpha", "beta"])                                 
+                                                                               
+                                                                  
     pool._post = make_post(
         {"alpha.test": (200, openai_body("alpha")), "beta.test": (200, openai_body("beta"))}
     )
     r2 = pool.ask("hi", providers=["alpha", "beta"])
-    assert r2.provider_id == "beta"  # alpha deprioritized despite being usable now
+    assert r2.provider_id == "beta"                                                
 
 
 def test_empty_completion_is_failure(providers, env, quota):
     post = make_post({"alpha.test": (200, openai_body("")), "beta.test": (200, openai_body("x"))})
     pool = Pool(providers, quota=quota, env=env, post=post)
     reply = pool.ask("hi", providers=["alpha", "beta"])
-    assert reply.provider_id == "beta"  # empty alpha skipped
+    assert reply.provider_id == "beta"                       
 
 
 def test_stream_chat_yields_meta_then_deltas(providers, env, quota):
@@ -172,7 +172,7 @@ def test_stream_chat_failover_before_first_byte(providers, env, quota):
     pool = Pool(providers, quota=quota, env=env, stream_post=sp)
     gen = pool.stream_chat([{"role": "user", "content": "hi"}], providers=["alpha", "beta"])
     meta = next(gen)
-    assert meta["provider"] == "beta"  # alpha 500 → failed over before streaming
+    assert meta["provider"] == "beta"                                            
     assert meta["attempts"] == len(sp.calls)
     assert meta["attempts"] > 1
     assert "".join(gen) == "ok"
@@ -305,7 +305,7 @@ def test_stream_chat_uses_one_overall_failover_timeout(providers, env, quota):
 
 
 def test_stream_chat_skips_gemini(providers, env, quota):
-    # 'gee' is a gemini-adapter provider → excluded from streaming
+                                                                  
     sp = make_stream_post({})
     pool = Pool(providers, quota=quota, env=env, stream_post=sp)
     gen = pool.stream_chat([{"role": "user", "content": "hi"}], providers=["gee"])
@@ -319,15 +319,15 @@ def test_cooldown_expires_and_provider_reeligible(providers, env, quota):
     pool = Pool(
         providers, quota=quota, env=env, post=post, cooldown_seconds=60.0, clock=lambda: t[0]
     )
-    pool.ask("hi", providers=["alpha", "beta"])  # alpha 429 at t=0 → cooled until t=60
+    pool.ask("hi", providers=["alpha", "beta"])                                        
     assert pool._cooldown_until["alpha"] == 60.0
-    # advance the clock past the cooldown window; alpha works again now
+                                                                       
     t[0] = 61.0
     pool._post = make_post(
         {"alpha.test": (200, openai_body("alpha")), "beta.test": (200, openai_body("beta"))}
     )
     r = pool.ask("hi", providers=["alpha", "beta"])
-    assert r.provider_id == "alpha"  # no longer cooled + least-used → tried first
+    assert r.provider_id == "alpha"                                               
 
 
 def test_stream_chat_skips_disabled_model(env, quota):
@@ -343,11 +343,11 @@ def test_stream_chat_skips_disabled_model(env, quota):
     )
     sp = make_stream_post({})
     pool = Pool([prov], quota=quota, env={"X_KEY": "k"}, stream_post=sp)
-    gen = pool.stream_chat([{"role": "user", "content": "hi"}])  # auto
+    gen = pool.stream_chat([{"role": "user", "content": "hi"}])        
     assert next(gen)["model"] == "on"
     list(gen)
-    assert len(sp.calls) == 1  # disabled model never hit
-    # explicit pin can still stream the disabled one
+    assert len(sp.calls) == 1                            
+                                                    
     gen2 = pool.stream_chat([{"role": "user", "content": "hi"}], model="off")
     assert next(gen2)["model"] == "off"
 
@@ -363,14 +363,14 @@ def test_disabled_model_skipped_by_auto_but_reachable_explicitly(env, quota):
         key_env="X_KEY",
         models=(Model("on-model"), Model("off-model", enabled=False)),
     )
-    post = make_post({})  # any call returns "ok"
+    post = make_post({})                         
     pool = Pool([prov], quota=quota, env={"X_KEY": "k"}, post=post)
-    # auto routing only ever picks the enabled model
+                                                    
     seen = set()
     for _ in range(5):
         seen.add(pool.ask("hi").model)
     assert seen == {"on-model"}
-    # but an explicit pin can still reach the disabled one
+                                                          
     assert pool.ask("hi", model="off-model").model == "off-model"
 
 
@@ -438,7 +438,7 @@ def test_tool_calls_reply_is_success(providers, env, quota):
     reply = pool.ask(
         "hi", providers=["alpha"], tools=[{"type": "function", "function": {"name": "f"}}]
     )
-    assert reply.message["tool_calls"] == tc  # empty content but tool_calls → success
+    assert reply.message["tool_calls"] == tc                                          
     assert reply.attempts == 1
 
 
@@ -470,7 +470,7 @@ def _diversity_providers():
 def test_unpinned_chat_tries_distinct_provider_before_transport_retry(
     quota, monkeypatch
 ):
-    """A pooled request spends its second attempt on diversity, not alpha again."""
+                                                                                   
     from sparrow import client as client_module
     from sparrow.client import HTTPResult
 

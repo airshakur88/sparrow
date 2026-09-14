@@ -1,4 +1,4 @@
-"""Bundled recipe workflows for practical sparrow tasks."""
+                                                           
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ RECIPE_SCHEMA_VERSION = "1.0.0"
 
 
 class RecipeError(ValueError):
-    """Base class for actionable recipe errors."""
+    pass
 
 
 class UnknownRecipeError(RecipeError):

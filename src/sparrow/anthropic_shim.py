@@ -1,13 +1,13 @@
-"""Anthropic Messages API shim — run Claude Code (and any Anthropic-API tool) on
-free models. Translates Anthropic `/v1/messages` <-> the pool's OpenAI-style chat,
-including tools (tool_use / tool_result) and the streaming event sequence.
+                                                                                
+                                                                                  
+                                                                          
 
-    The streaming path is *buffered-then-replayed*: sparrow resolves the full
-completion (with failover + tool calls) and then emits Anthropic's exact SSE event
-sequence, so clients that require streaming work without true mid-stream failover.
+                                                                             
+                                                                                  
+                                                                                  
 
-This is experimental — text + tool-use are covered; images/vision are not yet.
-"""
+                                                                              
+   
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def _safe_float(value, default: float) -> float:
 
 
 def request_to_chat(body: dict) -> dict:
-    """Anthropic Messages request -> kwargs for Pool.chat()."""
+                                                               
     messages: list[dict] = []
 
     system = body.get("system")
@@ -90,7 +90,7 @@ def request_to_chat(body: dict) -> dict:
                         "content": "" if rc is None else str(rc),
                     }
                 )
-            # image blocks are ignored for now (no vision yet)
+                                                              
         if role == "assistant":
             msg: dict = {"role": "assistant", "content": "".join(text_parts) or None}
             if tool_calls:
@@ -140,7 +140,7 @@ def _tool_choice(choice):
 
 
 def _content_blocks(reply) -> tuple[list[dict], str]:
-    """Build Anthropic content blocks + stop_reason from a pool Reply."""
+                                                                         
     blocks: list[dict] = []
     tool_calls = (reply.message or {}).get("tool_calls") if reply.message else None
     if tool_calls:
@@ -183,7 +183,7 @@ def reply_to_message(reply, model: str, msg_id: str = "msg_sparrow") -> dict:
 
 
 def reply_to_sse(reply, model: str, msg_id: str = "msg_sparrow") -> Iterator[str]:
-    """Yield Anthropic SSE event blocks (buffered replay of a finished reply)."""
+                                                                                 
     blocks, stop_reason = _content_blocks(reply)
 
     def ev(name: str, data: dict) -> str:
@@ -223,7 +223,7 @@ def reply_to_sse(reply, model: str, msg_id: str = "msg_sparrow") -> Iterator[str
                     "delta": {"type": "text_delta", "text": block["text"]},
                 },
             )
-        else:  # tool_use
+        else:            
             yield ev(
                 "content_block_start",
                 {
@@ -261,7 +261,7 @@ def reply_to_sse(reply, model: str, msg_id: str = "msg_sparrow") -> Iterator[str
 
 
 def estimate_tokens(body: dict) -> int:
-    """Rough token estimate for /v1/messages/count_tokens (chars/4)."""
+                                                                       
     chat = request_to_chat(body)
     chars = sum(len(str(m.get("content") or "")) for m in chat["messages"])
     return max(1, chars // 4)

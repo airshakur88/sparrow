@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Offline proxy stress smoke for regular user traffic.
+                                                       
 
-Starts a local sparrow proxy backed by fake in-process providers, then sends
-mixed OpenAI, Responses API, and Anthropic-compatible requests through the HTTP
-server. No network provider APIs are called.
-"""
+                                                                            
+                                                                               
+                                            
+   
 
 from __future__ import annotations
 
@@ -25,11 +25,11 @@ _SRC = Path(__file__).resolve().parent.parent / "src"
 if _SRC.is_dir():
     sys.path.insert(0, str(_SRC))
 
-from sparrow.client import HTTPResult  # noqa: E402
-from sparrow.models import Model, Provider  # noqa: E402
-from sparrow.proxy import serve  # noqa: E402
-from sparrow.quota import QuotaStore  # noqa: E402
-from sparrow.router import Pool  # noqa: E402
+from sparrow.client import HTTPResult              
+from sparrow.models import Model, Provider              
+from sparrow.proxy import serve              
+from sparrow.quota import QuotaStore              
+from sparrow.router import Pool              
 
 _PROFILES = {
     "ci": {"requests": 144, "concurrency": 24},
@@ -198,7 +198,7 @@ def _request_json(
         method=method,
         headers=req_headers,
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 - localhost only
+    with urllib.request.urlopen(req, timeout=10) as resp:                               
         raw = resp.read()
         ctype = resp.headers.get("Content-Type", "")
         if "application/json" in ctype:
@@ -217,7 +217,7 @@ def _request_sse(
         data=json.dumps(payload).encode("utf-8"),
         headers=req_headers,
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 - localhost only
+    with urllib.request.urlopen(req, timeout=10) as resp:                               
         raw = resp.read().decode("utf-8", "replace")
         events: list[tuple[str | None, Any]] = []
         current_event: str | None = None
@@ -266,7 +266,7 @@ def _request_multipart(url: str) -> tuple[int, Any]:
         data=_multipart(boundary),
         headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310 - localhost only
+    with urllib.request.urlopen(req, timeout=10) as resp:                               
         return resp.status, json.loads(resp.read() or b"{}")
 
 
@@ -448,7 +448,7 @@ def _exercise(base: str, index: int) -> tuple[str, int]:
         return "transcriptions", status
     except urllib.error.HTTPError as exc:
         return f"http_error_{exc.code}", exc.code
-    except Exception as exc:  # noqa: BLE001 - keep a full stress summary
+    except Exception as exc:                                             
         return f"{type(exc).__name__}: {exc}", 0
 
 
@@ -476,7 +476,7 @@ def run_stress(*, requests: int, concurrency: int, json_output: bool = False) ->
                 status_code, status_body = _request_json("GET", f"{base}/status")
                 if status_code != 200:
                     failures.append(f"status:{status_code}")
-            except Exception as exc:  # noqa: BLE001 - report status failures in the summary
+            except Exception as exc:                                                        
                 failures.append(f"status:{type(exc).__name__}: {exc}")
         finally:
             elapsed = time.perf_counter() - started

@@ -1,4 +1,4 @@
-"""Local catalog validation used by CI and ``sparrow doctor``."""
+                                                                 
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ _SAFE_MODEL_ID = re.compile(r"^[A-Za-z0-9@][A-Za-z0-9._:/@+-]{0,199}$")
 
 
 def normalize_model_listing(payload: Any) -> tuple[str, ...]:
-    """Return bounded, safe canonical model names and aliases from common listings."""
+                                                                                      
 
     if isinstance(payload, dict):
         rows = payload.get("data")
@@ -89,7 +89,7 @@ def _check_group(name: str, providers: list[Provider]) -> list[str]:
 
 
 def validate_catalog(path: Path | None = None) -> list[str]:
-    """Validate provider, embedder, and transcriber rows from ``path`` or bundled catalog."""
+                                                                                             
     providers = load_catalog(path)
     table = capability_table()
     errors = [

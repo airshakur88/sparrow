@@ -22,9 +22,14 @@ REQUESTED_TARGETS = {
         "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
     ),
     "nvidia": (
-        "openai/gpt-oss-20b",
-        "deepseek-ai/deepseek-v4-pro-0813",
+        "mistralai/mistral-nemotron",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-ocr-v2",
+        "moonshotai/kimi-k3",
         "deepseek-ai/deepseek-v4-flash-0731",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "meta/muse-glimmer-30b",
+        "poolside/laguna-xs-2.1",
     ),
     "gemini": (
         "gemini-3.8-flash",

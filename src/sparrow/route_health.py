@@ -1,4 +1,4 @@
-"""Persistent, privacy-safe per-route health and circuit breakers."""
+                                                                     
 
 from __future__ import annotations
 
@@ -16,14 +16,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-try:  # pragma: no cover - exercised on POSIX CI; fallback keeps Windows usable
+try:                                                                           
     import fcntl
-except ImportError:  # pragma: no cover
+except ImportError:                    
     fcntl = None
 
-try:  # pragma: no cover - imported only on Windows
+try:                                               
     import msvcrt
-except ImportError:  # pragma: no cover
+except ImportError:                    
     msvcrt = None
 
 _VERSION = 1
@@ -51,7 +51,7 @@ _LIVE_STORES: weakref.WeakSet[RouteHealthStore] = weakref.WeakSet()
 
 
 def _reset_path_locks_after_fork() -> None:
-    """Replace process-local locks whose owners may not exist in the child."""
+                                                                              
     global _PATH_LOCKS, _PATH_LOCKS_GUARD
     _PATH_LOCKS = {}
     _PATH_LOCKS_GUARD = threading.Lock()
@@ -73,7 +73,7 @@ def default_route_health_path(env: dict[str, str] | None = None) -> Path:
 
 @dataclass(frozen=True)
 class HealthRecord:
-    """Sanitized rolling health for one ``provider/model`` or ``provider/*`` key."""
+                                                                                    
 
     state: str = "closed"
     successes: int = 0
@@ -100,7 +100,7 @@ class HealthRecord:
 
 @dataclass(frozen=True)
 class HealthLease:
-    """Attempt ownership used to reject out-of-order circuit transitions."""
+                                                                            
 
     started_at: float
     generations: dict[str, int]
@@ -124,12 +124,12 @@ class _SuccessUpdate:
 
 
 class RouteHealthStore:
-    """Atomic, corruption-tolerant rolling health shared by CLI/proxy processes.
+                                                                                
 
-    Only route identifiers, timing, counters, and a normalized failure class are
-    persisted. Prompt text, response content, raw errors, headers, and credentials
-    are never accepted by this API.
-    """
+                                                                                
+                                                                                  
+                                   
+       
 
     def __init__(
         self,
@@ -169,13 +169,13 @@ class RouteHealthStore:
             atexit.register(self.flush)
 
     def _after_fork_child(self) -> None:
-        """Drop parent-owned success samples and reset child-local locks."""
+                                                                            
         self._thread_lock = threading.RLock()
         self._pending_successes = []
         self._success_flush_timer = None
 
     def snapshot(self) -> dict[str, HealthRecord]:
-        """Return fresh non-stale records; unreadable/corrupt state behaves empty."""
+                                                                                     
         now = self._clock()
         with self._thread_lock:
             try:
@@ -213,7 +213,7 @@ class RouteHealthStore:
         return 0.0
 
     def provider_cooldowns(self) -> dict[str, float]:
-        """Provider-wide persistent circuit reset times, in seconds remaining."""
+                                                                                 
         return {
             key[:-2]: self.reset_remaining(row)
             for key, row in self.snapshot().items()
@@ -221,7 +221,7 @@ class RouteHealthStore:
         }
 
     def route_cooldowns(self) -> dict[str, float]:
-        """Per-model persistent circuit reset times, in seconds remaining."""
+                                                                             
         return {
             key: self.reset_remaining(row)
             for key, row in self.snapshot().items()
@@ -229,24 +229,24 @@ class RouteHealthStore:
         }
 
     def allow(self, key: str) -> bool:
-        """Acquire permission for a request, including a single half-open lease."""
+                                                                                   
         return self.allow_many((key,))
 
     def allow_many(self, keys) -> bool:
-        """Atomically acquire all route/provider circuit leases or none of them."""
+                                                                                   
         return self.acquire_many(keys) is not None
 
     def refresh_lease(self, lease: HealthLease) -> HealthLease:
-        """Refresh one already-authorized attempt without acquiring an open circuit.
+                                                                                    
 
-        Used only for a deferred transport retry from the same request. Keeping the
-        persisted generations means a newer request still wins; refreshing the start
-        time lets a later success recover the failure that triggered this retry.
-        """
+                                                                                   
+                                                                                    
+                                                                                
+           
         return HealthLease(self._clock(), dict(lease.generations))
 
     def release_many(self, keys, *, lease: HealthLease | None) -> None:
-        """Release a half-open probe after local saturation without poisoning it."""
+                                                                                    
         requested = tuple(dict.fromkeys(key for key in keys if _valid_key(key)))
         if not requested:
             return
@@ -262,9 +262,9 @@ class RouteHealthStore:
                     and _state(row.get("state")) == "half_open"
                     and _owns_transition(row, key, lease)
                 ):
-                    # No upstream attempt occurred, so neither heal nor poison
-                    # the circuit. Expire the probe lease and let the next request
-                    # acquire a fresh single half-open generation immediately.
+                                                                              
+                                                                                  
+                                                                              
                     row.update(
                         {
                             "state": "open",
@@ -279,7 +279,7 @@ class RouteHealthStore:
         self._update(mutate)
 
     def acquire_many(self, keys) -> HealthLease | None:
-        """Acquire circuits and return ownership for conditional result updates."""
+                                                                                   
         requested = tuple(dict.fromkeys(key for key in keys if _valid_key(key)))
         if not requested:
             return HealthLease(started_at=self._clock(), generations={})
@@ -343,9 +343,9 @@ class RouteHealthStore:
             latency = 0.0
         event = _SuccessUpdate(requested, latency, lease, self._clock())
         with self._thread_lock:
-            # A half-open success is a recovery transition and must be durable
-            # immediately. acquire_many() refreshes _fallback before returning the
-            # lease, so this check does not add another disk read to the hot path.
+                                                                              
+                                                                                  
+                                                                                  
             immediate = self.success_flush_every <= 1 or any(
                 _state(self._fallback.get(key, {}).get("state")) != "closed"
                 for key in requested
@@ -368,7 +368,7 @@ class RouteHealthStore:
                 self._schedule_success_flush_locked()
 
     def flush(self) -> None:
-        """Persist ordinary closed-circuit success samples in one transaction."""
+                                                                                 
         with self._thread_lock:
             self._cancel_success_flush_locked()
             self._flush_pending_locked()
@@ -494,7 +494,7 @@ class RouteHealthStore:
                     row.setdefault("successes", 0)
                     row.setdefault("failures", 0)
                     row.setdefault("consecutive_failures", 0)
-                    # A non-availability response proves the endpoint answered.
+                                                                               
                     if owns_transition and state == "half_open":
                         row.update(
                             {
@@ -577,9 +577,9 @@ class RouteHealthStore:
                 self._fallback = routes
                 return result
             except (OSError, OverflowError, ValueError):
-                # Keep fallback as the best-known durable/base state. Pending
-                # successes remain a separate overlay after a failed write; folding
-                # them into fallback here would count them again on every retry.
+                                                                             
+                                                                                   
+                                                                                
                 base = self._clean(
                     {key: dict(row) for key, row in self._fallback.items()}, now
                 )
@@ -604,7 +604,7 @@ class RouteHealthStore:
                     pass
                 if fcntl is not None:
                     fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-                elif msvcrt is not None:  # pragma: no cover - Windows only
+                elif msvcrt is not None:                                   
                     lock_file.seek(0, os.SEEK_END)
                     if lock_file.tell() == 0:
                         lock_file.write(b"\0")
@@ -616,7 +616,7 @@ class RouteHealthStore:
                 finally:
                     if fcntl is not None:
                         fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-                    elif msvcrt is not None:  # pragma: no cover - Windows only
+                    elif msvcrt is not None:                                   
                         lock_file.seek(0)
                         msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
 
@@ -721,7 +721,7 @@ def _valid_key(value: object) -> bool:
 
 
 def score_record(row: HealthRecord | None) -> float:
-    """Routing penalty for an already-snapshotted persistent health record."""
+                                                                              
     if row is None or row.total == 0:
         return _UNKNOWN_SCORE
     latency_s = (row.ewma_ms or 0.0) / 1000.0

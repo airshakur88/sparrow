@@ -38,7 +38,7 @@ def test_chat_passes_the_reserved_secret_to_the_single_transport_attempt(provide
         providers,
         env={"ALPHA_KEY": "legacy-secret"},
         post=post,
-        credential_manager=manager,  # type: ignore[arg-type]
+        credential_manager=manager,                          
     )
 
     reply = pool.chat([{"role": "user", "content": "hello"}], providers=["alpha"])

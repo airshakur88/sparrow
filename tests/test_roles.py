@@ -1,4 +1,4 @@
-"""Tests for the role-preset registry used by the CLI."""
+                                                         
 
 from __future__ import annotations
 

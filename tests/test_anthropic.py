@@ -1,4 +1,4 @@
-"""Anthropic Messages shim: translation + proxy route."""
+                                                         
 
 from __future__ import annotations
 
@@ -22,11 +22,11 @@ from sparrow.router import Pool
 
 
 def test_claude_models_alias_to_auto():
-    assert resolve_alias("claude-3-5-haiku-20241022", {}) == "auto"  # in default map
-    # prefix fallback: an unknown future claude name still routes to a free model
+    assert resolve_alias("claude-3-5-haiku-20241022", {}) == "auto"                  
+                                                                                 
     assert resolve_alias("claude-opus-5-20260101", {}) == "auto"
-    assert resolve_alias("gpt-6-turbo", {}) == "auto"  # unknown gpt-* too
-    assert resolve_alias("llama-3.3-70b", {}) == "llama-3.3-70b"  # non-frontier passes through
+    assert resolve_alias("gpt-6-turbo", {}) == "auto"                     
+    assert resolve_alias("llama-3.3-70b", {}) == "llama-3.3-70b"                               
 
 
 def test_request_to_chat_text_and_system():
@@ -70,10 +70,10 @@ def test_request_to_chat_tools_and_tool_result():
     chat = request_to_chat(body)
     assert chat["tools"][0]["function"]["name"] == "get_weather"
     assert chat["tool_choice"] == "required"
-    # assistant tool_use → openai tool_calls
+                                            
     asst = [m for m in chat["messages"] if m["role"] == "assistant"][0]
     assert asst["tool_calls"][0]["function"]["name"] == "get_weather"
-    # tool_result → openai tool message
+                                       
     tool = [m for m in chat["messages"] if m["role"] == "tool"][0]
     assert tool["tool_call_id"] == "tu_1" and tool["content"] == "sunny"
 
@@ -99,7 +99,7 @@ def test_reply_to_sse_sequence():
     r = Reply(text="hi", provider_id="groq", model="m", raw={})
     events = list(reply_to_sse(r, "claude-3-5-sonnet"))
     types = [e.split("\n", 1)[0].removeprefix("event: ") for e in events]
-    # exact Anthropic ordering (a reordered sequence would break Claude Code)
+                                                                             
     assert types == [
         "message_start",
         "content_block_start",
@@ -108,19 +108,19 @@ def test_reply_to_sse_sequence():
         "message_delta",
         "message_stop",
     ]
-    # the text delta carries the reply
+                                      
     delta = json.loads(events[2].split("data: ", 1)[1])
     assert delta["delta"] == {"type": "text_delta", "text": "hi"}
 
 
 def test_request_to_chat_robust_to_malformed():
-    # hostile/odd inputs must not raise (would 500 a thread)
+                                                            
     body = {
         "model": "claude-3-5-sonnet",
-        "max_tokens": "lots",  # not a number
+        "max_tokens": "lots",                
         "temperature": "hot",
         "messages": [
-            {"role": "user", "content": [{"type": "text", "text": None}]},  # null text
+            {"role": "user", "content": [{"type": "text", "text": None}]},             
             {
                 "role": "user",
                 "content": [{"type": "tool_result", "tool_use_id": "x", "content": None}],
@@ -128,7 +128,7 @@ def test_request_to_chat_robust_to_malformed():
         ],
     }
     chat = request_to_chat(body)
-    assert chat["max_tokens"] == 1024  # fell back to default
+    assert chat["max_tokens"] == 1024                        
     assert chat["temperature"] == 0.0
 
 
@@ -142,7 +142,7 @@ def _post(url, payload, headers=None):
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", **(headers or {})},
     )
-    with urllib.request.urlopen(req) as resp:  # noqa: S310
+    with urllib.request.urlopen(req) as resp:              
         return resp.status, json.load(resp)
 
 
@@ -236,7 +236,7 @@ def test_proxy_messages_tool_use(providers, env, quota):
         status, body = _post(
             base + "/v1/messages",
             {
-                "model": "alpha",  # pin to the tool-returning backend
+                "model": "alpha",                                     
                 "max_tokens": 100,
                 "tools": [
                     {"name": "get_weather", "description": "w", "input_schema": {"type": "object"}}

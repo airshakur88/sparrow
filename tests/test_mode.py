@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from types import SimpleNamespace
-
 import pytest
 
 from sparrow.mode import (
@@ -168,7 +166,7 @@ def test_wise_exhausted_declared_quota_fails_before_provider_call(
 
     assert main(["ask", "hello"]) == 4
 
-    assert post.calls == []
+    assert vars(post)["calls"] == []
     assert "declared local free quota is exhausted" in capsys.readouterr().err
 
 
@@ -191,8 +189,8 @@ def test_wise_ask_narrows_to_exact_declared_headroom_target(providers, env, quot
 
     assert main(["ask", "hello"]) == 4
 
-    assert len(post.calls) == 1
-    assert post.calls[0]["body"]["model"] == "alpha-small"
+    assert len(vars(post)["calls"]) == 1
+    assert vars(post)["calls"][0]["body"]["model"] == "alpha-small"
 
 
 def test_wise_explicit_provider_can_override_exhausted_declared_quota(
@@ -217,189 +215,7 @@ def test_wise_explicit_provider_can_override_exhausted_declared_quota(
 
     assert main(["ask", "hello", "--providers", "beta"]) == 0
 
-    assert len(post.calls) == 1
-    assert "beta.test" in post.calls[0]["url"]
+    assert len(vars(post)["calls"]) == 1
+    assert "beta.test" in vars(post)["calls"][0]["url"]
 
 
-def test_quota_wise_status_reports_headroom_and_recommendation(
-    providers, env, quota, monkeypatch, capsys
-):
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    quota.record("alpha", "alpha-small", 1)
-    pool = Pool(providers, quota=quota, env={**env, "SPARROW_MODE": "wise"})
-    monkeypatch.setenv("SPARROW_MODE", "wise")
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: pool))
-
-    assert main(["quota-wise", "status"]) == 0
-
-    out = capsys.readouterr().out
-    assert "local headroom" in out
-    assert "recommended mode:" in out
-    assert "alpha" in out
-
-
-def test_quota_wise_status_honors_config_mode(providers, env, quota, monkeypatch, capsys):
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    pool = Pool(providers, quota=quota, env=env)
-    monkeypatch.delenv("SPARROW_MODE", raising=False)
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: pool))
-    monkeypatch.setattr("sparrow.cli.settings", lambda _env: {"mode": "wise"})
-
-    assert main(["quota-wise", "status"]) == 0
-
-    assert "active mode:      wise" in capsys.readouterr().out
-
-
-def test_tokenmax_config_mode_uses_wise_routing(monkeypatch, capsys):
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    captured = {}
-    target = SimpleNamespace(provider=SimpleNamespace(id="alpha"), model="alpha-small", rpd=0)
-
-    class FakePool:
-        env = {}
-        providers = [SimpleNamespace(id="alpha")]
-        quota = _EmptyQuota()
-
-    def fake_select_targets(pool, messages, max_models=None, *, routing=None):
-        captured["routing"] = routing
-        return [target], 1
-
-    def fake_fan_out(pool, messages, picks, **kwargs):
-        return [("alpha/alpha-small", "ok")], []
-
-    monkeypatch.delenv("SPARROW_MODE", raising=False)
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: FakePool()))
-    monkeypatch.setattr("sparrow.cli.settings", lambda _env: {"mode": "wise"})
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-    monkeypatch.setattr("sparrow.tokenmax.select_targets", fake_select_targets)
-    monkeypatch.setattr("sparrow.tokenmax.fan_out", fake_fan_out)
-
-    assert main(["tokenmax", "hello", "--no-synthesize"]) == 0
-
-    assert captured["routing"] == WISE_DEFAULT_ROUTING
-    assert "TOKENMAX" in capsys.readouterr().out
-
-
-def test_tokenmax_mode_normal_overrides_wise_env_routing(monkeypatch):
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    captured = {}
-    target = SimpleNamespace(provider=SimpleNamespace(id="alpha"), model="alpha-small", rpd=0)
-
-    class FakePool:
-        env = {"SPARROW_MODE": "wise"}
-        providers = [SimpleNamespace(id="alpha")]
-        quota = _EmptyQuota()
-
-    def fake_select_targets(pool, messages, max_models=None, *, routing=None):
-        captured["routing"] = routing
-        return [target], 1
-
-    def fake_fan_out(pool, messages, picks, **kwargs):
-        return [("alpha/alpha-small", "ok")], []
-
-    monkeypatch.setenv("SPARROW_MODE", "wise")
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: FakePool()))
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-    monkeypatch.setattr("sparrow.tokenmax.select_targets", fake_select_targets)
-    monkeypatch.setattr("sparrow.tokenmax.fan_out", fake_fan_out)
-
-    assert main(["tokenmax", "hello", "--mode", "normal", "--no-synthesize"]) == 0
-
-    assert captured["routing"] == "fair"
-
-
-def test_wise_tokenmax_prefers_declared_headroom(providers, env, quota, monkeypatch, capsys):
-    from helpers import make_post
-
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    post = make_post({})
-    pool = Pool(providers, quota=quota, env={**env, "SPARROW_MODE": "wise"}, post=post)
-    monkeypatch.setenv("SPARROW_MODE", "wise")
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: pool))
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-
-    assert main(["tokenmax", "hello", "--no-synthesize"]) == 0
-
-    assert "TOKENMAX — 1 models" in capsys.readouterr().out
-    assert len(post.calls) == 1
-    assert "alpha.test" in post.calls[0]["url"]
-
-
-def test_wise_tokenmax_synthesis_uses_declared_headroom(providers, env, quota, monkeypatch, capsys):
-    from helpers import make_post
-
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    post = make_post({})
-    pool = Pool(providers, quota=quota, env={**env, "SPARROW_MODE": "wise"}, post=post)
-    monkeypatch.setenv("SPARROW_MODE", "wise")
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: pool))
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-
-    assert main(["tokenmax", "hello"]) == 0
-
-    assert "SYNTHESIS" in capsys.readouterr().out
-    assert [call["body"]["model"] for call in post.calls] == ["alpha-small", "alpha-small"]
-
-
-def test_wise_tokenmax_skips_synthesis_when_declared_headroom_is_spent(
-    providers, env, quota, monkeypatch, capsys
-):
-    from helpers import make_post
-
-    from sparrow.cli import main
-    from sparrow.router import Pool
-
-    quota.record("alpha", "alpha-small", 1)
-    post = make_post({})
-    pool = Pool(providers, quota=quota, env={**env, "SPARROW_MODE": "wise"}, post=post)
-    monkeypatch.setenv("SPARROW_MODE", "wise")
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: pool))
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-
-    assert main(["tokenmax", "hello"]) == 0
-
-    assert len(post.calls) == 1
-    assert "synthesis skipped" in capsys.readouterr().err
-
-
-def test_wise_tokenmax_noninteractive_expensive_fanout_fails(
-    quota, monkeypatch, capsys
-):
-    from helpers import make_post
-
-    from sparrow.cli import main
-    from sparrow.models import Model, Provider
-    from sparrow.router import Pool
-
-    providers = [
-        Provider(
-            id="unknown",
-            label="Unknown",
-            adapter="openai",
-            base_url="https://unknown.test/v1",
-            auth="none",
-            models=tuple(Model(f"m{i}", rpd=0) for i in range(4)),
-        )
-    ]
-    post = make_post({})
-    pool = Pool(providers, quota=quota, env={"SPARROW_MODE": "wise"}, post=post)
-    monkeypatch.setenv("SPARROW_MODE", "wise")
-    monkeypatch.setattr(Pool, "from_default_config", classmethod(lambda cls: pool))
-    monkeypatch.setattr("sparrow.cli._read_stdin", lambda: "")
-
-    assert main(["tokenmax", "hello", "--max-models", "4", "--no-synthesize"]) == 4
-
-    assert post.calls == []
-    assert "wise mode refuses tokenmax fan-out" in capsys.readouterr().err

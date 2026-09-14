@@ -1,9 +1,9 @@
-"""Compatibility alias for `sparrow code <agent>`.
+                                                  
 
-The profile registry in :mod:`sparrow.profiles` is now the source of truth.
-This module keeps the legacy ``AGENTS``, ``render()``, and ``list_agents()``
-surface intact for existing users and tests.
-"""
+                                                                           
+                                                                            
+                                            
+   
 
 from __future__ import annotations
 

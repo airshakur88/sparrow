@@ -1,8 +1,8 @@
-"""Immutable credential contracts for provider key rotation.
+                                                            
 
-This module defines frozen dataclasses and enums for credential selection,
-cooldown tracking, and legacy Provider compatibility.
-"""
+                                                                          
+                                                     
+   
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from enum import StrEnum
 
 
 class CredentialOperation(StrEnum):
-    """Operation type for credential selection."""
+                                                  
 
     CHAT = "chat"
     EMBED = "embed"
@@ -22,7 +22,7 @@ class CredentialOperation(StrEnum):
 
 
 class CooldownReason(StrEnum):
-    """Reason a credential is in cooldown."""
+                                             
 
     KEY_AUTH = "key_auth"
     KEY_TEMP = "key_temp"
@@ -31,7 +31,7 @@ class CooldownReason(StrEnum):
 
 
 class CredentialState(StrEnum):
-    """State of a credential selection attempt."""
+                                                  
 
     RESERVED = "reserved"
     DISPATCHED = "dispatched"
@@ -42,7 +42,7 @@ class CredentialState(StrEnum):
 
 
 class UnavailableReason(StrEnum):
-    """Reason a credential is unavailable for selection."""
+                                                           
 
     NO_SECRET = "no_secret"
     DISABLED = "disabled"
@@ -53,10 +53,10 @@ class UnavailableReason(StrEnum):
 
 @dataclass(frozen=True)
 class CredentialSlot:
-    """A single credential slot configuration.
+                                              
 
-    Represents one API key environment variable and its metadata.
-    """
+                                                                 
+       
 
     id: str
     provider: str
@@ -74,11 +74,11 @@ class CredentialSlot:
 
 @dataclass(frozen=True)
 class CredentialSelection:
-    """Result of selecting a credential for an operation.
+                                                         
 
-    The secret field contains the actual API key value but is never
-    exposed in __repr__ or __str__.
-    """
+                                                                   
+                                   
+       
 
     credential_id: str
     provider_id: str
@@ -106,7 +106,7 @@ class CredentialSelection:
 
 @dataclass(frozen=True)
 class CredentialUnavailable:
-    """Reason a credential could not be selected."""
+                                                    
 
     reason: UnavailableReason
     provider_id: str

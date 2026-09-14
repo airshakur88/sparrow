@@ -1,4 +1,4 @@
-"""MCP server: JSON-RPC message handling (no real stdio needed)."""
+                                                                   
 
 from __future__ import annotations
 
@@ -30,12 +30,12 @@ def test_initialize(providers, env, quota):
     assert resp["result"]["serverInfo"]["name"] == "sparrow"
     assert resp["result"]["protocolVersion"] == "2025-06-18"
     assert "tools" in resp["result"]["capabilities"]
-    # The handshake teaches agents to invoke tools directly (not via the CLI), which is
-    # what lets tokenmax's live progress reach the user instead of a hidden subprocess.
+                                                                                       
+                                                                                       
     instructions = resp["result"]["instructions"]
     assert "tokenmax" in instructions
     assert "directly" in instructions.lower()
-    assert "sparrow tokenmax" in instructions  # how the human sees the flashing animation
+    assert "sparrow tokenmax" in instructions                                             
 
 
 def test_notification_gets_no_reply(providers, env, quota):
@@ -64,7 +64,7 @@ def test_tools_list(providers, env, quota):
     }
 
 
-# Tools MUST NOT expose mutating policy knobs (e.g. a set_policy tool).
+                                                                       
 @pytest.mark.parametrize("forbidden_name", ["set_policy", "set_mode", "set_routing"])
 def test_tools_list_has_no_mutating_policy_tool(providers, env, quota, forbidden_name):
     pool = _pool(providers, env, quota)
@@ -82,7 +82,7 @@ def test_tool_schemas_expose_expected_fields(providers, env, quota):
     route_props = by_name["free_llm_route"]["inputSchema"]["properties"]
     assert route_props["task"]["enum"] == ["auto", "general", "grounded-reading"]
 
-    # Panel-style tools share the same shape (n clamp 2-5, max_tokens, synthesize, routing enum).
+                                                                                                 
     for tool_name in ("free_llm_panel", "free_llm_second_opinion", "free_llm_battle"):
         schema = by_name[tool_name]["inputSchema"]
         assert "prompt" in schema["required"]
@@ -102,22 +102,22 @@ def test_tool_schemas_expose_expected_fields(providers, env, quota):
         ]
         assert props["max_tokens"]["type"] == "integer"
 
-    # Recipe: bounded argument shape, no duplicate dispatch logic.
+                                                                  
     recipe_schema = by_name["free_llm_recipe"]["inputSchema"]
     assert recipe_schema["required"] == ["name"]
     assert {"name", "prompt", "path", "input", "validation_output", "opinions", "synthesize", "max_tokens"} <= set(
         recipe_schema["properties"]
     )
 
-    # Roles: optional single-name filter.
+                                         
     roles_schema = by_name["free_llm_roles"]["inputSchema"]
     assert "name" in roles_schema["properties"]
 
-    # Tailnet info: optional port.
+                                  
     tailnet_schema = by_name["free_llm_tailnet_info"]["inputSchema"]
     assert tailnet_schema["properties"]["port"]["type"] == "integer"
 
-    # Quota-wise: no required args, no provider key fields.
+                                                           
     quota_wise_schema = by_name["free_llm_quota_wise"]["inputSchema"]
     assert quota_wise_schema.get("required", []) == []
     quota_wise_props = " ".join(quota_wise_schema["properties"].keys())
@@ -127,7 +127,7 @@ def test_tool_schemas_expose_expected_fields(providers, env, quota):
 
 def test_tools_call_quota(providers, env, quota):
     pool = _pool(providers, env, quota)
-    pool.ask("hi")  # record some usage
+    pool.ask("hi")                     
     resp = handle_message(
         pool,
         {"jsonrpc": "2.0", "id": 9, "method": "tools/call", "params": {"name": "free_llm_quota"}},
@@ -138,7 +138,7 @@ def test_tools_call_quota(providers, env, quota):
 
 
 def test_tools_call_ask(providers, env, quota):
-    pool = _pool(providers, env, quota, post=make_post({}))  # returns "ok"
+    pool = _pool(providers, env, quota, post=make_post({}))                
     resp = handle_message(
         pool,
         {
@@ -150,7 +150,7 @@ def test_tools_call_ask(providers, env, quota):
     )
     text = resp["result"]["content"][0]["text"]
     assert text.startswith("ok")
-    assert "via alpha/" in text  # provenance footer names the serving model
+    assert "via alpha/" in text                                             
     assert resp["result"]["isError"] is False
 
 
@@ -181,7 +181,7 @@ def test_tools_call_ask_forwards_task_hint(providers, env, quota, monkeypatch):
 
 
 def test_tools_call_panel(providers, env, quota):
-    pool = _pool(providers, env, quota)  # all providers return "ok"
+    pool = _pool(providers, env, quota)                             
     resp = handle_message(
         pool,
         {
@@ -193,7 +193,7 @@ def test_tools_call_panel(providers, env, quota):
     )
     text = resp["result"]["content"][0]["text"]
     assert "panel" in text.lower()
-    assert text.count("###") >= 2  # one section per model asked
+    assert text.count("###") >= 2                               
 
 
 def test_tools_call_panel_defaults_to_three_models(providers, env, quota):
@@ -286,7 +286,7 @@ def test_tools_call_panel_synthesis_failure_is_nonfatal(env, quota):
 
 
 def test_tools_call_tokenmax(providers, env, quota):
-    pool = _pool(providers, env, quota)  # all providers return "ok"
+    pool = _pool(providers, env, quota)                             
     resp = handle_message(
         pool,
         {
@@ -298,14 +298,14 @@ def test_tools_call_tokenmax(providers, env, quota):
     )
     text = resp["result"]["content"][0]["text"]
     assert "TOKENMAX" in text
-    assert "synthesize" in text.lower()  # the caller is told to synthesize
-    assert text.count("###") >= 1  # at least one model's answer included
+    assert "synthesize" in text.lower()                                    
+    assert text.count("###") >= 1                                        
 
 
 def test_tokenmax_default_respects_hard_cap(providers, env, quota, monkeypatch):
     import sparrow.tokenmax as TM
 
-    monkeypatch.setattr(TM, "HARD_CAP", 2)  # even "all" must obey the ceiling
+    monkeypatch.setattr(TM, "HARD_CAP", 2)                                    
     pool = _pool(providers, env, quota)
     resp = handle_message(
         pool,
@@ -313,7 +313,7 @@ def test_tokenmax_default_respects_hard_cap(providers, env, quota, monkeypatch):
             "jsonrpc": "2.0",
             "id": 14,
             "method": "tools/call",
-            "params": {"name": "tokenmax", "arguments": {"prompt": "hi"}},  # no max_models -> ALL
+            "params": {"name": "tokenmax", "arguments": {"prompt": "hi"}},                        
         },
     )
     assert "to 2 models" in resp["result"]["content"][0]["text"]
@@ -332,7 +332,7 @@ def test_tokenmax_result_has_rainbow_banner(providers, env, quota):
             "params": {"name": "tokenmax", "arguments": {"prompt": "hi"}},
         },
     )
-    assert RAINBOW_BANNER in resp["result"]["content"][0]["text"]  # color lands in every host
+    assert RAINBOW_BANNER in resp["result"]["content"][0]["text"]                             
 
 
 def test_tokenmax_emits_progress_when_token_present(providers, env, quota):
@@ -357,7 +357,7 @@ def test_tokenmax_emits_progress_when_token_present(providers, env, quota):
     assert progs, "expected progress notifications when a progressToken is supplied"
     last = progs[-1]["params"]
     assert last["progressToken"] == "tok-1"
-    assert last["progress"] == last["total"]  # the final tick reaches 100%
+    assert last["progress"] == last["total"]                               
     assert "TOKENMAXXING" in last["message"]
 
 
@@ -370,7 +370,7 @@ def test_tokenmax_silent_without_progress_token(providers, env, quota):
             "jsonrpc": "2.0",
             "id": 17,
             "method": "tools/call",
-            "params": {"name": "tokenmax", "arguments": {"prompt": "hi"}},  # no _meta
+            "params": {"name": "tokenmax", "arguments": {"prompt": "hi"}},            
         },
         send_notification=sent.append,
     )
@@ -394,13 +394,13 @@ def test_tools_call_route_is_zero_token(providers, env, quota):
     text = resp["result"]["content"][0]["text"]
     assert "difficulty" in text.lower()
     assert "resolved task: general (auto)" in text.lower()
-    assert "alpha/" in text  # a ranked candidate
-    assert pool.stats_snapshot()["requests"] == 0  # explained without spending a token
+    assert "alpha/" in text                      
+    assert pool.stats_snapshot()["requests"] == 0                                      
 
 
 def test_tools_call_stats(providers, env, quota):
     pool = _pool(providers, env, quota)
-    pool.ask("hi")  # record some usage
+    pool.ask("hi")                     
     resp = handle_message(
         pool,
         {"jsonrpc": "2.0", "id": 12, "method": "tools/call", "params": {"name": "free_llm_stats"}},
@@ -481,12 +481,12 @@ def test_ask_failover_in_tool(providers, env, quota):
             "params": {"name": "free_llm_ask", "arguments": {"prompt": "hi", "provider": "alpha"}},
         },
     )
-    # alpha 500s and there's no beta in provider filter → tool error surfaced
+                                                                             
     assert resp["result"]["isError"] is True
 
 
 def test_parse_error_returns_neg32700():
-    # serve_stdio emits a JSON-RPC parse error for invalid JSON
+                                                               
     import io
 
     from sparrow.mcp_server import serve_stdio
@@ -538,10 +538,10 @@ def test_invalid_request_missing_method(providers, env, quota):
     from sparrow.router import Pool
 
     pool = Pool(providers, quota=quota, env=env)
-    resp = handle_message(pool, {"jsonrpc": "2.0", "id": 5})  # has id, no method
+    resp = handle_message(pool, {"jsonrpc": "2.0", "id": 5})                     
     assert resp["error"]["code"] == -32600
     assert resp["id"] == 5
-    # a non-dict is an invalid request with id null
+                                                   
     assert handle_message(pool, 42)["error"]["code"] == -32600
 
 
@@ -556,7 +556,7 @@ def test_batch_returns_single_json_array(providers, env, quota):
     batch = json.dumps(
         [
             {"jsonrpc": "2.0", "id": 1, "method": "ping"},
-            {"jsonrpc": "2.0", "method": "notifications/initialized"},  # no reply
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},            
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
         ]
     )
@@ -569,16 +569,16 @@ def test_batch_returns_single_json_array(providers, env, quota):
     finally:
         sys.stdin, sys.stdout = old_in, old_out
     lines = [ln for ln in out.getvalue().splitlines() if ln.strip()]
-    assert len(lines) == 1  # one line, one JSON-RPC array (not 2 separate objects)
+    assert len(lines) == 1                                                         
     arr = json.loads(lines[0])
-    assert isinstance(arr, list) and len(arr) == 2  # notification omitted
+    assert isinstance(arr, list) and len(arr) == 2                        
     assert {r["id"] for r in arr} == {1, 2}
 
 
-# ---------------------------------------------------------------------------
-# WU-011: new agent-facing UX tools (roles, recipe, battle, second_opinion,
-# tailnet info, quota-wise). Keep free_llm_panel for backward compatibility.
-# ---------------------------------------------------------------------------
+                                                                             
+                                                                           
+                                                                            
+                                                                             
 
 
 def test_tools_call_roles_lists_bundled_roles(providers, env, quota):
@@ -589,7 +589,7 @@ def test_tools_call_roles_lists_bundled_roles(providers, env, quota):
     )
     text = resp["result"]["content"][0]["text"]
     assert resp["result"]["isError"] is False
-    # Spot-check a few role names from roles.py.
+                                                
     for role_name in ("coder", "critic", "summarizer", "second-opinion", "fast", "cheap"):
         assert role_name in text
 
@@ -641,15 +641,15 @@ def test_tools_call_second_opinion_clamps_count(providers, env, quota):
     )
     text = resp["result"]["content"][0]["text"]
     assert resp["result"]["isError"] is False
-    # 6 fake providers, panel cap is 5 → 5 sections.
+                                                    
     assert text.count("###") == 5
 
 
 def test_tools_call_second_opinion_reuses_panel_helper(providers, env, quota):
-    """Second-opinion must reuse the panel behavior, not duplicate it."""
+                                                                         
     import sparrow.mcp_server as mcp
 
-    # After import, the second_opinion handler is the same function object as panel.
+                                                                                    
     assert mcp._tool_second_opinion is mcp._tool_panel
 
 
@@ -685,7 +685,7 @@ def test_tools_call_battle_renders_comparison_markdown(providers, env, quota):
 
 
 def test_tools_call_battle_per_model_failures_stay_visible(providers, env, quota):
-    """A failing provider must not abort the whole battle."""
+                                                             
     post = make_post({"alpha.test": (500, {"error": "down"})})
     pool = _pool(providers, env, quota, post=post)
     resp = handle_message(
@@ -698,7 +698,7 @@ def test_tools_call_battle_per_model_failures_stay_visible(providers, env, quota
         },
     )
     text = resp["result"]["content"][0]["text"]
-    # Tool still returns content (not isError), and the per-model failure is visible.
+                                                                                     
     assert resp["result"]["isError"] is False
     assert "failed:" in text
 
@@ -718,7 +718,7 @@ def test_tools_call_battle_missing_prompt_is_tool_error(providers, env, quota):
 
 
 def test_tools_call_recipe_runs_text_recipe_with_fake_providers(providers, env, quota):
-    """free_llm_recipe runs a real bundled recipe end-to-end with fake providers."""
+                                                                                    
     pool = _pool(providers, env, quota)
     resp = handle_message(
         pool,
@@ -735,12 +735,12 @@ def test_tools_call_recipe_runs_text_recipe_with_fake_providers(providers, env, 
     text = resp["result"]["content"][0]["text"]
     assert resp["result"]["isError"] is False
     assert "pr-review" in text
-    # Fake providers return "ok" via the default post script.
+                                                             
     assert "ok" in text
 
 
 def test_tools_call_recipe_panel_recipe_renders_panel(providers, env, quota):
-    """A panel-output recipe (second-opinion) reuses run_panel + render_panel_markdown."""
+                                                                                          
     pool = _pool(providers, env, quota)
     resp = handle_message(
         pool,
@@ -790,7 +790,7 @@ def test_tools_call_recipe_missing_name_is_tool_error(providers, env, quota):
 
 
 def test_tools_call_recipe_missing_variable_is_tool_error_not_traceback(providers, env, quota):
-    """metaswarm-worker-review requires a non-empty `validation_output`."""
+                                                                           
     pool = _pool(providers, env, quota)
     resp = handle_message(
         pool,
@@ -827,7 +827,7 @@ def test_tools_call_recipe_missing_input_is_tool_error_not_traceback(providers, 
 
 
 def test_tools_call_tailnet_info_handles_missing_tailscale(providers, env, quota, monkeypatch):
-    """When tailscale is not on PATH, the tool degrades gracefully (no crash, no leak)."""
+                                                                                          
     import sparrow.tailnet as tailnet
 
     monkeypatch.setattr(tailnet.shutil, "which", lambda _: None)
@@ -842,18 +842,18 @@ def test_tools_call_tailnet_info_handles_missing_tailscale(providers, env, quota
         },
     )
     text = resp["result"]["content"][0]["text"]
-    # Degraded path returns a friendly status, no isError, no provider-key strings.
+                                                                                   
     assert resp["result"].get("isError") in (False, None)
     assert "Tailnet:" in text
     assert "tailscale" in text.lower() or "tailnet" in text.lower()
-    # No provider-shaped env leaks into the response.
+                                                     
     forbidden_substrings = ("GROQ_API_KEY", "CEREBRAS_API_KEY", "OPENAI_API_KEY=", "ANTHROPIC_API_KEY=")
     for needle in forbidden_substrings:
         assert needle not in text
 
 
 def test_tools_call_tailnet_info_usable_path_uses_placeholder_token(providers, env, quota, monkeypatch):
-    """When tailscale reports a usable 100.x IPv4, the response uses a placeholder proxy key."""
+                                                                                                
     from types import SimpleNamespace
 
     import sparrow.tailnet as tailnet
@@ -877,10 +877,10 @@ def test_tools_call_tailnet_info_usable_path_uses_placeholder_token(providers, e
     )
     text = resp["result"]["content"][0]["text"]
     assert "100.64.0.42" in text
-    # Real proxy bearer tokens are NEVER exposed.
-    # The hints block uses <proxy-key> as a placeholder.
+                                                 
+                                                        
     assert "<proxy-key>" in text
-    # Provider API keys are never exposed.
+                                          
     for needle in ("GROQ_API_KEY=", "CEREBRAS_API_KEY=", "OPENROUTER_API_KEY="):
         assert needle not in text
 
@@ -900,9 +900,9 @@ def test_tools_call_tailnet_info_rejects_invalid_port(providers, env, quota):
 
 
 def test_tools_call_quota_wise_renders_local_headroom(providers, env, quota, monkeypatch):
-    """quota_wise must render local counters and not recommend rotation / bypass."""
+                                                                                    
     pool = _pool(providers, env, quota)
-    # Add a recorded call so the snapshot has data.
+                                                   
     pool.ask("warm")
     resp = handle_message(
         pool,
@@ -917,11 +917,11 @@ def test_tools_call_quota_wise_renders_local_headroom(providers, env, quota, mon
     assert resp["result"]["isError"] is False
     assert "Quota-wise" in text or "quota" in text.lower()
     assert "advice" in text.lower()
-    # Anti-bypass / anti-rotation guarantees.
+                                             
     forbidden = ("rotate account", "rotate accounts", "bypass rate", "rate-limit bypass", "automatic paid", "paid fallback", "switch account", "switch accounts")
     for needle in forbidden:
         assert needle not in text.lower()
-    # Only acceptable phrasing is allowed (substring presence proves the advice is shaped).
+                                                                                           
     assert "local counter rollover at utc midnight" in text.lower()
     assert "upstream providers use their own limit/reset windows" in text.lower()
     assert "lower fan-out" in text.lower()

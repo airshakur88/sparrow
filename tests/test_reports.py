@@ -52,7 +52,7 @@ def test_run_record_schema_supports_all_reportable_kinds():
 def test_store_is_append_only_and_last_uses_append_order(tmp_path):
     store = _store(tmp_path)
     first = store.append_new(kind="ask", title="first", prompt="one", output="old")
-    # A malformed line should not become "last" and should not require a pointer file.
+                                                                                      
     store.path.write_text(
         store.path.read_text(encoding="utf-8") + "{not json}\n",
         encoding="utf-8",
@@ -188,9 +188,9 @@ def test_cost_show_uses_recorded_usage_and_local_quota_only(tmp_path, monkeypatc
     monkeypatch.setenv("SPARROW_DATA_DIR", str(tmp_path / "data"))
     quota_path = tmp_path / "quota.json"
     monkeypatch.setenv("SPARROW_QUOTA_PATH", str(quota_path))
-    # ``cost show`` reports today's local quota counters via the default
-    # QuotaStore clock, so record quota on that same day instead of pinning this
-    # setup to the run-record fixture date.
+                                                                        
+                                                                                
+                                           
     QuotaStore(path=quota_path).record("alpha", "alpha-small")
     record = RunRecordStore(clock=_clock).append_new(
         kind="ask",

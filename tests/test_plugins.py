@@ -1,4 +1,4 @@
-"""Plugin system: custom provider registration and custom adapters."""
+                                                                      
 
 from __future__ import annotations
 
@@ -76,17 +76,17 @@ def test_unknown_adapter_falls_back_to_openai(providers, env, quota):
     )
     pool = Pool([prov], quota=quota, env={}, post=make_post({}))
     reply = pool.chat([{"role": "user", "content": "hi"}])
-    assert reply.text == "ok"  # routed through the openai shape and parsed fine
+    assert reply.text == "ok"                                                   
 
 
 def test_register_provider_rejects_non_provider():
     with pytest.raises(TypeError):
-        plugins.register_provider("not a provider")  # type: ignore[arg-type]
+        plugins.register_provider("not a provider")                          
 
 
 def test_plugin_provider_merges_by_id(monkeypatch):
-    # a plugin reusing a built-in id overrides it rather than duplicating, so
-    # from_default_config never yields two providers with the same id.
+                                                                             
+                                                                      
     from sparrow import router as router_mod
 
     builtin = Provider(
@@ -107,7 +107,7 @@ def test_plugin_provider_merges_by_id(monkeypatch):
     )
     monkeypatch.setattr(router_mod, "load_catalog", lambda: [builtin])
     plugins.register_provider(plugin)
-    pool = Pool.from_default_config(env={})  # env={} → no embedders/keys configured
+    pool = Pool.from_default_config(env={})                                         
     dups = [p for p in pool.providers if p.id == "dup"]
     assert len(dups) == 1
-    assert dups[0].label == "Plugin"  # plugin won the id
+    assert dups[0].label == "Plugin"                     

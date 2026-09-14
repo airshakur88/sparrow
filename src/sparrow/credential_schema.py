@@ -1,4 +1,4 @@
-"""SQLite schema and typed errors for credential state."""
+                                                          
 
 from __future__ import annotations
 
@@ -8,19 +8,19 @@ SCHEMA_VERSION = 1
 
 
 class CorruptStoreError(RuntimeError):
-    """Raised when the SQLite file is not a usable database."""
+    pass
 
 
 class LockedStoreError(RuntimeError):
-    """Raised when SQLite remains locked past the bounded timeout."""
+    pass
 
 
 class SchemaVersionError(RuntimeError):
-    """Raised when a database requires a newer schema."""
+    pass
 
 
 def get_user_version(connection: object) -> int:
-    return int(connection.execute("PRAGMA user_version").fetchone()[0])  # type: ignore[attr-defined]
+    return int(connection.execute("PRAGMA user_version").fetchone()[0])                              
 
 
 def check_schema_version(connection: object) -> int:
@@ -31,16 +31,16 @@ def check_schema_version(connection: object) -> int:
 
 
 def bootstrap_schema(connection: object) -> None:
-    connection.execute("PRAGMA journal_mode=WAL")  # type: ignore[attr-defined]
-    connection.execute("PRAGMA synchronous=FULL")  # type: ignore[attr-defined]
-    connection.execute("PRAGMA foreign_keys=ON")  # type: ignore[attr-defined]
-    connection.executescript(SCHEMA_SQL)  # type: ignore[attr-defined]
-    connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")  # type: ignore[attr-defined]
+    connection.execute("PRAGMA journal_mode=WAL")                              
+    connection.execute("PRAGMA synchronous=FULL")                              
+    connection.execute("PRAGMA foreign_keys=ON")                              
+    connection.executescript(SCHEMA_SQL)                              
+    connection.execute(f"PRAGMA user_version={SCHEMA_VERSION}")                              
 
 
 @dataclass(slots=True)
 class CredentialStoreError(RuntimeError):
-    """Safe error raised when the credential store cannot be used."""
+                                                                     
 
     detail: str
 

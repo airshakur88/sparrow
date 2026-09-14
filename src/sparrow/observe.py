@@ -1,14 +1,14 @@
-"""Observability: a module logger plus a per-Pool event hook.
+                                                             
 
-The library never configures logging handlers itself (that's the application's
-job) — it only emits on the ``sparrow`` logger, so it stays silent until a
-host opts in. Set ``SPARROW_LOG`` (a level name like ``info`` or ``debug``,
-or ``1`` for info) and the CLI/proxy will attach a stderr handler.
+                                                                              
+                                                                          
+                                                                           
+                                                                  
 
-Programmatic users can pass ``on_event`` to :class:`~sparrow.Pool` to receive
-structured event dicts — one per routing attempt, success, error, and cooldown —
-for metrics/tracing pipelines (OpenTelemetry, Prometheus, plain JSON logs, ...).
-"""
+                                                                             
+                                                                                
+                                                                                
+   
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ from collections.abc import Callable, Mapping
 
 logger = logging.getLogger("sparrow")
 
-#: An event hook receives a dict like ``{"event": "success", "target": "groq/...",
-#: "latency_ms": 142.0, "attempts": 1}``. Exceptions raised by a hook are swallowed.
+                                                                                  
+                                                                                    
 EventHook = Callable[[dict], None]
 
 _LEVELS = {
@@ -34,11 +34,11 @@ _LEVELS = {
 
 
 def configure_logging_from_env(env: Mapping[str, str] | None = None) -> bool:
-    """If ``SPARROW_LOG`` is set, attach a stderr handler at that level.
+                                                                        
 
-    Returns True if logging was enabled. Idempotent — won't double-add handlers.
-    Meant to be called by the CLI/proxy entrypoints, not the library.
-    """
+                                                                                
+                                                                     
+       
     env = env if env is not None else os.environ
     raw = (env.get("SPARROW_LOG") or "").strip().lower()
     if not raw:
@@ -48,17 +48,17 @@ def configure_logging_from_env(env: Mapping[str, str] | None = None) -> bool:
     if not any(getattr(h, "_sparrow", False) for h in logger.handlers):
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("sparrow %(levelname)s %(message)s"))
-        handler._sparrow = True  # type: ignore[attr-defined]
+        handler._sparrow = True                              
         logger.addHandler(handler)
     return True
 
 
 def emit(hook: EventHook | None, event: str, **fields) -> None:
-    """Log a structured event and, if present, pass it to the user hook.
+                                                                        
 
-    Failures in the user hook are isolated — observability must never break a
-    completion. Log level is keyed off the event name.
-    """
+                                                                             
+                                                      
+       
     payload = {"event": event, **fields}
     if logger.isEnabledFor(logging.DEBUG) or (
         event in ("error", "cooldown", "exhausted") and logger.isEnabledFor(logging.INFO)
@@ -67,7 +67,7 @@ def emit(hook: EventHook | None, event: str, **fields) -> None:
     if hook is not None:
         try:
             hook(payload)
-        except Exception:  # noqa: BLE001 — a bad hook must not break routing
+        except Exception:                                                    
             logger.debug("event hook raised", exc_info=True)
 
 

@@ -1,29 +1,29 @@
-"""A tiny OpenAI-compatible HTTP proxy backed by the Pool.
+                                                          
 
-Run it, point any OpenAI-SDK app at it, and your existing code transparently
-load-balances and fails over across every free provider you have keys for:
+                                                                            
+                                                                          
 
-    $ sparrow start --port 8080
-    $ export OPENAI_BASE_URL=http://localhost:8080/v1
-    $ export OPENAI_API_KEY=anything   # ignored by sparrow
+                               
+                                                     
+                                                           
 
-Implemented on the standard library only (``http.server``) so installing
-sparrow pulls in nothing beyond httpx.
+                                                                        
+                                      
 
-Supported routes:
-    GET  /v1/models                 list available (provider/model) ids
-    GET  /v1/providers              secret-free provider readiness inventory
-    POST /v1/chat/completions       route a chat completion (true token streaming)
-    POST /v1/embeddings             pooled free embeddings
-    POST /v1/audio/transcriptions   pooled free audio transcription (Whisper, multipart)
-    POST /v1/responses              Responses API shim (Codex CLI / agents)
-    POST /v1/messages               Anthropic Messages shim (Claude Code / agents)
-    GET  /playground                local comparison playground
-    POST /sparrow/battle        bounded local model battle
-    GET  /healthz                   liveness probe
-    GET  /livez                     liveness probe alias
-    GET  /readyz                    advisory local-capacity readiness probe
-"""
+                 
+                                                                       
+                                                                            
+                                                                                  
+                                                          
+                                                                                        
+                                                                           
+                                                                                  
+                                                               
+                                                          
+                                                  
+                                                        
+                                                                           
+   
 
 from __future__ import annotations
 
@@ -57,23 +57,23 @@ from .routing_modes import PUBLIC_ROUTING_ALIASES, routing_override
 from .savings import usd_saved
 from .task_quality import task_resolution
 
-_MAX_BODY = 16 * 1024 * 1024  # 16 MB cap on request bodies
-# Audio uploads are larger than JSON; Groq's free tier accepts up to 25 MB, so cap audio
-# multipart bodies there rather than at the JSON limit (a valid 20 MB clip must not 413).
+_MAX_BODY = 16 * 1024 * 1024                               
+                                                                                        
+                                                                                         
 _MAX_AUDIO_BODY = 25 * 1024 * 1024
-# Long-running agent loops regularly spend several minutes in tool-aware reasoning.
-# The OpenCode profile uses the ``agent`` routing alias and a matching ten-minute
-# client deadline; carry that intent through to the actual provider request rather
-# than silently falling back to Pool's generic 90-second default.
-_AGENT_UPSTREAM_TIMEOUT = 540.0  # leave one minute for proxy/client handoff
-# response_format values we forward. srt/vtt aren't accepted by Groq/Mistral's transcription
-# endpoints (they'd fail upstream and surface as a confusing 502), so reject them up front.
+                                                                                   
+                                                                                 
+                                                                                  
+                                                                 
+_AGENT_UPSTREAM_TIMEOUT = 540.0                                             
+                                                                                            
+                                                                                           
 _TRANSCRIPTION_FORMATS = ("json", "text", "verbose_json")
 _log = logging.getLogger(__name__)
 
 
 def _max_tokens_value(req: dict[str, Any], default: int) -> Any:
-    """Return the first supported OpenAI-compatible output-token budget."""
+                                                                           
     for field in ("max_tokens", "max_completion_tokens", "max_output_tokens"):
         if field in req and req[field] is not None:
             return req[field]
@@ -81,10 +81,10 @@ def _max_tokens_value(req: dict[str, Any], default: int) -> Any:
 
 
 def _model_ids(pool: Pool, ready_model_ids: frozenset[str] | None = None) -> list[str]:
-    # "auto" + per-request routing aliases (mapped to a routing mode by the proxy),
-    # then every enabled provider/model id.
-    # Unfiltered discovery always includes routing aliases. A readiness-filtered
-    # empty pool returns an empty list (the Anthropic payload handles null bounds).
+                                                                                   
+                                           
+                                                                                
+                                                                                   
     ids = list(PUBLIC_ROUTING_ALIASES) if ready_model_ids is None or ready_model_ids else []
     for provider in pool.providers:
         for m in provider.models:
@@ -169,7 +169,7 @@ def _anthropic_models_payload(
 
 
 def _readiness_snapshot(pool: Pool) -> ReadinessSnapshot:
-    """Take one quota/cooldown snapshot without probing an upstream."""
+                                                                       
     now = pool._clock()
     return readiness_snapshot(
         pool.providers,
@@ -195,8 +195,8 @@ def _ready_filter(query: str) -> bool | None:
 
 
 def _provider_leaderboard(pool: Pool, limit: int = 5) -> list[tuple[str, float]]:
-    """Top providers by requests served today, as (id, fraction-of-leader) — feeds
-    the summary card's 'provider race'."""
+                                                                                  
+                                          
     snap = pool.quota.snapshot()
     totals: dict[str, int] = {}
     for key, count in snap.items():
@@ -208,19 +208,19 @@ def _provider_leaderboard(pool: Pool, limit: int = 5) -> list[tuple[str, float]]
 
 
 def _status_payload(pool: Pool, recent: Sequence[dict], tokenmax: dict | None = None) -> dict:
-    """Return a JSON-able status payload for the /status endpoint.
+                                                                  
 
-    ``recent`` is a snapshot (most-recent-first) of the served-target ring buffer,
-    taken under its lock by the caller so iteration here is race-free. ``tokenmax`` is
-    an optional snapshot of the live tokenmax-swarm progress (the OpenCode TUI animates
-    its rainbow throb while ``active`` is true).
-    """
+                                                                                  
+                                                                                      
+                                                                                       
+                                                
+       
     now = pool._clock()
     quota_snap = pool.quota.snapshot()
     metrics_snap = pool.metrics.snapshot()
     health_snap = pool.route_health_snapshot()
     health_store = pool.route_health
-    cooldown_snap = pool.cooldown_snapshot(now)  # locked read; no torn cooldown state
+    cooldown_snap = pool.cooldown_snapshot(now)                                       
     conformance_snapshot = (
         pool.conformance.snapshot() if pool.conformance is not None else None
     )
@@ -360,7 +360,7 @@ def _status_payload(pool: Pool, recent: Sequence[dict], tokenmax: dict | None = 
             "cache_hits": s.get("cache_hits", 0),
             "usd_saved": saved,
         },
-        # lifetime (persisted across restarts) — the growing "served free" number
+                                                                                 
         "lifetime": {
             "requests": life.get("requests", 0),
             "prompt_tokens": life.get("prompt_tokens", 0),
@@ -380,35 +380,35 @@ def _status_payload(pool: Pool, recent: Sequence[dict], tokenmax: dict | None = 
 
 
 def _routing_and_model(headers, requested: str) -> tuple[str | None, str]:
-    """Resolve a per-request routing override. A valid mode in the
-    ``X-Sparrow-Routing`` header, or the model name itself being a routing
-    keyword (e.g. ``fast``/``quality``), selects that mode and falls back to ``auto``
-    model selection. Returns ``(routing_override, requested_model)``."""
+                                                                  
+                                                                          
+                                                                                     
+                                                                        
     override = routing_override(headers.get("X-Sparrow-Routing"))
     if isinstance(requested, str):
-        # accept bare or provider-qualified aliases: 'spread', 'sparrow/spread',
-        # and 'sparrow/auto' (opencode sends its provider name as the prefix). No real
-        # pool model is named after a routing keyword or 'auto', so the suffix check is safe.
+                                                                                
+                                                                                      
+                                                                                             
         alias = requested.rsplit("/", 1)[-1].lower()
         alias_override = routing_override(alias)
         if alias_override is not None:
             override = override or alias_override
             requested = "auto"
         elif alias == "auto":
-            requested = "auto"  # 'auto' / 'sparrow/auto' → default routing, no provider filter
+            requested = "auto"                                                                 
     return override, requested
 
 
 def _task_hint(headers, req: dict) -> object:
-    """Header intent wins over an optional OpenAI-compatible body extension."""
+                                                                               
     header = headers.get("X-Sparrow-Task")
     return header if header is not None else req.get("task")
 
 
 def make_handler(pool: Pool, api_key: str | None = None):
-    # Ring buffer of recently-served (provider, model). Appended from worker
-    # threads and snapshotted by /status, so guard it: a deque append is atomic,
-    # but iterating it (list(recent)) concurrently with an append can raise.
+                                                                            
+                                                                                
+                                                                            
     recent = collections.deque(maxlen=25)
     recent_lock = threading.Lock()
 
@@ -416,9 +416,9 @@ def make_handler(pool: Pool, api_key: str | None = None):
         with recent_lock:
             recent.appendleft(entry)
 
-    # Live tokenmax-swarm progress, surfaced via /status so the OpenCode TUI can throb
-    # its rainbow banner while a swarm is in flight. Mutated from a request thread (and
-    # its fan-out workers via the progress callback); guard every read/write with the lock.
+                                                                                      
+                                                                                       
+                                                                                           
     tokenmax_state: dict = {"active": False}
     tokenmax_lock = threading.Lock()
 
@@ -432,18 +432,18 @@ def make_handler(pool: Pool, api_key: str | None = None):
     class Handler(BaseHTTPRequestHandler):
         server_version = f"sparrow/{__version__}"
         _response_started = False
-        # Socket read timeout: a slow/stalled client can't pin a worker thread + fd
-        # indefinitely. setup() applies this to the connection via settimeout().
+                                                                                   
+                                                                                
         timeout = 75
 
-        # quiet by default; the server prints its own concise log line
-        def log_message(self, format, *args):  # noqa: A002
+                                                                      
+        def log_message(self, format, *args):              
             return
 
         def end_headers(self) -> None:
-            # Committing starts when the header buffer is flushed. A socket write
-            # may transmit a prefix and then raise, so mark this before delegating:
-            # the outer handler must never append a second HTTP response afterward.
+                                                                                 
+                                                                                   
+                                                                                   
             self._response_started = True
             super().end_headers()
 
@@ -459,31 +459,31 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     self.send_header(key, str(value))
                 self.end_headers()
                 self.wfile.write(data)
-            except (BrokenPipeError, ConnectionResetError):  # client went away
+            except (BrokenPipeError, ConnectionResetError):                    
                 pass
 
         def _error(self, status: int, message: str, code: str = "sparrow_error") -> None:
             self._send(status, {"error": {"message": message, "type": code}})
 
         def _anthropic_error(self, status: int, message: str, code: str = "invalid_request_error"):
-            # Anthropic's error envelope differs from OpenAI's; Claude-side clients
-            # expect {"type":"error","error":{"type":..,"message":..}}.
+                                                                                   
+                                                                       
             self._send(status, {"type": "error", "error": {"type": code, "message": message}})
 
         def _authorized(self) -> bool:
-            """If a proxy key is configured, require a matching Bearer token
-            (OpenAI style) or x-api-key (Anthropic style)."""
+                                                                            
+                                                             
             if not api_key:
                 return True
-            # Constant-time compares so the key can't be recovered byte-by-byte
-            # via response timing on a network-exposed proxy.
+                                                                               
+                                                             
             if hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {api_key}"):
                 return True
             return hmac.compare_digest(self.headers.get("x-api-key", ""), api_key)
 
         def _wants_anthropic_models(self) -> bool:
-            """Claude Code gateway model discovery calls Anthropic's model list
-            shape on the same `/v1/models` route OpenAI clients use."""
+                                                                               
+                                                                       
             headers = {k.lower(): v.lower() for k, v in self.headers.items()}
             user_agent = headers.get("user-agent", "")
             return (
@@ -493,7 +493,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
             )
 
         def _send_browser_shell(self) -> None:
-            """Serve the public shell without interpolating pool or auth state."""
+                                                                                  
             html = _browser_shell_html().encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -506,22 +506,22 @@ def make_handler(pool: Pool, api_key: str | None = None):
             self.end_headers()
             self.wfile.write(html)
 
-        def do_GET(self) -> None:  # noqa: N802
+        def do_GET(self) -> None:              
             self._response_started = False
             try:
                 self._do_get()
-            except Exception as exc:  # never let a request kill the thread
+            except Exception as exc:                                       
                 _log.exception("unexpected GET handler failure")
                 if self._response_started:
                     self.close_connection = True
                 else:
                     self._error(500, f"internal error: {type(exc).__name__}", "internal_error")
 
-        def do_POST(self) -> None:  # noqa: N802
+        def do_POST(self) -> None:              
             self._response_started = False
             try:
                 self._do_post()
-            except Exception as exc:  # never let a request kill the thread
+            except Exception as exc:                                       
                 _log.exception("unexpected POST handler failure")
                 if self._response_started:
                     self.close_connection = True
@@ -530,10 +530,10 @@ def make_handler(pool: Pool, api_key: str | None = None):
 
         def _do_get(self) -> None:
             path = urlsplit(self.path).path.rstrip("/") or "/"
-            # The browser shell itself contains no inventory, usage, provider, or
-            # credential data. It stays reachable on a key-locked/Tailnet proxy so
-            # a normal browser can prompt locally and authenticate its JSON calls
-            # with the same header contract as every other API client.
+                                                                                 
+                                                                                  
+                                                                                 
+                                                                      
             if path in ("/", "/dashboard", "/playground"):
                 self._send_browser_shell()
                 return
@@ -547,9 +547,9 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     snapshot.readiness_payload(),
                 )
                 return
-            # Shareable SVG badge/card of lifetime "served free" totals. Embeddable
-            # (e.g. in a README) only when SPARROW_PUBLIC_BADGE is set, so a
-            # key-locked proxy stays locked by default; otherwise auth like the rest.
+                                                                                   
+                                                                            
+                                                                                     
             if path in ("/badge.svg", "/summary.svg"):
                 public = os.environ.get("SPARROW_PUBLIC_BADGE", "").strip().lower() in (
                     "1",
@@ -576,8 +576,8 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 self.end_headers()
                 self.wfile.write(data)
                 return
-            # Inventory, usage, and all API data remain protected when a proxy
-            # key is configured. Only the data-free browser shell above is public.
+                                                                              
+                                                                                  
             if not self._authorized():
                 self._error(401, "invalid or missing API key", "invalid_api_key")
                 return
@@ -649,14 +649,14 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 return
             try:
                 raw = self.rfile.read(length) if length else b""
-                if length and len(raw) < length:  # client aborted / truncated body
+                if length and len(raw) < length:                                   
                     self._error(400, "incomplete request body", "invalid_request_error")
                     return
             except (OSError, ValueError):
                 self._error(400, "could not read request body", "invalid_request_error")
                 return
 
-            # Audio uploads are multipart/form-data, not JSON — handle before parsing JSON.
+                                                                                           
             if is_transcription:
                 self._handle_transcription(raw, self.headers.get("Content-Type", ""))
                 return
@@ -707,12 +707,12 @@ def make_handler(pool: Pool, api_key: str | None = None):
             self._send(200, battle_to_dict(result))
 
         def _handle_tokenmax(self, req: dict) -> None:
-            """🌈 Fan out to automatically eligible ranked targets and report progress.
+                                                                                      
 
-            The hard cap is 256; ``max_models`` and active routing can narrow the set.
-            ``/status`` lets the OpenCode TUI throb its rainbow banner. Returned answers
-            are available for the caller to synthesize.
-            """
+                                                                                      
+                                                                                        
+                                                       
+               
             from . import tokenmax as _tm
 
             prompt = req.get("prompt")
@@ -737,15 +737,15 @@ def make_handler(pool: Pool, api_key: str | None = None):
 
             def on_progress(done: int, _total: int, _label: str) -> None:
                 with tokenmax_lock:
-                    if tokenmax_state.get("active"):  # don't resurrect a finished/cleared run
-                        # fan_out releases its counter lock before invoking this callback, so
-                        # worker callbacks can arrive out of order — clamp to keep the bar
-                        # monotonic (never jump backwards).
+                    if tokenmax_state.get("active"):                                          
+                                                                                             
+                                                                                          
+                                                           
                         tokenmax_state["done"] = max(int(tokenmax_state.get("done", 0)), done)
 
-            # Claim the single shared display slot atomically: only one swarm "owns" the
-            # /status banner at a time, so a second concurrent run can't clobber the first's
-            # progress. (tokenmax is a max-effort blast; serializing the display is fine.)
+                                                                                        
+                                                                                            
+                                                                                          
             with tokenmax_lock:
                 busy = bool(tokenmax_state.get("active"))
                 if not busy:
@@ -767,12 +767,12 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 answered, failed = _tm.fan_out(
                     pool, msgs, picks, max_tokens=max_tokens, progress=on_progress
                 )
-                with tokenmax_lock:  # success: reflect the final, complete counts
+                with tokenmax_lock:                                               
                     tokenmax_state["done"] = total
                     tokenmax_state["answered"] = len(answered)
             finally:
-                # Always release the slot so the TUI stops throbbing — even if the swarm
-                # errored (then `done` keeps its last real value rather than overstating).
+                                                                                        
+                                                                                          
                 with tokenmax_lock:
                     tokenmax_state["active"] = False
             self._send(
@@ -787,7 +787,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
             )
 
         def _handle_messages(self, req: dict) -> None:
-            """Anthropic Messages API shim — lets Claude Code & friends use free models."""
+                                                                                           
             if not isinstance(req.get("messages"), list) or not req["messages"]:
                 self._anthropic_error(400, "'messages' must be a non-empty array")
                 return
@@ -797,9 +797,9 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 return
             display_model = req.get("model") or "auto"
             stream_deadline: float | None = None
-            # Genuine incremental streaming is safe only for text output. Tool
-            # use and rich content retain the completed-reply replay path below,
-            # which preserves their structured Anthropic event framing.
+                                                                              
+                                                                                
+                                                                       
             if req.get("stream") and _anthropic_text_streamable(req, chat):
                 stream_deadline = pool._clock() + self._text_stream_timeout(req)
                 if self._stream_messages_text(
@@ -853,7 +853,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 else:
                     self._anthropic_error(502, str(exc), "all_providers_exhausted")
                 return
-            # Record recent served
+                                  
             record_recent(
                 {"provider": reply.provider_id, "model": reply.model, "attempts": reply.attempts}
             )
@@ -870,13 +870,13 @@ def make_handler(pool: Pool, api_key: str | None = None):
             *,
             deadline: float,
         ) -> bool:
-            """Stream text as native Anthropic events.
+                                                      
 
-            Returns ``False`` only when streaming could not select an upstream
-            before the HTTP response was committed, allowing the caller to use
-            the existing buffered compatibility path. After commit, failures are
-            terminal Anthropic ``error`` events and never trigger provider retry.
-            """
+                                                                              
+                                                                              
+                                                                                
+                                                                                 
+               
             try:
                 gen, meta = self._open_text_stream(
                     req,
@@ -894,7 +894,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 return True
             except (NoProvidersConfigured, AllProvidersExhausted, StopIteration):
                 return False
-            except Exception:  # noqa: BLE001 - pre-commit buffered fallback is safe
+            except Exception:                                                       
                 return False
 
             provider_id = str(meta.get("provider", "auto")) if isinstance(meta, dict) else "auto"
@@ -942,7 +942,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     except StopIteration:
                         succeeded = True
                         break
-                    except Exception:  # noqa: BLE001 - upstream failed after commit
+                    except Exception:                                               
                         try:
                             self._write_named_sse(
                                 "error",
@@ -1021,8 +1021,8 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 self._error(400, "'input' is required", "invalid_request_error")
                 return
             requested = req.get("model")
-            # Resolve "auto" / "provider" / "provider/model" / bare model against
-            # the embedder providers, so a pinned embedder id is honored.
+                                                                                 
+                                                                         
             provider_filter = None
             model = None
             if isinstance(requested, str) and requested not in ("", "auto"):
@@ -1046,7 +1046,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
             self._send(200, _to_embeddings_response(reply))
 
         def _handle_transcription(self, raw: bytes, content_type: str) -> None:
-            """OpenAI /audio/transcriptions (multipart): file + model → {text}."""
+                                                                                  
             if "multipart/form-data" not in content_type.lower():
                 self._error(
                     400, "audio transcription requires multipart/form-data", "invalid_request_error"
@@ -1077,7 +1077,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     "invalid_request_error",
                 )
                 return
-            # Resolve "auto" / "provider" / "provider/model" against the transcriber providers.
+                                                                                               
             provider_filter = None
             model = None
             if requested and requested not in ("", "auto"):
@@ -1126,14 +1126,14 @@ def make_handler(pool: Pool, api_key: str | None = None):
             protocol: str | None = None,
             timeout: float | None = None,
         ):
-            """Shared: resolve model/params and call the pool. Returns a Reply or
-            sends an error response and returns None."""
+                                                                                 
+                                                        
             requested = req.get("model") or "auto"
             if not isinstance(requested, str):
                 self._error(400, "'model' must be a string", "invalid_request_error")
                 return None
             routing_override, requested = _routing_and_model(self.headers, requested)
-            requested = resolve_alias(requested, pool.env)  # gpt-4o-mini → free target
+            requested = resolve_alias(requested, pool.env)                             
             provider_filter, model_filter = _parse_model(requested, {p.id for p in pool.providers})
             try:
                 max_tokens = int(_max_tokens_value(req, 1024))
@@ -1179,9 +1179,9 @@ def make_handler(pool: Pool, api_key: str | None = None):
             except ContextWindowExceeded as exc:
                 self._error(413, str(exc), "context_length_exceeded")
             except AllProvidersExhausted as exc:
-                # If the pool failed because the request itself was rejected as a
-                # client error (non-retryable 4xx), surface that real status instead
-                # of a misleading generic 502.
+                                                                                 
+                                                                                    
+                                              
                 cs = getattr(exc, "client_status", None)
                 if isinstance(cs, int) and 400 <= cs < 500:
                     self._error(
@@ -1191,7 +1191,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     )
                 else:
                     self._error(502, str(exc), "all_providers_exhausted")
-            except SparrowError as exc:  # pragma: no cover - defensive
+            except SparrowError as exc:                                
                 self._error(500, str(exc), "sparrow_error")
             return None
 
@@ -1205,12 +1205,12 @@ def make_handler(pool: Pool, api_key: str | None = None):
             timeout: float | None = None,
             protocol: str | None = None,
         ):
-            """Select/fail over upstreams before any downstream SSE commit.
+                                                                           
 
-            ``Pool.stream_chat`` yields provider metadata only after it has obtained
-            the first upstream text delta. Consequently, once this method returns,
-            the caller can commit headers and must never attempt another provider.
-            """
+                                                                                    
+                                                                                  
+                                                                                  
+               
             requested = req.get("model") or "auto"
             if not isinstance(requested, str):
                 raise ValueError("'model' must be a string")
@@ -1257,7 +1257,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 if callable(closer):
                     try:
                         closer()
-                    except Exception:  # noqa: BLE001 - preserve the selection error
+                    except Exception:                                               
                         pass
                 raise
             return gen, meta
@@ -1283,8 +1283,8 @@ def make_handler(pool: Pool, api_key: str | None = None):
         def _write_named_sse(self, name: str, payload: dict) -> None:
             block = f"event: {name}\ndata: {json.dumps(payload)}\n\n"
             self.wfile.write(block.encode("utf-8"))
-            # BaseHTTPRequestHandler currently uses an unbuffered stream, but an
-            # explicit flush preserves incremental behavior if that ever changes.
+                                                                                
+                                                                                 
             self.wfile.flush()
 
         @staticmethod
@@ -1293,7 +1293,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
             if callable(closer):
                 try:
                     closer()
-                except Exception:  # noqa: BLE001 - connection cleanup is best-effort
+                except Exception:                                                    
                     pass
 
         def _handle_chat(self, req: dict) -> None:
@@ -1314,7 +1314,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     "invalid_request_error",
                 )
                 return
-            # True token streaming for plain chat; tools/stream falls back to buffered.
+                                                                                       
             if req.get("stream") and not tools and response_format is None:
                 self._stream_chat(req, norm)
                 return
@@ -1327,7 +1327,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
             )
             if reply is None:
                 return
-            # Record recent served
+                                  
             record_recent(
                 {"provider": reply.provider_id, "model": reply.model, "attempts": reply.attempts}
             )
@@ -1375,12 +1375,12 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     routing=routing_override,
                     task=task,
                 )
-                meta = next(gen)  # provider/model chosen, or raises before any bytes
+                meta = next(gen)                                                     
             except NoProvidersConfigured as exc:
                 self._error(503, str(exc), "no_providers")
                 return
             except ContextWindowExceeded as exc:
-                # input is too long for every model — fail loudly, don't retry buffered.
+                                                                                        
                 self._error(413, str(exc), "context_length_exceeded")
                 return
             except (AllProvidersExhausted, StopIteration) as exc:
@@ -1393,7 +1393,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                             "invalid_request_error",
                         )
                         return
-                # nothing streamable succeeded — fall back to a buffered completion
+                                                                                   
                 reply = self._resolve(
                     req,
                     norm,
@@ -1435,14 +1435,14 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 )
                 self.wfile.write(b"data: [DONE]\n\n")
                 self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError):  # pragma: no cover
-                pass  # client disconnected
-            except Exception as exc:  # noqa: BLE001
-                # Upstream failed AFTER the first token. Do NOT emit finish="stop" +
-                # [DONE] — that would make a truncated answer look complete to the
-                # client and hide the failure. Emit an SSE error event instead (the
-                # recognized streaming-error convention) and record the truncation.
-                # Headers are already sent, so an HTTP error status isn't possible.
+            except (BrokenPipeError, ConnectionResetError):                    
+                pass                       
+            except Exception as exc:                
+                                                                                    
+                                                                                  
+                                                                                   
+                                                                                   
+                                                                                   
                 pool.metrics.record_failure(
                     f"{provider_id}/{model_name}", f"stream truncated: {exc}"
                 )
@@ -1462,15 +1462,15 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 except (BrokenPipeError, ConnectionResetError, OSError):
                     pass
             finally:
-                gen.close()  # release the upstream stream even on early disconnect
-            # Record recent served (stream)
+                gen.close()                                                        
+                                           
             record_recent(
                 {"provider": provider_id, "model": model_name, "attempts": int(attempts)}
             )
 
         def _handle_responses(self, req: dict) -> None:
-            """Minimal OpenAI Responses API (/v1/responses) shim for Codex CLI
-            and other Responses-based agents."""
+                                                                              
+                                                
             messages = _responses_input_to_messages(req)
             if not messages:
                 self._error(400, "'input' is required", "invalid_request_error")
@@ -1480,9 +1480,9 @@ def make_handler(pool: Pool, api_key: str | None = None):
             except ValueError as exc:
                 self._error(400, str(exc), "invalid_request_error")
                 return
-            # Tool calls, image/rich input, structured output, and reasoning
-            # retain buffered replay so their complete structured items remain
-            # intact. Plain text uses genuine upstream-to-downstream streaming.
+                                                                            
+                                                                              
+                                                                               
             stream_deadline: float | None = None
             if req.get("stream") and _responses_text_streamable(req, messages, tools):
                 stream_deadline = pool._clock() + self._text_stream_timeout(req)
@@ -1521,13 +1521,13 @@ def make_handler(pool: Pool, api_key: str | None = None):
             *,
             deadline: float,
         ) -> bool:
-            """Stream text as native Responses events without replay buffering.
+                                                                               
 
-            Returns ``False`` only before headers/events are committed, allowing
-            the completed-reply compatibility path to handle providers without
-            streaming support. A post-commit upstream failure emits
-            ``response.failed`` and can never fall through to another provider.
-            """
+                                                                                
+                                                                              
+                                                                   
+                                                                               
+               
             try:
                 gen, meta = self._open_text_stream(
                     req,
@@ -1543,7 +1543,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 return True
             except (NoProvidersConfigured, AllProvidersExhausted, StopIteration):
                 return False
-            except Exception:  # noqa: BLE001 - pre-commit buffered fallback is safe
+            except Exception:                                                       
                 return False
 
             provider_id = str(meta.get("provider", "auto")) if isinstance(meta, dict) else "auto"
@@ -1623,7 +1623,7 @@ def make_handler(pool: Pool, api_key: str | None = None):
                     except StopIteration:
                         succeeded = True
                         break
-                    except Exception:  # noqa: BLE001 - upstream failed after commit
+                    except Exception:                                               
                         partial = "".join(text_parts)
                         try:
                             emit(
@@ -1727,14 +1727,14 @@ def make_handler(pool: Pool, api_key: str | None = None):
             return True
 
         def _send_sse(self, sse_blocks) -> None:
-            """Emit pre-formatted SSE blocks as a stream.
+                                                         
 
-            This is intentionally the *buffered* compatibility path: tools,
-            rich content, and structured responses resolve fully (with failover)
-            before their protocol events are replayed. Dedicated text-only paths
-            above stream upstream deltas incrementally instead. ``sse_blocks`` is
-            an iterable of already-encoded SSE strings.
-            """
+                                                                           
+                                                                                
+                                                                                
+                                                                                 
+                                                       
+               
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-cache")
@@ -1744,35 +1744,35 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 for block in sse_blocks:
                     self.wfile.write(block.encode())
                 self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError):  # pragma: no cover
+            except (BrokenPipeError, ConnectionResetError):                    
                 pass
-            except Exception:  # noqa: BLE001
-                # Headers (200 event-stream) are already sent. A generator error must
-                # NOT bubble to do_POST, which would write an HTTP status line into the
-                # middle of the open stream. Stop writing and let the (Connection:
-                # close) socket end the stream — terminator framing differs per route
-                # (chat [DONE] vs Responses typed events), so don't guess one here.
+            except Exception:                
+                                                                                     
+                                                                                       
+                                                                                  
+                                                                                     
+                                                                                   
                 pass
 
     return Handler
 
 
 def _parse_model(requested: object, provider_ids: set[str]):
-    """Map an OpenAI 'model' field to (provider_filter, model_filter).
+                                                                      
 
-    "auto"                  -> (None, None)        any provider/model
-    "groq"                  -> (["groq"], None)    any model on groq
-    "groq/llama-3.1-8b"     -> (["groq"], "llama-3.1-8b")
-    "openai/gpt-oss-120b"   -> (None, "openai/gpt-oss-120b")  (openai isn't a provider id;
-                               it's a catalog model name that happens to contain '/')
-    "llama-3.3-70b"         -> (None, "llama-3.3-70b")  model on any provider
-    """
+                                                                     
+                                                                    
+                                                         
+                                                                                          
+                                                                                     
+                                                                             
+       
     if not isinstance(requested, str) or not requested or requested == "auto":
         return None, None
     if "/" in requested:
         provider, _, model = requested.partition("/")
-        # Only treat as provider/model when the prefix is a real provider id —
-        # otherwise it's a bare model name that contains a slash.
+                                                                              
+                                                                 
         if provider in provider_ids:
             return [provider], model
     if requested in provider_ids:
@@ -1781,7 +1781,7 @@ def _parse_model(requested: object, provider_ids: set[str]):
 
 
 def _messages_are_text_only(messages: list[dict]) -> bool:
-    """Return whether history contains only textual roles/content."""
+                                                                     
     for message in messages:
         if message.get("role") == "tool" or message.get("tool_calls"):
             return False
@@ -1801,7 +1801,7 @@ def _messages_are_text_only(messages: list[dict]) -> bool:
 
 
 def _anthropic_text_streamable(req: dict, chat: dict) -> bool:
-    """Keep tools and rich Anthropic blocks on buffered structured replay."""
+                                                                             
     if chat.get("tools") or chat.get("tool_choice") is not None:
         return False
     system = req.get("system")
@@ -1838,7 +1838,7 @@ def _anthropic_text_streamable(req: dict, chat: dict) -> bool:
 
 
 def _responses_text_streamable(req: dict, messages: list[dict], tools) -> bool:
-    """Gate genuine Responses streaming to plain-text request/response shapes."""
+                                                                                 
     if tools or any(req.get(field) is not None for field in ("include", "reasoning", "modalities")):
         return False
     text_config = req.get("text")
@@ -1856,19 +1856,19 @@ def _responses_text_streamable(req: dict, messages: list[dict], tools) -> bool:
 
 
 def _content(message: dict) -> str:
-    """Flatten OpenAI content (string or array of parts) into plain text."""
+                                                                            
     content = message.get("content", "")
     if isinstance(content, str):
         return content
     if isinstance(content, list):
         return "".join(part.get("text", "") for part in content if isinstance(part, dict))
     if content is None:
-        return ""  # OpenAI uses content: null for assistant tool-call turns
+        return ""                                                           
     return str(content)
 
 
 def _normalize_messages(messages: list) -> list[dict]:
-    """Normalize roles while preserving multimodal and tool-calling content."""
+                                                                               
     out: list[dict] = []
     for m in messages:
         content = m.get("content")
@@ -1885,9 +1885,9 @@ def _normalize_messages(messages: list) -> list[dict]:
 
 
 def _header_safe(value: object) -> str:
-    """Strip control chars (CR/LF/...) so a provider/model name can never inject a
-    response header. Catalog validation already rejects these at load; this is
-    defense-in-depth for any value reaching an HTTP header."""
+                                                                                  
+                                                                              
+                                                              
     return re.sub(r"[\x00-\x1f\x7f]", "", str(value))
 
 
@@ -1923,42 +1923,42 @@ def _to_transcription_response(reply) -> dict:
 
 
 def _parse_multipart_form(content_type: str, body: bytes) -> dict:
-    """Minimal multipart/form-data parser (stdlib only — ``cgi`` is gone in 3.13).
+                                                                                  
 
-    Returns ``{name: str}`` for text fields and ``{name: (filename, bytes)}`` for file
-    parts. Raises ``ValueError`` on a missing/garbled boundary."""
+                                                                                      
+                                                                  
     m = re.search(r'boundary="?([^";]+)"?', content_type, re.IGNORECASE)
     if not m:
         raise ValueError("no boundary in Content-Type")
     boundary = m.group(1).strip().encode("latin-1")
-    # The RFC-2046 inter-part delimiter is CRLF + "--boundary". Anchor on it (rather than a
-    # bare "--boundary") so binary audio bytes that happen to contain "--boundary" can't be
-    # mistaken for a delimiter and silently truncate the upload. Prepend a CRLF so the very
-    # first delimiter (which has no preceding CRLF in the body) matches uniformly.
+                                                                                           
+                                                                                           
+                                                                                           
+                                                                                  
     segments = (b"\r\n" + body).split(b"\r\n--" + boundary)
-    # segments[0] is the preamble (normally empty); a well-formed body ends with the closing
-    # "--boundary--", so the LAST segment must begin with "--". Reject truncated/garbled bodies.
+                                                                                            
+                                                                                                
     if len(segments) < 2 or not segments[-1].startswith(b"--"):
         raise ValueError("missing closing multipart boundary")
     out: dict = {}
-    for seg in segments[1:-1]:  # drop the preamble and the trailing closing segment
-        seg = seg[2:] if seg.startswith(b"\r\n") else seg  # CRLF terminating the boundary line
+    for seg in segments[1:-1]:                                                      
+        seg = seg[2:] if seg.startswith(b"\r\n") else seg                                      
         hdr, sep, payload = seg.partition(b"\r\n\r\n")
         if not sep:
             continue
         headers = hdr.decode("latin-1", "replace")
-        # Negative lookbehind for a letter so this matches the `name=` parameter but NOT the
-        # `name` inside `filename=` — otherwise a part with only a filename would be accepted
-        # as a named field (and could masquerade as the required `file` field).
+                                                                                            
+                                                                                             
+                                                                               
         name_m = re.search(r'(?<![A-Za-z])name="([^"]*)"', headers, re.IGNORECASE)
         if not name_m:
             continue
         name = name_m.group(1)
         fn_m = re.search(r'filename="([^"]*)"', headers, re.IGNORECASE)
         if fn_m is not None:
-            out[name] = (fn_m.group(1), payload)  # file part → raw bytes
+            out[name] = (fn_m.group(1), payload)                         
         else:
-            out[name] = payload.decode("utf-8", "replace")  # text field
+            out[name] = payload.decode("utf-8", "replace")              
     return out
 
 
@@ -1984,7 +1984,7 @@ def _to_openai_response(reply) -> dict:
 
 
 def _dashboard_html(pool) -> str:
-    """A self-contained dashboard page (no JS framework, auto-refreshing)."""
+                                                                             
     import html as _html
 
     from . import __version__
@@ -2035,7 +2035,7 @@ def _dashboard_html(pool) -> str:
         f"{capacity_table_rows}</table>"
     )
 
-    # Measured latency / success, if any calls have been timed this run.
+                                                                        
     metrics_snap = pool.metrics.snapshot() if getattr(pool, "metrics", None) else {}
     measured = sorted(
         ((k, v) for k, v in metrics_snap.items() if v.ewma_ms is not None),
@@ -2378,8 +2378,6 @@ runButton.addEventListener('click', runBattle);
 countInput.addEventListener('input', updateBattleDisclosure);
 byId('forget-token').addEventListener('click', () => {
   showAuth('Token forgotten. Enter it again to reconnect.');
-  // An auth-free loopback proxy reconnects immediately; a keyed proxy returns
-  // 401 and leaves the prompt visible without retaining the old token.
   refreshDashboard().catch(() => {});
 });
 function selectPanel(name) {
@@ -2398,7 +2396,7 @@ setInterval(() => { if (!app.hidden) refreshDashboard().catch(() => {}); }, 5000
 
 
 def _browser_shell_csp() -> str:
-    """Hash-pin the only inline style and script; no external assets can execute."""
+                                                                                    
 
     def source_hash(source: str) -> str:
         digest = hashlib.sha256(source.encode("utf-8")).digest()
@@ -2418,7 +2416,7 @@ def _browser_shell_csp() -> str:
 
 
 def _browser_shell_html() -> str:
-    """Public, data-free dashboard/playground shell with closure-only auth."""
+                                                                              
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>sparrow</title><style>{_BROWSER_SHELL_STYLE}</style></head><body>
@@ -2459,7 +2457,7 @@ def _browser_shell_html() -> str:
 
 
 def _playground_html() -> str:
-    """Compatibility renderer for the unified self-contained browser shell."""
+                                                                              
     return _browser_shell_html()
 
 
@@ -2488,11 +2486,11 @@ def _chunk_block(
 
 
 def _sse_chunks(reply):
-    """Yield OpenAI chat.completion.chunk SSE blocks for a finished reply.
+                                                                          
 
-    Carries tool_calls (and the ``tool_calls`` finish_reason) when present, so a
-    streaming request that asked for tools doesn't silently lose them.
-    """
+                                                                                
+                                                                      
+       
     cid = f"chatcmpl-sparrow-{reply.provider_id}"
     model = f"{reply.provider_id}/{reply.model}"
     base = {
@@ -2517,7 +2515,7 @@ def _sse_chunks(reply):
             }
         )
     if tool_calls:
-        # OpenAI streaming deltas require a per-call `index` on each tool_call.
+                                                                               
         indexed = [{**tc, "index": i} for i, tc in enumerate(tool_calls)]
         yield block(
             {
@@ -2530,15 +2528,15 @@ def _sse_chunks(reply):
     yield "data: [DONE]\n\n"
 
 
-# ---- OpenAI Responses API (/v1/responses) shim — for Codex CLI & agents ------
+                                                                                
 
 
 def _responses_input_to_messages(req: dict) -> list[dict]:
-    """Convert a Responses request (`instructions` + `input`) to chat messages.
+                                                                               
 
-    `input` may be a plain string or a list of items, each with a `role` and
-    `content` that is a string or a list of typed parts ({type, text}).
-    """
+                                                                            
+                                                                       
+       
     messages: list[dict] = []
     instructions = req.get("instructions")
     if isinstance(instructions, str) and instructions:
@@ -2624,7 +2622,7 @@ def _responses_input_to_messages(req: dict) -> list[dict]:
 
 
 def _responses_tools_to_chat(req: dict) -> tuple[list[dict] | None, object | None]:
-    """Translate Responses function tools/tool choice to Chat Completions shape."""
+                                                                                   
 
     raw_tools = req.get("tools")
     raw_choice = req.get("tool_choice")
@@ -2744,7 +2742,7 @@ def _responses_live_text_object(
     status: str,
     error: dict | None = None,
 ) -> dict:
-    """Build the response snapshot carried by live Responses SSE terminals."""
+                                                                              
     finished = status == "completed"
     output = []
     if status != "in_progress":
@@ -2830,7 +2828,7 @@ def _to_responses_object(reply) -> dict:
         "max_output_tokens": None,
         "model": f"{reply.provider_id}/{reply.model}",
         "output": output,
-        "output_text": reply.text or "",  # string per the Responses schema (never null)
+        "output_text": reply.text or "",                                                
         "parallel_tool_calls": True,
         "previous_response_id": None,
         "reasoning": {"effort": None, "summary": None},
@@ -2853,7 +2851,7 @@ def _to_responses_object(reply) -> dict:
 
 
 def _responses_sse_events(reply):
-    """Yield Responses-API SSE blocks (typed events) for a finished reply."""
+                                                                             
     obj = _to_responses_object(reply)
     sequence_number = 0
 
@@ -2994,27 +2992,27 @@ def serve(
     port: int = 8080,
     api_key: str | None = None,
 ) -> ThreadingHTTPServer:
-    """Build the proxy server. If ``api_key`` is set (or ``SPARROW_PROXY_KEY``
-    is in the environment), POSTs must present ``Authorization: Bearer <key>``."""
+                                                                              
+                                                                                  
     if api_key is None:
         api_key = os.environ.get("SPARROW_PROXY_KEY") or None
     handler = make_handler(pool, api_key)
     httpd = _BoundedThreadingHTTPServer((host, port), handler)
     httpd.pool = pool
-    # Worker threads are daemons so a stuck request can't block process/server
-    # shutdown (Ctrl-C, container stop).
+                                                                              
+                                        
     httpd.daemon_threads = True
     return httpd
 
 
-_MAX_CONNECTIONS = 128  # cap concurrent worker threads/fds against a slowloris-style flood
-_CONNECTION_SLOT_WAIT_SECONDS = 0.25  # absorb normal worker turnover at the hard cap
+_MAX_CONNECTIONS = 128                                                                     
+_CONNECTION_SLOT_WAIT_SECONDS = 0.25                                                 
 
 
 class _BoundedThreadingHTTPServer(ThreadingHTTPServer):
-    """ThreadingHTTPServer with a hard cap on concurrent request threads, so a
-    flood of slow/trickle connections can't exhaust threads, fds, and memory.
-    Past the cap, new connections get a quick 503 and are dropped."""
+                                                                              
+                                                                             
+                                                                     
 
     daemon_threads = True
     request_queue_size = _MAX_CONNECTIONS
@@ -3032,24 +3030,24 @@ class _BoundedThreadingHTTPServer(ThreadingHTTPServer):
             super().server_close()
 
     def process_request(self, request, client_address):
-        # A client can receive its response just before the worker's ``finally``
-        # releases its slot. Give that normal rollover a short grace period so a
-        # pool exactly at the advertised cap does not spuriously reject the next
-        # request, while slow-connection floods still get a bounded, quick 503.
+                                                                                
+                                                                                
+                                                                                
+                                                                               
         if not self._slots.acquire(timeout=_CONNECTION_SLOT_WAIT_SECONDS):
             try:
                 request.sendall(
                     b"HTTP/1.1 503 Service Unavailable\r\n"
                     b"Connection: close\r\nContent-Length: 0\r\n\r\n"
                 )
-            except OSError:  # pragma: no cover - best-effort
+            except OSError:                                  
                 pass
             self.shutdown_request(request)
             return
         try:
             super().process_request(request, client_address)
         except BaseException:
-            # The worker thread never started, so it won't release the slot — do it here.
+                                                                                         
             self._slots.release()
             raise
 

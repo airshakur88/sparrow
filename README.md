@@ -155,14 +155,6 @@ sparrow start --port 8080
 
 The local HTTP gateway is available at `http://127.0.0.1:8080` by default.
 
-## MCP
-
-To run Sparrow as an MCP server over stdio:
-
-```sh
-sparrow mcp
-```
-
 ## Catalog
 
 The built-in catalog currently contains 21 providers and 180 models (167
@@ -177,7 +169,7 @@ providers require their corresponding API key.
 | `kilo` | `openrouter/free`, `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, `poolside/laguna-s-2.1:free`, `kilo-auto/free`, `stepfun/step-3.7-flash:free`, `nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`, `cohere/north-mini-code:free`, `dots-studio/dots-3-note-preview:free`, `inclusionai/ling-3.0-flash-fin:free`, `liquid/lfm-2.5-2.6b:free`, `nvidia/nemotron-3.5-lightning:free` |
 | `gemini` | `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3.6-flash`, `gemini-3.5-flash`, `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`, `gemma-4-31b-it`, `gemma-4-26b-a4b-it` |
 | `groq` | `qwen/qwen3.8-27b`, `qwen/qwen3.6-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `groq/compound`, `groq/compound-mini`, `meta-llama/llama-prompt-guard-2-86m`, `meta-llama/llama-prompt-guard-2-22m` |
-| `nvidia` | `deepseek-ai/deepseek-v4-pro-0813`, `deepseek-ai/deepseek-v4-flash-0731`, `moonshotai/kimi-k3`, `moonshotai/kimi-k2.6`, `nvidia/nemotron-3-ultra-550b-a55b`, `nvidia/nemotron-3-super-120b-a12b`, `poolside/laguna-xs-2.1`, `poolside/laguna-s-2.1`, `01-ai/yi-large`, `openai/gpt-oss-20b`, `writer/palmyra-fin-70b-32k`, `nvidia/llama3-chatqa-1.5-70b`, `meta/llama-3.1-70b-instruct`, `qwen/qwen3-coder-30b-a3b-instruct`, `mistralai/mistral-large-2-instruct` |
+| `nvidia` | `mistralai/mistral-nemotron`, `nvidia/nemotron-3-ultra-550b-a55b`, `nvidia/nemotron-ocr-v2`, `moonshotai/kimi-k3`, `deepseek-ai/deepseek-v4-flash-0731`, `nvidia/nemotron-3.5-lightning-30b-a3b`, `meta/muse-glimmer-30b`, `poolside/laguna-xs-2.1` |
 | `openrouter` | `nvidia/nemotron-3-ultra-550b-a55b:free`, `nvidia/nemotron-3.5-lightning:free`, `inclusionai/ling-3.0-flash-fin:free`, `inclusionai/ling-3.0-flash-sante:free`, `nex-agi/nex-n2.5-pro:free`, `thinkingmachines/inkling:free`, `thinkingmachines/inkling-small:free`, `poolside/laguna-s-2.1:free`, `cohere/north-mini-code:free`, `google/gemma-4-31b-it:free`, `openai/gpt-oss-120b:free`, `openai/gpt-oss-20b:free`, `qwen/qwen3-coder-30b-a3b-instruct:free`, `qwen/qwen3-vl-8b-thinking:free`, `z-ai/glm-4.5-air:free` |
 | `ollama` | `deepseek-v4-pro:0813`, `deepseek-v4-flash:0731`, `deepseek-v4-pro`, `deepseek-v4-flash`, `minimax-m3`, `kimi-k3`, `gpt-oss:120b`, `gpt-oss:20b`, `gpt-oss-120b`, `gpt-oss-20b`, `nemotron-3-ultra`, `qwen3.5-397b` |
 | `github_models` | `gpt-5`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4o`, `o4-mini`, `deepseek-r1`, `llama-4-scout-17b-16e-instruct`, `llama-3.3-70b-instruct`, `mistral-small-3.1`, `Phi-4`, `Mistral-large-2411`, `AI21-Jamba-1.5-Large` |
@@ -189,7 +181,7 @@ providers require their corresponding API key.
 | `chutes` | `deepseek-ai/DeepSeek-R1`, `meta-llama/Meta-Llama-3.1-70B-Instruct` |
 | `agnes` | `agnes-2.0-flash`, `agnes-1.5-flash`, `agnes-image-2.0-flash`, `agnes-image-2.1-flash`, `agnes-video-v2.0` |
 | `aion` | `aion-labs/aion-2.0`, `aion-labs/aion-3.0`, `aion-labs/aion-3.0-mini`, `aion-labs/aion-rp-llama-3.1-8b` |
-| `opencode` | `nemotron-3-ultra-free`, `nemotron-3.5-lightning-free`, `big-pickle`, `mimo-v2.5-free`, `ling-3.0-flash-fin-free`, `muse-spark-1.3-contributor-free` |
+| `opencode` | `nemotron-3-ultra-free`, `nemotron-3.5-lightning-free`, `big-pickle`, `mimo-v2.5-free`, `ling-3.0-flash-fin-free` |
 | `bai` | `GLM-5.3-Flash`, `Qwen3.8-Flash`, `MiMo-V2.5`, `Hy3` |
 | `free_ai` | `dynamic-catalog` |
 

@@ -38,7 +38,7 @@ def test_async_parity_uses_explicit_managed_secret_and_one_transport_call(provid
             env={},
             post=lambda *_args: client_module.HTTPResult(500, {}, ""),
             quota=quota,
-            credential_manager=manager,  # type: ignore[arg-type]
+            credential_manager=manager,                          
         ),
         apost=apost,
     )
@@ -69,7 +69,7 @@ def test_async_reservation_worker_finishes_before_cancellation(providers, quota)
                 env={},
                 post=lambda *_args: client_module.HTTPResult(500, {}, ""),
                 quota=quota,
-                credential_manager=Manager(),  # type: ignore[arg-type]
+                credential_manager=Manager(),                          
             ),
             apost=lambda *_args: _empty_async_result(),
         )

@@ -1,4 +1,4 @@
-"""Markdown, HTML, and cost-audit rendering for run records."""
+                                                               
 
 from __future__ import annotations
 
@@ -130,9 +130,9 @@ def render_html_report(record: RunRecord) -> str:
             sections.append("</section>")
     sections.extend(["</main></body>", "</html>"])
     rendered = "\n".join(sections)
-    # Defense in depth for self-contained reports: untrusted text may contain
-    # URLs or CSP snippets even after escaping, so neutralize external-reference
-    # tokens in the final document as well.
+                                                                             
+                                                                                
+                                           
     return _neutralize_external_references(rendered)
 
 
@@ -202,7 +202,7 @@ def open_report_path(
     target = path.resolve()
     try:
         opened = bool(opener(target.as_uri()))
-    except Exception:  # noqa: BLE001 - opening is best effort
+    except Exception:                                         
         opened = False
     if not opened:
         print(target, file=stream)

@@ -31,7 +31,7 @@ def test_readiness_reports_cooling_credentials_without_reserving(providers, tmp_
         {"PRIMARY": "managed-secret"},
         CredentialStore(tmp_path / "state.db"),
     )
-    manager._store.set_cooldown("alpha", "key", "primary", 9_999_999_999_999, None)  # type: ignore[arg-type]
+    manager._store.set_cooldown("alpha", "key", "primary", 9_999_999_999_999, None)                          
 
     snapshot = readiness_snapshot(
         providers[:1], env={}, quota={}, cooldowns={}, credential_manager=manager

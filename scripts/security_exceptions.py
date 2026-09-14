@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate and render the repository's time-bounded scanner exceptions."""
+                                                                           
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ _IGNORED_TREE_PARTS = frozenset(
 
 
 class ExceptionPolicyError(ValueError):
-    """The exception registry is malformed, expired, or too permissive."""
+    pass
 
 
 @dataclass(frozen=True)
@@ -71,7 +71,7 @@ def load_exceptions(
     *,
     today: date | None = None,
 ) -> tuple[SecurityException, ...]:
-    """Load a strict, bounded registry and reject expired entries."""
+                                                                     
     today = today or datetime.now(UTC).date()
     try:
         raw = path.read_bytes()
@@ -153,7 +153,7 @@ def load_exceptions(
 
 
 def find_native_suppressions(root: Path = ROOT) -> tuple[str, ...]:
-    """Find in-repository directives that would bypass mandatory scanners."""
+                                                                             
     findings: list[str] = []
     python_paths = sorted(
         path

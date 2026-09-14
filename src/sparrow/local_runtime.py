@@ -1,10 +1,10 @@
-"""Explicit, loopback-only discovery and import for local OpenAI runtimes.
+                                                                          
 
-This module deliberately does not scan the LAN, inspect processes, read runtime
-credentials, or enable a route automatically.  Discovery is a bounded GET to a
-small known list (or one explicit literal-loopback URL); import creates pin-only
-user-catalog rows marked for reversible removal.
-"""
+                                                                               
+                                                                              
+                                                                                
+                                                
+   
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ _LOCK_POLL_INTERVAL = 0.01
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, *args: object, **kwargs: object) -> None:  # noqa: D102
+    def redirect_request(self, *args: object, **kwargs: object) -> None:              
         return None
 
 
@@ -83,7 +83,7 @@ class LocalRuntime:
 
 @dataclass
 class _CatalogAccess:
-    """An open catalog transaction anchored to its original parent directory."""
+                                                                                
 
     path: Path
     parent_fd: int | None
@@ -92,12 +92,12 @@ class _CatalogAccess:
 
 
 def canonical_loopback_base_url(raw: str) -> str:
-    """Return a canonical OpenAI base URL for a literal loopback endpoint.
+                                                                          
 
-    Hostnames are intentionally rejected, including ``localhost``.  Accepting
-    only canonical literal IPs removes DNS/rebinding ambiguity and alternate
-    numeric spellings which different resolvers interpret inconsistently.
-    """
+                                                                             
+                                                                            
+                                                                         
+       
 
     if not isinstance(raw, str) or raw != raw.strip() or _CONTROL.search(raw):
         raise ValueError("local runtime requires a canonical literal loopback URL")
@@ -167,7 +167,7 @@ def discover_runtime(
     base_url: str | None = None,
     timeout: float = 1.0,
 ) -> LocalRuntime:
-    """Perform one bounded, credential-free ``GET /models`` on loopback."""
+                                                                           
 
     provider_id, label, endpoint = _runtime_identity(name, base_url)
     timeout = max(_MIN_TIMEOUT, min(_MAX_TIMEOUT, float(timeout)))
@@ -216,7 +216,7 @@ def discover_runtime(
 def discover_known_runtimes(
     *, timeout: float = 1.0
 ) -> tuple[list[LocalRuntime], list[dict[str, object]]]:
-    """Probe the fixed three-runtime list sequentially and return sanitized results."""
+                                                                                       
 
     found: list[LocalRuntime] = []
     unavailable: list[dict[str, object]] = []
@@ -288,7 +288,7 @@ def _render(runtime: LocalRuntime) -> str:
 
 
 def _assert_safe_catalog_path(path: Path) -> None:
-    """Require directory parents and a missing or regular, non-symlink catalog."""
+                                                                                  
 
     absolute_parent = Path(os.path.abspath(os.fspath(path.parent)))
     for component in reversed((absolute_parent, *absolute_parent.parents)):
@@ -312,7 +312,7 @@ def _assert_safe_catalog_path(path: Path) -> None:
 
 def _lock_file(fd: int) -> None:
     deadline = time.monotonic() + _LOCK_TIMEOUT
-    if _WINDOWS:  # pragma: no cover - exercised on Windows
+    if _WINDOWS:                                           
         import importlib
 
         msvcrt = importlib.import_module("msvcrt")
@@ -342,7 +342,7 @@ def _lock_file(fd: int) -> None:
 
 
 def _unlock_file(fd: int) -> None:
-    if _WINDOWS:  # pragma: no cover - exercised on Windows
+    if _WINDOWS:                                           
         import importlib
 
         msvcrt = importlib.import_module("msvcrt")
@@ -355,7 +355,7 @@ def _unlock_file(fd: int) -> None:
 
 
 def _validate_lock_directory(path: Path, uid: int) -> Path:
-    """Require a uid-owned directory whose ancestor chain other users cannot replace."""
+                                                                                        
 
     try:
         details = path.lstat()
@@ -392,7 +392,7 @@ def _runtime_lock_directory(uid: int) -> Path:
 
 
 def _catalog_path_lock_directory(path: Path, uid: int) -> Path:
-    """Find an existing private ancestor for passwd-less container users."""
+                                                                            
 
     absolute_parent = Path(os.path.abspath(os.fspath(path.parent)))
     for candidate in (absolute_parent, *absolute_parent.parents):
@@ -407,7 +407,7 @@ def _catalog_path_lock_directory(path: Path, uid: int) -> Path:
 
 
 def _canonical_lock_directory(path: Path | None = None) -> Path:
-    """Resolve a stable per-user directory without trusting process environment."""
+                                                                                   
 
     uid = os.geteuid()
     runtime = _runtime_lock_directory(uid)
@@ -435,9 +435,9 @@ def _canonical_lock_directory(path: Path | None = None) -> Path:
 
 @contextmanager
 def _stable_catalog_lock(path: Path | None = None) -> Iterator[None]:
-    """Use one environment-independent, private lock domain for this POSIX uid."""
+                                                                                  
 
-    if _WINDOWS:  # pragma: no cover - Windows holds the sibling file open
+    if _WINDOWS:                                                          
         yield
         return
     directory = _canonical_lock_directory(path)
@@ -455,8 +455,8 @@ def _stable_catalog_lock(path: Path | None = None) -> Iterator[None]:
             or not os.path.samestat(opened_directory, named_directory)
         ):
             raise ValueError("local runtime catalog lock directory changed")
-        # The directory descriptor anchors path resolution; an O_RDWR 0600 file
-        # avoids NFS directory-lock limits and locks opened by unrelated uids.
+                                                                               
+                                                                              
         lock_flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_CLOEXEC", 0)
         lock_flags |= getattr(os, "O_NOFOLLOW", 0)
         lock_fd = os.open(lock_name, lock_flags, 0o600, dir_fd=directory_fd)
@@ -493,7 +493,7 @@ def _stable_catalog_lock(path: Path | None = None) -> Iterator[None]:
 
 
 def _assert_catalog_parent(access: _CatalogAccess) -> None:
-    if access.parent_fd is None:  # pragma: no cover - exercised on Windows
+    if access.parent_fd is None:                                           
         _assert_safe_catalog_path(access.path)
         return
     try:
@@ -506,7 +506,7 @@ def _assert_catalog_parent(access: _CatalogAccess) -> None:
 
 def _named_catalog_stat(access: _CatalogAccess) -> os.stat_result | None:
     try:
-        if access.parent_fd is None:  # pragma: no cover - exercised on Windows
+        if access.parent_fd is None:                                           
             return access.path.lstat()
         return os.stat(
             access.path.name,
@@ -536,12 +536,12 @@ def _assert_catalog_generation(access: _CatalogAccess) -> None:
 
 @contextmanager
 def _catalog_lock(path: Path) -> Iterator[_CatalogAccess]:
-    """Lock globally, then retain the original catalog directory descriptor.
+                                                                            
 
-        Locks coordinate sparrow writers. Generation checks also reject observed
-    substitutions by other writers; portable filesystems do not offer a fully
-    atomic compare-and-replace for an uncooperative same-directory attacker.
-    """
+                                                                                
+                                                                             
+                                                                            
+       
 
     path = Path(os.path.abspath(os.fspath(path)))
     directory_fd = -1
@@ -567,7 +567,7 @@ def _catalog_lock(path: Path) -> Iterator[_CatalogAccess]:
                 _assert_catalog_parent(access)
                 _assert_safe_catalog_path(path)
                 _assert_catalog_parent(access)
-            else:  # pragma: no cover - exercised on Windows
+            else:                                           
                 access = _CatalogAccess(path, None)
 
             try:
@@ -637,7 +637,7 @@ def _read_catalog(access: _CatalogAccess) -> str:
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     flags |= getattr(os, "O_NONBLOCK", 0)
     try:
-        if access.parent_fd is None:  # pragma: no cover - exercised on Windows
+        if access.parent_fd is None:                                           
             fd = os.open(access.path, flags)
         else:
             fd = os.open(access.path.name, flags, dir_fd=access.parent_fd)
@@ -692,7 +692,7 @@ def _provider_ids(text: str) -> tuple[str, ...]:
     )
 
 
-def _atomic_write_windows(access: _CatalogAccess, text: str) -> None:  # pragma: no cover
+def _atomic_write_windows(access: _CatalogAccess, text: str) -> None:                    
     path = access.path
     _assert_safe_catalog_path(path)
     fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
@@ -740,7 +740,7 @@ def _open_temporary_at(access: _CatalogAccess) -> tuple[int, str]:
 
 def _atomic_write(access: _CatalogAccess, text: str) -> None:
     _assert_catalog_generation(access)
-    if access.parent_fd is None:  # pragma: no cover - exercised on Windows
+    if access.parent_fd is None:                                           
         _atomic_write_windows(access, text)
         return
     _assert_catalog_parent(access)
@@ -775,14 +775,14 @@ def _atomic_write(access: _CatalogAccess, text: str) -> None:
 
 
 def import_runtime(runtime: LocalRuntime, *, path: Path | None = None) -> Path:
-    """Atomically add/update one managed pin-only local runtime provider."""
+                                                                            
 
     path = path or default_local_catalog_path()
     block = _render(runtime)
     pattern = _managed_pattern(runtime.provider_id)
     with _catalog_lock(path) as access:
         existing = _read_catalog(access)
-        _provider_ids(existing)  # Validate the complete file before changing it.
+        _provider_ids(existing)                                                  
         match = pattern.search(existing)
         unmanaged = pattern.sub("", existing, count=1) if match is not None else existing
         if runtime.provider_id in _provider_ids(unmanaged):
@@ -792,13 +792,13 @@ def import_runtime(runtime: LocalRuntime, *, path: Path | None = None) -> Path:
         else:
             separator = "" if not existing else ("\n" if existing.endswith("\n") else "\n\n")
             updated = existing + separator + block
-        # Re-assert the private-file contract even for an idempotent re-import.
+                                                                               
         _atomic_write(access, updated)
     return path
 
 
 def remove_runtime(provider_id: str, *, path: Path | None = None) -> bool:
-    """Remove only a block previously written by :func:`import_runtime`."""
+                                                                           
 
     if not _SAFE_ID.fullmatch(provider_id):
         raise ValueError("unsafe local provider id")

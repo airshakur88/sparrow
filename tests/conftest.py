@@ -1,4 +1,4 @@
-"""Shared fixtures: fake providers, env, and a fixed-clock quota store."""
+                                                                          
 
 from __future__ import annotations
 
@@ -55,5 +55,5 @@ def env() -> dict[str, str]:
 
 @pytest.fixture
 def quota(tmp_path) -> QuotaStore:
-    clock = lambda: datetime(2026, 6, 2, 12, 0, tzinfo=UTC)  # noqa: E731
+    clock = lambda: datetime(2026, 6, 2, 12, 0, tzinfo=UTC)              
     return QuotaStore(path=tmp_path / "quota.json", clock=clock)

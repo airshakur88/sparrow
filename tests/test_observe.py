@@ -1,4 +1,4 @@
-"""Observability: the on_event hook and SPARROW_LOG handler setup."""
+                                                                     
 
 from __future__ import annotations
 
@@ -24,12 +24,12 @@ def test_hook_receives_success_event(providers, env, quota):
 
 def test_hook_sees_error_and_exhausted(providers, env, quota):
     events = []
-    # every provider 500s → failover exhausts
+                                             
     post = make_post({".test": (500, {"error": "down"})})
     pool = Pool(providers, quota=quota, env=env, post=post, on_event=events.append)
     try:
         pool.chat([{"role": "user", "content": "hi"}], providers=["alpha"])
-    except Exception:  # noqa: BLE001
+    except Exception:                
         pass
     kinds = [e["event"] for e in events]
     assert "error" in kinds
@@ -42,7 +42,7 @@ def test_a_broken_hook_does_not_break_routing(providers, env, quota):
 
     pool = Pool(providers, quota=quota, env=env, post=make_post({}), on_event=boom)
     reply = pool.chat([{"role": "user", "content": "hi"}])
-    assert reply.text == "ok"  # completion still succeeds despite the bad hook
+    assert reply.text == "ok"                                                  
 
 
 def test_cache_events_are_emitted(providers, env, quota, tmp_path):
@@ -64,7 +64,7 @@ def test_cache_events_are_emitted(providers, env, quota, tmp_path):
 
 
 def test_emit_without_hook_is_noop():
-    emit(None, "attempt", target="x")  # must not raise
+    emit(None, "attempt", target="x")                  
 
 
 def test_configure_logging_from_env_attaches_one_handler():
@@ -74,11 +74,11 @@ def test_configure_logging_from_env_attaches_one_handler():
         assert logger.level == logging.DEBUG
         n = len([h for h in logger.handlers if getattr(h, "_sparrow", False)])
         assert n == 1
-        # idempotent: calling again doesn't add a second handler
+                                                                
         configure_logging_from_env({"SPARROW_LOG": "info"})
         n2 = len([h for h in logger.handlers if getattr(h, "_sparrow", False)])
         assert n2 == 1
-        assert configure_logging_from_env({}) is False  # unset → no-op
+        assert configure_logging_from_env({}) is False                 
     finally:
         logger.handlers = before
         logger.setLevel(logging.WARNING)

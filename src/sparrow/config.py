@@ -1,15 +1,15 @@
-"""Configuration loading: provider catalog + user overrides.
+                                                            
 
-Resolution order for the provider catalog:
+                                          
 
-1. The packaged ``providers.toml`` (the built-in catalog).
-2. A user catalog at ``$SPARROW_CONFIG`` or
-   ``~/.config/sparrow/providers.toml`` if present. Providers with the same
-   ``id`` override the built-ins; new ids are appended.
+                                                          
+                                           
+                                                                           
+                                                       
 
-Only providers whose API key (and any extra env vars) are present in the
-environment are returned by :func:`configured_providers`.
-"""
+                                                                        
+                                                         
+   
 
 from __future__ import annotations
 
@@ -30,18 +30,18 @@ from .models import Model, Provider
 _PACKAGED_CATALOG = Path(__file__).with_name("providers.toml")
 _log = logging.getLogger("sparrow")
 
-# Control characters (incl. CR/LF/TAB) are never valid in a base_url, provider id,
-# or model name — they enable response-header injection (those values are echoed
-# into X-Sparrow-* headers) and request smuggling.
+                                                                                  
+                                                                                
+                                                  
 _CTRL_RE = re.compile(r"[\x00-\x1f\x7f]")
 _ENV_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 _TOML_LOCATION_RE = re.compile(r"at line (\d+), column (\d+)")
 
 
 def _allow_local_providers() -> bool:
-    """Opt-in (SPARROW_ALLOW_LOCAL_PROVIDERS) to permit loopback/private
-    base_urls — for users who deliberately run self-hosted providers (Ollama,
-    LM Studio, a LAN gateway)."""
+                                                                        
+                                                                             
+                                 
     return os.environ.get("SPARROW_ALLOW_LOCAL_PROVIDERS", "").strip().lower() in (
         "1",
         "true",
@@ -55,11 +55,11 @@ def _safe_name(value: str) -> bool:
 
 
 def _safe_base_url(url: str, *, allow_local: bool) -> bool:
-    """Reject base_urls that would turn a configured provider key into an SSRF /
-    key-exfil vector: non-http(s) schemes, embedded credentials, control chars, and
-    (unless opted in) loopback / private / link-local / reserved targets. A bare
-    hostname that isn't a literal private IP is allowed (public DNS); DNS-rebinding
-    is out of scope for a parse-time check."""
+                                                                                
+                                                                                   
+                                                                                
+                                                                                   
+                                              
     if not url or _CTRL_RE.search(url) or any(c.isspace() for c in url):
         return False
     try:
@@ -69,20 +69,20 @@ def _safe_base_url(url: str, *, allow_local: bool) -> bool:
     if parts.scheme not in ("http", "https") or parts.username or parts.password:
         return False
     host = parts.hostname
-    # Non-ASCII hosts (fullwidth digits/dots, unicode look-alikes like "ⓛocalhost")
-    # and percent-encoded hosts are IDNA/resolver-normalized to a real target at
-    # connect time and can map to loopback — legit provider hosts are plain ASCII.
+                                                                                   
+                                                                                
+                                                                                  
     if not host or not host.isascii() or "%" in host or "\\" in host:
         return False
     if allow_local:
         return True
-    host = host.rstrip(".")  # a trailing dot (FQDN root) must not bypass the checks
+    host = host.rstrip(".")                                                         
     low = host.lower()
     if not low or low == "localhost" or low.endswith((".local", ".internal", ".localhost")):
         return False
-    # Canonicalize the host to a literal IP if it is one in ANY form a resolver
-    # accepts — dotted, but also decimal (2130706433), hex (0x7f000001), octal, and
-    # short forms (127.1) — so those can't smuggle a loopback/private target past us.
+                                                                               
+                                                                                   
+                                                                                     
     candidate = host
     try:
         candidate = socket.inet_ntoa(socket.inet_aton(host))
@@ -91,9 +91,9 @@ def _safe_base_url(url: str, *, allow_local: bool) -> bool:
     try:
         ip = ipaddress.ip_address(candidate)
     except ValueError:
-        return True  # a real hostname, not any literal-IP form
-    # An IPv4-mapped IPv6 (::ffff:127.0.0.1) reflects the embedded IPv4's reachability;
-    # normalize so the check is correct on every Python, not only 3.11+ (bpo-46203).
+        return True                                            
+                                                                                       
+                                                                                    
     mapped = getattr(ip, "ipv4_mapped", None)
     if mapped is not None:
         ip = mapped
@@ -108,12 +108,12 @@ def _safe_base_url(url: str, *, allow_local: bool) -> bool:
 
 
 def _safe_local_catalog_url(url: str) -> bool:
-    """True only for a canonical literal loopback URL trusted by local import.
+                                                                              
 
-    ``local = true`` is intentionally narrower than the legacy environment opt-in:
-    it cannot authorize localhost DNS, LAN/private addresses, alternate IPv4
-    spellings, or IPv4-mapped IPv6 addresses.
-    """
+                                                                                  
+                                                                            
+                                             
+       
     if not url or _CTRL_RE.search(url) or any(c.isspace() for c in url):
         return False
     try:
@@ -134,15 +134,15 @@ def _safe_local_catalog_url(url: str) -> bool:
         return False
     if getattr(ip, "ipv4_mapped", None) is not None or not ip.is_loopback:
         return False
-    # Reject resolver-compatible shorthand/non-canonical text such as 127.1 and
-    # verbose IPv6. urlsplit removes brackets, so ::1 is the one canonical v6 form.
+                                                                               
+                                                                                   
     return host == str(ip)
 
 
-# Common OpenAI / Anthropic model names mapped to a free target, so existing
-# code (which hardcodes e.g. "gpt-4o-mini") works against sparrow unchanged.
-# "auto" means "let the pool pick the least-used free provider". Override or add
-# your own with env vars, e.g.  SPARROW_ALIAS_gpt-4o-mini=groq/llama-3.3-70b-versatile
+                                                                            
+                                                                            
+                                                                                
+                                                                                      
 _DEFAULT_ALIASES: dict[str, str] = {
     "gpt-4o-mini": "auto",
     "gpt-4o": "auto",
@@ -170,12 +170,12 @@ def _norm(s: str) -> str:
 
 
 def resolve_alias(name: str, env: dict[str, str] | None = None) -> str:
-    """Map a well-known model name to its free target. User env overrides win;
-    unknown names pass through unchanged."""
+                                                                              
+                                            
     env = env if env is not None else dict(os.environ)
     target = _norm(name)
-    # Sorted so that when two env vars normalize to the same alias, the winner is
-    # deterministic rather than dict-iteration-order dependent.
+                                                                                 
+                                                               
     for key, value in sorted(env.items()):
         if key.startswith(_ALIAS_ENV_PREFIX) and _norm(key[len(_ALIAS_ENV_PREFIX) :]) == target:
             return value or name
@@ -186,8 +186,8 @@ def resolve_alias(name: str, env: dict[str, str] | None = None) -> str:
         return str(cfg_aliases[name])
     if name in _DEFAULT_ALIASES:
         return _DEFAULT_ALIASES[name]
-    # Prefix fallback: any unknown OpenAI/Anthropic frontier name routes to a free
-    # model, so e.g. Claude Code's "claude-sonnet-4-..." just works.
+                                                                                  
+                                                                    
     low = name.lower()
     if low.startswith(("claude-", "claude ", "gpt-", "o1-", "o3-", "o4-", "chatgpt")):
         return "auto"
@@ -197,10 +197,10 @@ def resolve_alias(name: str, env: dict[str, str] | None = None) -> str:
 def split_provider_model(
     requested: str, provider_ids: set[str] | None
 ) -> tuple[list[str] | None, str | None]:
-    """Split ``provider/model`` into ``([provider], model)`` — but ONLY when the prefix is a
-    real provider id. Otherwise the whole string is a model name that legitimately contains a
-    slash (OpenRouter / Hugging Face / Kilo ids like ``Qwen/Qwen3-Coder`` or
-    ``deepseek-ai/DeepSeek-R1``), so it must not be mis-split into provider ``Qwen``."""
+                                                                                            
+                                                                                             
+                                                                            
+                                                                                        
     if requested and provider_ids and "/" in requested:
         prov, _, mdl = requested.partition("/")
         if prov in provider_ids:
@@ -209,29 +209,29 @@ def split_provider_model(
 
 
 def known_aliases(env: dict[str, str] | None = None) -> list[str]:
-    """Model aliases understood by :func:`resolve_alias`.
+                                                         
 
-    Used by gateway model discovery so clients can choose a well-known Claude or
-    OpenAI model name and still have the proxy resolve it to the free pool.
-    """
+                                                                                
+                                                                           
+       
     env = env if env is not None else dict(os.environ)
     return list(_known_aliases_cached(_alias_cache_key(env)))
 
 
 def _alias_cache_key(env: dict[str, str]) -> tuple:
-    """Stable cache key for alias discovery.
+                                            
 
-    Only alias-related env vars and config-file path metadata affect
-    ``known_aliases``. File mtime/size keep gateway discovery fresh after config
-    edits without re-reading TOML on every `/v1/models` request.
-    """
+                                                                    
+                                                                                
+                                                                
+       
     path = _config_file_path(env)
     config_sig = _path_signature(path)
     env_aliases = tuple(sorted((k, v) for k, v in env.items() if k.startswith(_ALIAS_ENV_PREFIX)))
     return config_sig, env_aliases
 
 
-# LRU eviction is fine here: a dropped entry recomputes from env/config metadata.
+                                                                                 
 @lru_cache(maxsize=64)
 def _known_aliases_cached(cache_key: tuple) -> tuple[str, ...]:
     config_sig, env_aliases = cache_key
@@ -264,7 +264,7 @@ def _config_file_path(env: dict[str, str]) -> Path | None:
 
 
 def _path_signature(path: Path | None) -> tuple:
-    """Return a cache identity that also detects same-size, same-timestamp writes."""
+                                                                                     
     if path is None:
         return ("", False, 0, 0, 0, 0, 0, 0, "")
     normalized = path.expanduser().resolve(strict=False)
@@ -291,7 +291,7 @@ def _path_signature(path: Path | None) -> tuple:
 
 @lru_cache(maxsize=128)
 def _read_toml_cached(signature: tuple) -> tuple[dict, tuple | None]:
-    """Parse one immutable path/stat version, retaining sanitized error metadata."""
+                                                                                    
     path_str, exists, *_ = signature
     if not path_str or not exists:
         return {}, None
@@ -319,13 +319,13 @@ def _read_toml_cached(signature: tuple) -> tuple[dict, tuple | None]:
 
 
 def load_config_file(env: dict[str, str] | None = None) -> dict:
-    """Load the optional config.toml. Returns {} if none exists.
+                                                                
 
-    Recognized tables:
-        [keys]      PROVIDER_API_KEY = "..."   (provider key env vars)
-        [aliases]   "gpt-4o-mini" = "auto"     (model name -> free target)
-        [settings]  cooldown_seconds = 60, proxy_key = "...", host/port
-    """
+                      
+                                                                      
+                                                                          
+                                                                       
+       
     env = env if env is not None else dict(os.environ)
     path = _config_file_path(env)
     if path is None:
@@ -346,7 +346,7 @@ def load_config_file(env: dict[str, str] | None = None) -> dict:
 
 
 def config_diagnostics(env: dict[str, str] | None = None) -> list[dict[str, object]]:
-    """Strict, secret-safe diagnostics for the otherwise tolerant config loader."""
+                                                                                   
     env = env if env is not None else dict(os.environ)
     path = _config_file_path(env)
     if path is None:
@@ -386,8 +386,8 @@ def config_diagnostics(env: dict[str, str] | None = None) -> list[dict[str, obje
 
 
 def effective_env(env: dict[str, str] | None = None) -> dict[str, str]:
-    """Real environment with config-file ``[keys]`` filled in underneath, so
-    actual env vars always win but config.toml provides defaults."""
+                                                                            
+                                                                    
     env = env if env is not None else dict(os.environ)
     keys = load_config_file(env).get("keys", {})
     if not isinstance(keys, dict):
@@ -398,14 +398,14 @@ def effective_env(env: dict[str, str] | None = None) -> dict[str, str]:
 
 
 def settings(env: dict[str, str] | None = None) -> dict:
-    """The ``[settings]`` table from config.toml (or {})."""
+                                                            
     value = load_config_file(env).get("settings", {})
     return value if isinstance(value, dict) else {}
 
 
 def _maybe_int(value, *, positive: bool = False) -> int | None:
-    """Best-effort int from possibly-bad input; None on failure (and, when
-    ``positive``, on a non-positive value — so ``context = 0`` reads as unknown)."""
+                                                                          
+                                                                                    
     try:
         n = int(value)
     except (TypeError, ValueError):
@@ -416,9 +416,9 @@ def _maybe_int(value, *, positive: bool = False) -> int | None:
 
 
 def _parse_rows(rows: list, *, allow_local: bool | None = None) -> list[Provider]:
-    """Parse provider rows tolerantly: a malformed row (missing id/base_url/name,
-    bad int) is skipped, not fatal, so one typo in a user catalog can't brick the
-    whole tool. The packaged catalog is valid, so this is a no-op for it."""
+                                                                                 
+                                                                                 
+                                                                            
     providers: list[Provider] = []
     allow_local = _allow_local_providers() if allow_local is None else allow_local
     for row in rows:
@@ -427,9 +427,9 @@ def _parse_rows(rows: list, *, allow_local: bool | None = None) -> list[Provider
         provider_id = str(row["id"])
         base_url = str(row["base_url"]).rstrip("/")
         local_catalog = row.get("local") is True
-        # Security: a bad base_url turns this provider's API key into an SSRF /
-        # key-exfil POST; a control char in the id/name injects response headers.
-        # Drop the offending row (tolerant, like a malformed row) and warn.
+                                                                               
+                                                                                 
+                                                                           
         if not _safe_name(provider_id):
             _log.warning("skipping provider with unsafe id %r", provider_id)
             continue
@@ -500,7 +500,7 @@ def _parsed_section_cached(
 
 
 def load_embedders(path: Path | None = None) -> list[Provider]:
-    """Load the embedder catalog ([[embedder]] rows). Same shape as providers."""
+                                                                                 
     base_path = path or _PACKAGED_CATALOG
     return list(
         _parsed_section_cached(
@@ -518,8 +518,8 @@ def configured_embedders(
 
 
 def load_transcribers(path: Path | None = None) -> list[Provider]:
-    """Load the transcriber catalog ([[transcriber]] rows). Same shape as providers —
-    audio→text (Whisper) endpoints on the OpenAI /audio/transcriptions surface."""
+                                                                                     
+                                                                                  
     base_path = path or _PACKAGED_CATALOG
     return list(
         _parsed_section_cached(
@@ -537,7 +537,7 @@ def configured_transcribers(
 
 
 def load_catalog(path: Path | None = None) -> list[Provider]:
-    """Load the full provider catalog (built-ins + user overrides)."""
+                                                                      
     base_path = path or _PACKAGED_CATALOG
     allow_local = _allow_local_providers()
     providers = list(
@@ -564,7 +564,7 @@ def configured_providers(
     catalog: list[Provider] | None = None,
     env: dict[str, str] | None = None,
 ) -> list[Provider]:
-    """Return only providers that have a usable API key in the environment."""
+                                                                              
     catalog = catalog if catalog is not None else load_catalog()
     env = env if env is not None else effective_env()
     return [p for p in catalog if p.is_configured(env)]

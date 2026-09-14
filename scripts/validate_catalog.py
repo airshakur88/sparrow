@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate bundled provider catalog structure without making network calls."""
+                                                                               
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ _SRC = Path(__file__).resolve().parent.parent / "src"
 if _SRC.is_dir():
     sys.path.insert(0, str(_SRC))
 
-from sparrow.catalog_validation import validate_catalog  # noqa: E402
+from sparrow.catalog_validation import validate_catalog              
 
 
 def main() -> int:

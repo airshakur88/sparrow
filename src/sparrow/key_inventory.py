@@ -1,9 +1,9 @@
-"""Safe local inventory of manually-created provider keys.
+                                                          
 
-The inventory is metadata only by default: it tracks which provider keys exist,
-where they live (env var name), optional dates and notes. Secret values should
-stay in env vars, config.toml, a shell profile, or a real secret manager.
-"""
+                                                                               
+                                                                              
+                                                                         
+   
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ _SECRET_PATTERNS = [
 
 
 def redact_secrets(text: str) -> str:
-    """Return text with common API-key shapes redacted."""
+                                                          
     redacted = text
     for pattern in _SECRET_PATTERNS:
         redacted = pattern.sub("[redacted]", redacted)
@@ -98,7 +98,7 @@ def _optional_date(value: Any) -> str | None:
 
 
 def load_inventory(path: Path | None = None) -> list[KeyRecord]:
-    """Load [[keys]] records from TOML. Missing or invalid files return []."""
+                                                                              
     path = path or default_inventory_path()
     try:
         with path.open("rb") as fh:
@@ -123,11 +123,11 @@ def records_by_provider(records: list[KeyRecord]) -> dict[str, list[KeyRecord]]:
 
 
 def default_config_path() -> Path:
-    """Return the config.toml path used for [keys] values.
+                                                          
 
-    SPARROW_CONFIG_FILE points to config.toml. SPARROW_CONFIG is reserved
-    for the user provider catalog, matching sparrow.config.
-    """
+                                                                         
+                                                           
+       
     override = os.environ.get("SPARROW_CONFIG_FILE")
     if override:
         return Path(override).expanduser()
@@ -135,7 +135,7 @@ def default_config_path() -> Path:
 
 
 def _restrict_owner_read_write(fd: int) -> None:
-    """Best-effort 0600 permission narrowing for an open secret file descriptor."""
+                                                                                   
     fchmod = getattr(os, "fchmod", None)
     if not callable(fchmod):
         return
@@ -146,11 +146,11 @@ def _restrict_owner_read_write(fd: int) -> None:
 
 
 def upsert_config_key(env_var: str, value: str, path: Path | None = None) -> Path:
-    """Write one [keys] value to config.toml and return the path.
+                                                                 
 
-    This small writer preserves existing top-level tables that we understand,
-    but does not preserve comments. It is used by the interactive CLI helper.
-    """
+                                                                             
+                                                                             
+       
     path = path or default_config_path()
     data: dict[str, dict] = {}
     try:
@@ -163,23 +163,23 @@ def upsert_config_key(env_var: str, value: str, path: Path | None = None) -> Pat
     keys[env_var] = value
     data["keys"] = keys
     path.parent.mkdir(parents=True, exist_ok=True)
-    # Open at 0o600 *before* writing, so the secret bytes never exist at a
-    # world-readable mode (closes the create-then-chmod TOCTOU window). fchmod
-    # also narrows an already-existing file, which O_CREAT's mode would not touch.
+                                                                          
+                                                                              
+                                                                                  
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
-        fh = os.fdopen(fd, "w", encoding="utf-8")  # takes ownership of fd
+        fh = os.fdopen(fd, "w", encoding="utf-8")                         
     except BaseException:
-        os.close(fd)  # fdopen failed — close the raw fd ourselves
+        os.close(fd)                                              
         raise
-    with fh:  # closes fd on exit
-        _restrict_owner_read_write(fd)  # narrow an already-existing file too
+    with fh:                     
+        _restrict_owner_read_write(fd)                                       
         fh.write(dump_simple_toml(data))
     return path
 
 
 def append_inventory_record(record: KeyRecord, path: Path | None = None) -> Path:
-    """Append a metadata record to keys.toml unless the same provider/env exists."""
+                                                                                    
     path = path or default_inventory_path()
     records = load_inventory(path)
     exists = any(r.provider == record.provider and r.env_var == record.env_var for r in records)

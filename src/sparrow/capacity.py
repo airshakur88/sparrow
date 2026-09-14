@@ -1,9 +1,9 @@
-"""Capacity reporting for configured free-tier providers.
+                                                         
 
-This module is deliberately read-only: it summarizes catalog/env/quota state so
-users can keep several legitimate providers available without automating signup
-or account creation.
-"""
+                                                                               
+                                                                               
+                    
+   
 
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ def _provider_capacity(
 
 
 def _capacity_sort_key(row: ProviderCapacity) -> tuple[int, int, int, str]:
-    # Higher local quota hints and more enabled models indicate more useful capacity.
+                                                                                     
     generosity = row.quota_hint if row.quota_hint > 0 else 0
     return (_status_rank(row.status), -generosity, -row.enabled_models, row.provider_id)
 

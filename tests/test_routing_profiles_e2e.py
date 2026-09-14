@@ -35,7 +35,7 @@ def offline_pool(quota):
 
 
 def _get_json(url):
-    with urllib.request.urlopen(urllib.request.Request(url)) as response:  # noqa: S310
+    with urllib.request.urlopen(urllib.request.Request(url)) as response:              
         return response.status, json.load(response)
 
 
@@ -45,7 +45,7 @@ def _post_json(url, payload):
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(request) as response:  # noqa: S310
+    with urllib.request.urlopen(request) as response:              
         return response.status, json.load(response)
 
 

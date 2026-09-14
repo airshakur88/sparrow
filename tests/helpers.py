@@ -1,4 +1,4 @@
-"""Test helpers: a fake `post` transport and canned response bodies."""
+                                                                       
 
 from __future__ import annotations
 
@@ -20,11 +20,11 @@ def gemini_body(text: str) -> dict:
 
 
 def make_stream_post(script=None):
-    """Fake streaming transport: (url, headers, body, timeout) -> (status, lines).
+                                                                                  
 
-    ``script`` maps url-substring -> (status, [deltas]) or [deltas]. Default:
-    200 with a single "ok" content delta.
-    """
+                                                                             
+                                         
+       
     import json as _json
 
     calls: list[dict] = []
@@ -51,12 +51,12 @@ def make_stream_post(script=None):
 
 
 def make_post(script):
-    """Build a fake `post` callable for the client/router.
+                                                          
 
-    ``script`` maps a URL substring -> (status, body) or a callable
-    (url, headers, body) -> (status, body). Unmatched URLs return 200 with a
-    generic "ok" completion so tests can assert on routing.
-    """
+                                                                   
+                                                                            
+                                                           
+       
     calls: list[dict] = []
 
     def post(url, headers, json_body, timeout):

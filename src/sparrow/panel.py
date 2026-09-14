@@ -1,10 +1,10 @@
-"""Shared bounded multi-model panel helpers.
+                                            
 
-This module powers the "second opinion" surfaces: CLI, MCP, and future battle
-or recipe flows. It is deliberately smaller than tokenmax: panels ask a few
-diverse models, keep structured per-model records, and treat synthesis as a
-non-fatal bonus.
-"""
+                                                                             
+                                                                           
+                                                                           
+                
+   
 
 from __future__ import annotations
 
@@ -98,13 +98,13 @@ def select_panel_targets(
     providers: Iterable[str] | None = None,
     task: str | None = None,
 ) -> list[Any]:
-    """Pick a small, diverse set of targets for a second-opinion panel.
+                                                                       
 
-    The selector first prefers one target per provider and, when two or more
-    model families are detectable, one target per family. If all candidates
-    collapse to one family or no family can be detected, it falls back to the
-    existing distinct-provider behavior used by the old MCP panel.
-    """
+                                                                            
+                                                                           
+                                                                             
+                                                                  
+       
 
     limit = clamp_panel_count(n)
     candidates = pool.rank_targets(
@@ -222,7 +222,7 @@ def run_panel(
                 latency_ms=latency_ms,
                 cached=bool(getattr(reply, "cached", False)),
             )
-        except Exception as exc:  # noqa: BLE001 - one opinion failing must not abort the panel
+        except Exception as exc:                                                               
             latency_ms = round((time.monotonic() - started) * 1000)
             return PanelAnswer(
                 provider_id=provider_id,
@@ -274,7 +274,7 @@ def target_family(target: Any) -> str | None:
 
 
 def model_family(name: str) -> str | None:
-    """Return a coarse model family label for panel diversity decisions."""
+                                                                           
     normalized = normalize_model_name(name)
     match = re.match(r"[a-z]+", normalized)
     family = match.group(0) if match else ""
@@ -310,7 +310,7 @@ def _synthesize(
             model=reply.model,
             text=reply.text,
         )
-    except Exception as exc:  # noqa: BLE001 - synthesis is a bonus, never fatal
+    except Exception as exc:                                                    
         return PanelSynthesis(
             provider_id=None,
             model=None,

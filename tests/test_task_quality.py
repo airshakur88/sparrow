@@ -1,4 +1,4 @@
-"""Task classification and provenance-bearing semantic-quality evidence."""
+                                                                           
 
 from __future__ import annotations
 

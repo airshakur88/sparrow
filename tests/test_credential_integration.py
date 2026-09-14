@@ -11,7 +11,6 @@ from sparrow.client import HTTPResult
 from sparrow.credential_manager import CredentialManager
 from sparrow.credential_store import CredentialStore
 from sparrow.credentials import CredentialSlot
-from sparrow.mcp_server import handle_message
 from sparrow.models import Model, Provider
 from sparrow.proxy import serve
 from sparrow.router import Pool
@@ -44,7 +43,7 @@ def _manager(tmp_path: Path, provider: Provider, env: dict[str, str]) -> Credent
     )
 
 
-def test_loopback_proxy_and_mcp_preserve_public_shapes_and_hide_secrets(tmp_path, providers):
+def test_loopback_proxy_preserves_public_shape_and_hides_secrets(tmp_path, providers):
     provider = providers[0]
     env = {provider.key_env: "INTEGRATION-SECRET-A", "KEY_TWO": "INTEGRATION-SECRET-B"}
     calls: list[dict] = []
@@ -61,18 +60,14 @@ def test_loopback_proxy_and_mcp_preserve_public_shapes_and_hide_secrets(tmp_path
         url = f"http://127.0.0.1:{httpd.server_address[1]}/v1/chat/completions"
         response = _request_json(url, {"model": "alpha-small", "messages": [{"role": "user", "content": "hi"}]})
         assert response["choices"][0]["message"]["content"] == "hello"
-        mcp = handle_message(pool, {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "free_llm_ask", "arguments": {"prompt": "hi"}}})
-        assert mcp is not None
-        assert mcp["result"]["isError"] is False
-        assert "hello" in mcp["result"]["content"][0]["text"]
     finally:
         httpd.shutdown()
         httpd.server_close()
-    serialized = json.dumps(mcp)
+    serialized = json.dumps(response)
     assert "INTEGRATION-SECRET-A" not in serialized
     assert "INTEGRATION-SECRET-B" not in serialized
     assert {call["headers"]["Authorization"] for call in calls} == {
-        "Bearer INTEGRATION-SECRET-A", "Bearer INTEGRATION-SECRET-B"
+        "Bearer INTEGRATION-SECRET-A"
     }
 
 

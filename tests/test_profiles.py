@@ -125,7 +125,7 @@ def _profile(name: str, cost_class: str) -> Profile:
         client_kind="openai",
         base_url="http://localhost:8080/v1",
         model_family="auto",
-        cost_class=cost_class,  # type: ignore[arg-type]
+        cost_class=cost_class,                          
         role_map={"critic": "test role"},
         config_snippets={"shell": "echo test"},
         doctor_checks=(DoctorCheck("url", "models", "http://localhost:8080", "/v1/models"),),
@@ -151,7 +151,7 @@ def test_resolver_never_silently_selects_paid_only_profile():
 
 
 def test_profile_doctor_dry_run_has_no_network_calls(monkeypatch, capsys):
-    def fail_network(*_args, **_kwargs):  # pragma: no cover - should never run
+    def fail_network(*_args, **_kwargs):                                       
         raise AssertionError("dry-run should not call the network")
 
     monkeypatch.setattr("sparrow.profiles.urllib.request.urlopen", fail_network)
@@ -164,10 +164,10 @@ def test_profile_doctor_dry_run_has_no_network_calls(monkeypatch, capsys):
 
 
 class _ModelsHandler(BaseHTTPRequestHandler):
-    def log_message(self, format, *_args):  # noqa: A002
+    def log_message(self, format, *_args):              
         return
 
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):              
         if self.path == "/v1/models":
             body = json.dumps({"object": "list", "data": []}).encode()
             self.send_response(200)
@@ -203,7 +203,7 @@ def test_profile_doctor_hermes_warns_when_auth_cannot_be_verified(monkeypatch, c
     monkeypatch.delenv("SPARROW_PROXY_KEY", raising=False)
 
     class _LockedModelsHandler(_ModelsHandler):
-        def do_GET(self):  # noqa: N802
+        def do_GET(self):              
             self.send_response(401)
             self.end_headers()
 
@@ -234,7 +234,7 @@ def test_profile_doctor_sends_configured_proxy_key_and_requires_2xx(
     seen = []
 
     class _AuthenticatedModelsHandler(_ModelsHandler):
-        def do_GET(self):  # noqa: N802
+        def do_GET(self):              
             seen.append(self.headers.get("Authorization"))
             if self.headers.get("Authorization") != f"Bearer {secret}":
                 self.send_response(401)
@@ -262,7 +262,7 @@ def test_profile_doctor_sends_configured_proxy_key_and_requires_2xx(
 def test_profile_doctor_authenticated_claude_uses_non_inference_probe(
     tmp_path, monkeypatch, capsys
 ):
-    """A healthy authenticated proxy must be checkable without invoking a model."""
+                                                                                   
     monkeypatch.setattr("sparrow.profiles.shutil.which", lambda name: f"/fake/{name}")
     secret = "claude-doctor-proxy-secret"
     config = tmp_path / "config.toml"
@@ -272,7 +272,7 @@ def test_profile_doctor_authenticated_claude_uses_non_inference_probe(
     seen_posts = []
 
     class _AuthenticatedClaudeProxy(_ModelsHandler):
-        def do_GET(self):  # noqa: N802
+        def do_GET(self):              
             seen_gets.append((self.path, self.headers.get("Authorization")))
             if self.headers.get("Authorization") != f"Bearer {secret}":
                 self.send_response(401)
@@ -280,7 +280,7 @@ def test_profile_doctor_authenticated_claude_uses_non_inference_probe(
                 return
             super().do_GET()
 
-        def do_POST(self):  # noqa: N802
+        def do_POST(self):              
             seen_posts.append((self.path, self.headers.get("Authorization")))
             self.send_response(400)
             self.end_headers()
@@ -303,7 +303,7 @@ def test_profile_doctor_authenticated_claude_uses_non_inference_probe(
 
 
 def test_profile_doctor_default_opener_never_uses_environment_proxies(monkeypatch):
-    """A configured proxy bearer must travel directly to the selected endpoint."""
+                                                                                  
     import urllib.request
 
     from sparrow.profiles import _build_doctor_opener
@@ -336,7 +336,7 @@ def test_profile_doctor_rejected_configured_proxy_key_is_failure(
     monkeypatch.setenv("SPARROW_CONFIG_FILE", str(config))
 
     class _RejectingModelsHandler(_ModelsHandler):
-        def do_GET(self):  # noqa: N802
+        def do_GET(self):              
             self.send_response(403)
             self.end_headers()
 

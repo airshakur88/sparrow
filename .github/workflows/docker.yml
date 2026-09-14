@@ -11,7 +11,7 @@ jobs:
       contents: read
       security-events: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -30,7 +30,7 @@ jobs:
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: "3.14"
 
@@ -67,21 +67,21 @@ jobs:
           python3 scripts/security_exceptions.py ids trivy > .trivyignore.generated
 
       - name: Set up pinned Buildx and BuildKit
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
         with:
           version: v0.36.1
           driver-opts: >-
             image=moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
 
       - name: Build exact release image archive
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
         with:
           context: .
           tags: sparrow:release-scan-${{ github.sha }}
           outputs: type=docker,dest=/tmp/sparrow-image.tar
 
       - name: Fail on high or critical image vulnerabilities
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           input: /tmp/sparrow-image.tar
           format: table
@@ -126,7 +126,7 @@ jobs:
           sha256sum sparrow-image.tar > sparrow-image.tar.sha256
 
       - name: Upload exact scanned image
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: scanned-release-image-${{ github.sha }}
           path: |
@@ -146,13 +146,13 @@ jobs:
       packages: write
     steps:
       - name: Download exact scanned image
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           name: scanned-release-image-${{ github.sha }}
           path: /tmp/scanned-release-image
 
       - name: Set up pinned Buildx and BuildKit
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e
         with:
           version: v0.36.1
           driver-opts: >-
@@ -166,7 +166,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
         with:
           images: ghcr.io/${{ github.repository }}
           flavor: |
@@ -175,7 +175,7 @@ jobs:
             type=semver,pattern={{version}}
 
       - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -225,7 +225,7 @@ jobs:
           done
 
       - name: Generate downloadable image SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610
         with:
           image: ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}
           format: spdx-json
@@ -235,14 +235,14 @@ jobs:
           upload-release-assets: false
 
       - name: Attest image provenance
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
       - name: Attest image SBOM
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.push.outputs.digest }}

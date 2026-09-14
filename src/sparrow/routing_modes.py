@@ -1,9 +1,9 @@
-"""Shared routing-mode normalization.
+                                     
 
-These helpers keep the library, proxy, and MCP server in sync: a misspelled mode
-falls back to the pool default, while public aliases such as ``auto`` mean
-"do not override the pool default".
-"""
+                                                                                
+                                                                          
+                                   
+   
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ _ROUTING_SET = frozenset(ROUTING_MODES)
 
 
 def normalize_routing_mode(value: str | None, default: str = "fair") -> str:
-    """Return a valid internal routing mode, falling back to ``default``."""
+                                                                            
     mode = value.strip().lower() if isinstance(value, str) else ""
     if mode in _ROUTING_SET:
         return mode
@@ -44,7 +44,7 @@ def normalize_routing_mode(value: str | None, default: str = "fair") -> str:
 
 
 def routing_override(value: object) -> str | None:
-    """Return a valid override mode, or ``None`` for ``auto``/unknown values."""
+                                                                                
     if not isinstance(value, str):
         return None
     mode = value.strip().lower()

@@ -1,4 +1,4 @@
-"""Battle helpers: bounded model comparison on top of the panel primitive."""
+                                                                             
 
 from __future__ import annotations
 

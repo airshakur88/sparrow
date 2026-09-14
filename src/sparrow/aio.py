@@ -1,16 +1,16 @@
-"""Async API: :class:`AsyncPool` mirrors :class:`~sparrow.Pool` over httpx.AsyncClient.
+                                                                                       
 
-    from sparrow import AsyncPool
+                                 
 
-    async with AsyncPool.from_default_config() as pool:
-        reply = await pool.aask("Explain CAP theorem in one sentence.")
-        print(reply.text)
+                                                       
+                                                                       
+                         
 
-It shares the sync Pool's routing, quota, cooldown, metrics, and (opt-in) response
-cache — only the HTTP I/O is async. A single ``httpx.AsyncClient`` is created lazily
-and reused for the pool's lifetime; close it with ``await pool.aclose()`` or an
-``async with``. If used across multiple event loops the client is recreated per loop.
-"""
+                                                                                  
+                                                                                    
+                                                                               
+                                                                                     
+   
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ from .router import (
 from .routing_modes import normalize_routing_mode
 from .task_quality import TASK_GENERAL, resolve_task, validate_task
 
-#: An async transport: ``await apost(url, headers, json_body, timeout) -> HTTPResult``.
+                                                                                       
 AsyncPostFn = Callable[[str, dict, dict, float], Awaitable["_client.HTTPResult"]]
 
 
@@ -77,24 +77,24 @@ async def _aread_capped_response(chunks, deadline: float, timeout: float) -> tup
 
 
 class AsyncPool:
-    """Async counterpart to :class:`~sparrow.Pool`.
+                                                   
 
-    Wraps a sync ``Pool`` for all configuration and bookkeeping; pass ``apost`` to
-    inject a transport (the test suite does this to avoid the network).
-    """
+                                                                                  
+                                                                       
+       
 
     def __init__(self, pool: Pool, *, apost: AsyncPostFn | None = None):
         self._pool = pool
         self._apost_fn = apost
-        self._aclient = None  # lazy httpx.AsyncClient
-        self._aclient_loop = None  # the loop the client is bound to
-        self._aclient_lock = asyncio.Lock()  # serialize lazy create/close
+        self._aclient = None                          
+        self._aclient_loop = None                                   
+        self._aclient_lock = asyncio.Lock()                               
 
     @classmethod
     def from_default_config(cls, **kwargs) -> AsyncPool:
         return cls(Pool.from_default_config(**kwargs))
 
-    # ---- expose the underlying pool's config -------------------------
+                                                                        
     @property
     def providers(self) -> list[Provider]:
         return self._pool.providers
@@ -115,18 +115,18 @@ class AsyncPool:
     def quota(self):
         return self._pool.quota
 
-    # ---- client lifecycle --------------------------------------------
+                                                                        
     async def _client_obj(self):
         import httpx
 
         running = asyncio.get_running_loop()
         async with self._aclient_lock:
-            # An AsyncClient is bound to the loop that created it; if we're now on
-            # a different loop (e.g. a second asyncio.run), drop the stale one.
+                                                                                  
+                                                                               
             if self._aclient is not None and self._aclient_loop is not running:
                 try:
                     await self._aclient.aclose()
-                except Exception:  # noqa: BLE001 — old loop may be closed
+                except Exception:                                         
                     pass
                 self._aclient = None
             if self._aclient is None:
@@ -135,9 +135,9 @@ class AsyncPool:
                     limits=httpx.Limits(
                         max_keepalive_connections=20, max_connections=100, keepalive_expiry=30.0
                     ),
-                    # Keep provider credentials on the validated origin. A public
-                    # provider URL could otherwise redirect to a loopback/private
-                    # target and receive the Authorization header.
+                                                                                 
+                                                                                 
+                                                                  
                     follow_redirects=False,
                 )
                 self._aclient_loop = running
@@ -219,7 +219,7 @@ class AsyncPool:
                     await asyncio.sleep(delay)
                     continue
             return result
-        if last_exc is not None:  # pragma: no cover - loop structure guard
+        if last_exc is not None:                                           
             raise last_exc
         if last_result is not None:
             return last_result
@@ -242,7 +242,7 @@ class AsyncPool:
             await asyncio.shield(operation)
             raise
 
-    # ---- per-target async dispatch -----------------------------------
+                                                                        
     async def _acall(
         self,
         provider: Provider,
@@ -284,9 +284,9 @@ class AsyncPool:
                 max_transport_attempts=max_transport_attempts,
             )
         if provider.adapter not in ("openai", "cloudflare"):
-            # A plugin-registered (sync) adapter — run it off the event loop so it
-            # behaves identically to the sync Pool. Unknown names fall through to
-            # the native async openai shape (matching client._resolve_adapter).
+                                                                                  
+                                                                                 
+                                                                               
             from .plugins import registered_adapters
 
             if provider.adapter in registered_adapters():
@@ -428,7 +428,7 @@ class AsyncPool:
             completion_tokens=usage.get("candidatesTokenCount"),
         )
 
-    # ---- entrypoints --------------------------------------------------
+                                                                         
     async def aask(self, prompt: str, *, system: str | None = None, **kwargs) -> Reply:
         messages: list[dict] = []
         if system:
@@ -452,10 +452,10 @@ class AsyncPool:
         routing: str | None = None,
         task: str | None = None,
     ) -> Reply:
-        """Async failover completion — same routing/cache/metrics as :meth:`Pool.chat`.
+                                                                                       
 
-        ``timeout`` is one overall deadline shared by every failover attempt.
-        """
+                                                                             
+           
         p = self._pool
         if not p.providers:
             raise NoProvidersConfigured("no provider has an API key set")
@@ -497,7 +497,7 @@ class AsyncPool:
                 protocol=protocol,
                 task=resolved_task,
             )
-            hit = await asyncio.to_thread(p._cache.get, cache_key)  # blocking sqlite off-loop
+            hit = await asyncio.to_thread(p._cache.get, cache_key)                            
             feature_cache_eligible = (
                 hit is not None
                 and (
@@ -695,8 +695,8 @@ class AsyncPool:
                 if account_exhausted:
                     p._mark_account_backoff(target.provider.id, p._clock())
                     unavailable_providers.add(target.provider.id)
-                # Any non-context failure (incl. a rate-limit, which might have fit)
-                # means "too long" isn't provably the whole story — stay generic.
+                                                                                    
+                                                                                 
                 non_ctx_failure = True
                 if not exc.retryable and not account_exhausted and client_error is None:
                     client_error = exc
@@ -713,7 +713,7 @@ class AsyncPool:
                 emit(p._on_event, "error", target=target.name, reason=str(exc))
                 attempts.append((target.name, str(exc)))
                 continue
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:                
                 non_ctx_failure = True
                 if selection is not None and manager is not None:
                     failure = classify_credential_failure(
@@ -766,8 +766,8 @@ class AsyncPool:
                 latency_ms=round(latency_ms, 1),
                 attempts=len(attempts) + 1,
             )
-            # Blocking flock/sqlite — run off the event loop so contention can't
-            # stall other in-flight async requests.
+                                                                                
+                                                   
             await asyncio.to_thread(p.quota.record, target.provider.id, target.model)
             reply.attempts = len(attempts) + 1
             await asyncio.to_thread(

@@ -1,4 +1,4 @@
-"""config.toml loading: keys, aliases, settings."""
+                                                   
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def test_no_config_file_is_empty():
 
 def test_keys_fill_under_env(tmp_path):
     env = _write(tmp_path, '[keys]\nGROQ_API_KEY = "from-file"\nCEREBRAS_API_KEY = "from-file"\n')
-    env["CEREBRAS_API_KEY"] = "from-env"  # real env wins
+    env["CEREBRAS_API_KEY"] = "from-env"                 
     merged = effective_env(env)
     assert merged["GROQ_API_KEY"] == "from-file"
     assert merged["CEREBRAS_API_KEY"] == "from-env"

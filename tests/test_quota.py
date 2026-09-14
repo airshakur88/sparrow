@@ -1,4 +1,4 @@
-"""QuotaStore persistence + UTC-day reset."""
+                                             
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def _quota_process_record(path: str, amount: int, gate) -> None:
 
 
 def _store(tmp_path, day):
-    clock = lambda: datetime(2026, 6, day, 12, 0, tzinfo=UTC)  # noqa: E731
+    clock = lambda: datetime(2026, 6, day, 12, 0, tzinfo=UTC)              
     return QuotaStore(path=tmp_path / "q.json", clock=clock)
 
 
@@ -47,7 +47,7 @@ def test_persists_across_instances(tmp_path):
 
 def test_resets_at_utc_midnight(tmp_path):
     _store(tmp_path, 2).record("groq", "m", 7)
-    fresh = _store(tmp_path, 3)  # next UTC day
+    fresh = _store(tmp_path, 3)                
     assert fresh.used("groq", "m") == 0
 
 
@@ -56,7 +56,7 @@ def test_over_budget(tmp_path):
     s.record("groq", "m", 3)
     assert s.over_budget("groq", "m", rpd=3) is True
     assert s.over_budget("groq", "m", rpd=5) is False
-    assert s.over_budget("groq", "m", rpd=0) is False  # 0 = unmetered hint
+    assert s.over_budget("groq", "m", rpd=0) is False                      
 
 
 def test_snapshot(tmp_path):
@@ -68,15 +68,15 @@ def test_snapshot(tmp_path):
 
 
 def test_record_merges_concurrent_external_writes(tmp_path):
-    # Two stores share the file (as the proxy + a CLI process would). An increment
-    # from store B must not clobber an increment store A persisted in between —
-    # record() reloads under a cross-process lock before writing.
+                                                                                  
+                                                                               
+                                                                 
     a = _store(tmp_path, 2)
     b = _store(tmp_path, 2)
-    a.record("groq", "m", 1)  # A writes groq::m = 1
-    b.record("cerebras", "n", 1)  # B records its own key — must preserve A's
+    a.record("groq", "m", 1)                        
+    b.record("cerebras", "n", 1)                                             
     assert b.snapshot() == {"groq::m": 1, "cerebras::n": 1}
-    # and A sees B's write after a reload
+                                         
     assert a.snapshot() == {"groq::m": 1, "cerebras::n": 1}
 
 
@@ -124,7 +124,7 @@ def test_batched_flush_failure_keeps_pending_visible(tmp_path, monkeypatch):
     s.record("groq", "m", 2)
     with monkeypatch.context() as m:
         m.setattr(s, "_save", lambda: (_ for _ in ()).throw(OSError("disk full")))
-        s.flush()  # best effort; must keep pending increments
+        s.flush()                                             
         assert s.snapshot() == {"groq::m": 2}
 
     s.flush()
@@ -235,7 +235,7 @@ def test_batched_quota_flush_merges_real_processes(tmp_path):
 @pytest.mark.filterwarnings("ignore:This process .* is multi-threaded.*:DeprecationWarning")
 def test_batched_quota_rebases_pending_deltas_after_fork(tmp_path):
     path = tmp_path / "q.json"
-    clock = lambda: datetime(2026, 6, 2, 12, 0, tzinfo=UTC)  # noqa: E731
+    clock = lambda: datetime(2026, 6, 2, 12, 0, tzinfo=UTC)              
     store = QuotaStore(
         path=path,
         clock=clock,

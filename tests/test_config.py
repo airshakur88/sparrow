@@ -1,4 +1,4 @@
-"""Catalog loading + configured-provider filtering."""
+                                                      
 
 from __future__ import annotations
 
@@ -24,6 +24,29 @@ def _model(provider: Provider, name: str) -> Model:
 
 def _packaged_catalog() -> list[Provider]:
     return load_catalog(PACKAGED_CATALOG)
+
+
+def test_nvidia_catalog_contains_only_requested_models():
+    nvidia = next(provider for provider in _packaged_catalog() if provider.id == "nvidia")
+
+    assert [model.name for model in nvidia.models] == [
+        "mistralai/mistral-nemotron",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-ocr-v2",
+        "moonshotai/kimi-k3",
+        "deepseek-ai/deepseek-v4-flash-0731",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "meta/muse-glimmer-30b",
+        "poolside/laguna-xs-2.1",
+    ]
+
+
+def test_opencode_zen_is_keyless():
+    opencode = next(provider for provider in _packaged_catalog() if provider.id == "opencode")
+
+    assert opencode.label == "OpenCode Zen"
+    assert opencode.auth == "none"
+    assert opencode.key_env is None
 
 
 def test_alias_default_maps_to_auto():
@@ -79,7 +102,7 @@ def test_packaged_catalog_loads():
         "free_ai",
     }
     for p in catalog:
-        assert p.models  # every provider ships at least one model
+        assert p.models                                           
         assert p.base_url.startswith("https://")
 
 
@@ -169,7 +192,7 @@ def test_packaged_catalog_reflects_current_automatic_routes():
 
     assert _model(providers["llm7"], "minimax-m2.7").enabled
     assert _model(providers["kilo"], "nvidia/nemotron-3-ultra-550b-a55b:free").enabled
-    assert _model(providers["nvidia"], "moonshotai/kimi-k2.6").enabled
+    assert _model(providers["nvidia"], "mistralai/mistral-nemotron").enabled
     assert _model(providers["ollama"], "minimax-m3").enabled
 
     assert load_embedders(PACKAGED_CATALOG) == []
@@ -256,13 +279,13 @@ def test_packaged_catalog_includes_current_provider_metadata():
 
 
 def test_keyless_providers_always_configured():
-    # OVH (auth=none) and LLM7 (key_optional) are usable with an empty env.
+                                                                           
     catalog = _packaged_catalog()
     ids = {p.id for p in configured_providers(catalog, {})}
-    assert "ovh" in ids  # keyless
-    assert "llm7" in ids  # key optional
-    assert "pollinations" in ids  # keyless
-    assert "groq" not in ids  # needs a key
+    assert "ovh" in ids           
+    assert "llm7" in ids                
+    assert "pollinations" in ids           
+    assert "groq" not in ids               
 
 
 def test_pollinations_catalog_matches_current_chat_selectors():
@@ -284,13 +307,13 @@ def test_configured_filter_by_env():
     catalog = _packaged_catalog()
     ids = {p.id for p in configured_providers(catalog, {"GROQ_API_KEY": "x"})}
     assert "groq" in ids
-    assert "nvidia" not in ids  # no key → excluded
-    assert "ovh" in ids  # keyless → always present
+    assert "nvidia" not in ids                     
+    assert "ovh" in ids                            
 
 
 def test_cloudflare_requires_extra_env():
     catalog = _packaged_catalog()
-    # token alone is not enough; account id is also required
+                                                            
     with_token = {p.id for p in configured_providers(catalog, {"CLOUDFLARE_API_TOKEN": "t"})}
     assert "cloudflare" not in with_token
     with_both = {
@@ -323,20 +346,20 @@ def test_split_provider_model_guards_against_slash_model_names():
     from sparrow.config import split_provider_model
 
     pids = {"groq", "huggingface", "kilo", "openrouter"}
-    # real provider prefix → split
+                                  
     assert split_provider_model("groq/llama-3.1-8b", pids) == (["groq"], "llama-3.1-8b")
-    # slash-bearing model on a real provider → only first slash is the provider boundary
+                                                                                        
     assert split_provider_model("huggingface/Qwen/Qwen3-Coder-30B-A3B-Instruct", pids) == (
         ["huggingface"],
         "Qwen/Qwen3-Coder-30B-A3B-Instruct",
     )
-    # bare slash-model (no valid provider prefix) → kept whole, NOT mis-split into "Qwen"
+                                                                                         
     assert split_provider_model("Qwen/Qwen3-Coder-30B-A3B-Instruct", pids) == (
         None,
         "Qwen/Qwen3-Coder-30B-A3B-Instruct",
     )
     assert split_provider_model("deepseek-ai/DeepSeek-R1", pids) == (None, "deepseek-ai/DeepSeek-R1")
-    # no slash, or no provider set → unchanged
+                                              
     assert split_provider_model("gpt-4o-mini", pids) == (None, "gpt-4o-mini")
     assert split_provider_model("groq/x", None) == (None, "groq/x")
 

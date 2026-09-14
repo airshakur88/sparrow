@@ -352,7 +352,7 @@ def test_proxy_plain_text_response_format_does_not_require_json_conformance(tmp_
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request) as response:  # noqa: S310 - local fixture
+        with urllib.request.urlopen(request) as response:                              
             assert response.status == 200
     finally:
         httpd.shutdown()
@@ -771,7 +771,7 @@ def test_proxy_forwards_response_format_and_preserves_serving_provenance(tmp_pat
         headers={"Content-Type": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request) as response:  # noqa: S310 - local fixture
+        with urllib.request.urlopen(request) as response:                              
             body = json.load(response)
     finally:
         httpd.shutdown()

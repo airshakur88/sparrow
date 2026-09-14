@@ -47,7 +47,7 @@ def test_benchmark_uses_managed_discovery_and_probe_keys(providers, monkeypatch)
 
     monkeypatch.setattr(benchmark_module, "discover_openai_models", discover)
     monkeypatch.setattr(benchmark_module._client, "call", call)
-    pool = Pool(providers, env={}, credential_manager=manager)  # type: ignore[arg-type]
+    pool = Pool(providers, env={}, credential_manager=manager)                          
 
     rows = benchmark_module.benchmark(pool, providers=["alpha"], workers=1)
 
@@ -75,7 +75,7 @@ def test_conformance_reuses_one_managed_probe_selection(providers):
         features=[FEATURE_CHAT],
         call_fn=call,
         stream_fn=lambda *_args, **_kwargs: (),
-        credential_manager=manager,  # type: ignore[arg-type]
+        credential_manager=manager,                          
     )
 
     assert result[FEATURE_CHAT]["classification"] == "verified"
@@ -99,7 +99,7 @@ def test_conformance_reports_exhausted_probe_without_calling_provider(providers)
         features=[FEATURE_CHAT],
         call_fn=call,
         stream_fn=lambda *_args, **_kwargs: (),
-        credential_manager=manager,  # type: ignore[arg-type]
+        credential_manager=manager,                          
     )
 
     assert result[FEATURE_CHAT]["status"] == "unavailable"

@@ -1,10 +1,10 @@
-"""Secret-free, read-only readiness snapshots for the proxy.
+                                                            
 
-The router intentionally still tries cooled or locally exhausted targets as a
-last resort. This module provides a more conservative advisory view for
-orchestrators and integrations without making provider calls or changing
-routing state.
-"""
+                                                                             
+                                                                       
+                                                                        
+              
+   
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ _STATUSES: tuple[ReadinessStatus, ...] = (
 
 
 class ModelLike(Protocol):
-    """Structural model fields needed for readiness."""
+                                                       
 
     @property
     def name(self) -> str: ...
@@ -43,7 +43,7 @@ class ModelLike(Protocol):
 
 
 class ProviderLike(Protocol):
-    """Structural provider fields needed for readiness."""
+                                                          
 
     @property
     def id(self) -> str: ...
@@ -56,7 +56,7 @@ class ProviderLike(Protocol):
 
 @dataclass(frozen=True)
 class ModelReadiness:
-    """One enabled model's local readiness state."""
+                                                    
 
     id: str
     name: str
@@ -67,7 +67,7 @@ class ModelReadiness:
     remaining: int | None
 
     def payload(self) -> dict[str, object]:
-        """Return the public, explicitly allow-listed model schema."""
+                                                                      
         payload = {
             "id": self.id,
             "name": self.name,
@@ -82,7 +82,7 @@ class ModelReadiness:
 
 @dataclass(frozen=True)
 class ProviderReadiness:
-    """One active Pool provider's local readiness state."""
+                                                           
 
     id: str
     configured: bool
@@ -95,7 +95,7 @@ class ProviderReadiness:
     credential_status: str | None = None
 
     def payload(self) -> dict[str, object]:
-        """Return the public, explicitly allow-listed provider schema."""
+                                                                         
         payload = {
             "id": self.id,
             "configured": self.configured,
@@ -113,7 +113,7 @@ class ProviderReadiness:
 
 @dataclass(frozen=True)
 class ReadinessSnapshot:
-    """A consistent local-capacity snapshot."""
+                                               
 
     providers: tuple[ProviderReadiness, ...]
 
@@ -169,7 +169,7 @@ def readiness_snapshot(
     route_cooldowns: Mapping[str, float] | None = None,
     credential_manager=None,
 ) -> ReadinessSnapshot:
-    """Build a deterministic snapshot without calling an upstream provider."""
+                                                                              
     env_copy = dict(env)
     route_cooldowns = route_cooldowns or {}
     rows: list[ProviderReadiness] = []

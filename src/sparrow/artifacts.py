@@ -1,4 +1,4 @@
-"""Append-only run records and deterministic report paths."""
+                                                             
 
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any
 
 try:
-    import fcntl  # POSIX advisory file locks
-except ImportError:  # pragma: no cover - non-POSIX (Windows)
+    import fcntl                             
+except ImportError:                                          
     fcntl = None
 
 RUN_RECORD_SCHEMA_VERSION = "1.0.0"
@@ -25,12 +25,12 @@ _SAFE_RUN_ID = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
 class RunRecordError(ValueError):
-    """Raised when a run record cannot be parsed or written safely."""
+    pass
 
 
 @dataclass(frozen=True)
 class RunRecord:
-    """Versioned local record for reportable sparrow runs."""
+                                                             
 
     run_id: str
     kind: str
@@ -116,12 +116,12 @@ class RunRecord:
 
 
 class RunRecordStore:
-    """JSONL-backed run-record store.
+                                     
 
-    Writes are append-only. Reads ignore malformed records and replay valid
-    records in file order, so "last" is defined by append order rather than a
-    mutable pointer file or report-file mtimes.
-    """
+                                                                           
+                                                                             
+                                               
+       
 
     def __init__(
         self,
