@@ -6,6 +6,7 @@ import json
 import pytest
 
 from sparrow.cli import _strip_fences, build_parser
+from sparrow.cli import main
 from sparrow.models import Model, Provider
 
 
@@ -93,8 +94,6 @@ def test_strip_fences_handles_plain_and_markdown_json() -> None:
 
 
 def test_models_json_is_machine_readable(monkeypatch, capsys) -> None:
-    from sparrow.cli import main
-
     catalog = [
         Provider(
             id="ready",
@@ -113,3 +112,12 @@ def test_models_json_is_machine_readable(monkeypatch, capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload[0]["provider"] == "ready"
     assert payload[0]["model"] == "on"
+
+
+def test_main_without_command_shows_welcome(capsys) -> None:
+    assert main([]) == 0
+
+    output = capsys.readouterr().out
+    assert "SPARROW" in output
+    assert "sparrow ask" in output
+    assert "sparrow doctor" in output

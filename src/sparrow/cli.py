@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from typing import NoReturn
 
 from . import __version__
 from .config import (
@@ -37,6 +38,51 @@ from .task_quality import TASK_HINTS
 from .virtual_models import VIRTUAL_MODELS
 
 
+class _SparrowArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        print(_error_line(message), file=sys.stderr)
+        print("  hint: run `sparrow --help` for the command guide", file=sys.stderr)
+        self.exit(2)
+
+
+def _paint(text: str, code: str, stream=None) -> str:
+    output = stream if stream is not None else sys.stdout
+    if os.environ.get("NO_COLOR") or not getattr(output, "isatty", lambda: False)():
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def _error_line(message: str, stream=None) -> str:
+    output = stream if stream is not None else sys.stderr
+    return f"{_paint('error', '31', output)}: {message}"
+
+
+def _heading(title: str, subtitle: str | None = None) -> str:
+    line = _paint(f"-- {title} --", "36")
+    return f"{line}\n{subtitle}" if subtitle else line
+
+
+def _welcome() -> None:
+    print(_paint("SPARROW", "36;1"))
+    print("Free-tier LLM routing from one friendly command line.")
+    print()
+    print(_heading("Quick start"))
+    print('  sparrow ask "Summarize this text"')
+    print("  sparrow models --configured-only")
+    print("  sparrow doctor")
+    print()
+    print(_heading("Commands"))
+    print("  ask        Send a prompt to the routed model pool")
+    print("  models     Browse virtual and provider models")
+    print("  providers  Check provider configuration and health")
+    print("  quota      Inspect today's local usage")
+    print("  keys       Manage provider credentials")
+    print("  doctor     Diagnose local configuration")
+    print("  start      Run the OpenAI-compatible proxy")
+    print()
+    print("Run `sparrow --help` for all options.")
+
+
 def _read_stdin() -> str:
     if sys.stdin is None or sys.stdin.isatty():
         return ""
@@ -61,12 +107,12 @@ def cmd_ask(args: argparse.Namespace) -> int:
         prompt = f"{stdin}\n\n{prompt}".strip() if prompt else stdin
 
     if not prompt.strip():
-        print("sparrow: no prompt provided (pass text or pipe stdin)", file=sys.stderr)
+        print(_error_line("no prompt provided (pass text or pipe stdin)"), file=sys.stderr)
         return 3
 
     role = get_role(args.role) if args.role else None
     if args.role and role is None:
-        print(f"sparrow: unknown role '{args.role}'\n", file=sys.stderr)
+        print(_error_line(f"unknown role '{args.role}'"), file=sys.stderr)
         print(format_roles(), file=sys.stderr)
         return 2
 
@@ -88,7 +134,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
     if system is None and role is not None and role.system_prefix is not None:
         system = role.system_prefix
     if args.json:
-        json_rule = "Respond with a single valid JSON value and nothing else — no prose, no markdown fences."
+        json_rule = "Respond with a single valid JSON value and nothing else - no prose, no markdown fences."
         system = f"{system}\n{json_rule}" if system else json_rule
 
     pool = Pool.from_default_config()
@@ -124,7 +170,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
     second_opinion = bool(args.second_opinion or (role is not None and role.name == "second-opinion"))
     if second_opinion:
         if args.json:
-            print("sparrow: --json is not supported with --second-opinion", file=sys.stderr)
+            print(_error_line("--json is not supported with --second-opinion"), file=sys.stderr)
             return 2
         result = run_panel(
             pool,
@@ -140,7 +186,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
             task=task,
         )
         if not result.answers:
-            print("sparrow: no providers configured", file=sys.stderr)
+            print(_error_line("no providers configured"), file=sys.stderr)
             return 3
         print(render_panel_markdown(result, title="sparrow second opinion panel"))
         return 0 if result.successful_answers else 4
@@ -160,8 +206,10 @@ def cmd_ask(args: argparse.Namespace) -> int:
         snapshot = pool.quota.snapshot()
         if declared_quota_exhausted(targets, snapshot):
             print(
-                "sparrow: declared local free quota is exhausted in wise mode; "
+                _error_line(
+                "declared local free quota is exhausted in wise mode; "
                 "rerun with an explicit --model or --providers if you want to override.",
+                ),
                 file=sys.stderr,
             )
             return 4
@@ -183,10 +231,10 @@ def cmd_ask(args: argparse.Namespace) -> int:
             task=task,
         )
     except NoProvidersConfigured as exc:
-        print(f"sparrow: {exc}", file=sys.stderr)
+        print(_error_line(str(exc)), file=sys.stderr)
         return 3
     except AllProvidersExhausted as exc:
-        print(f"sparrow: {exc}", file=sys.stderr)
+        print(_error_line(str(exc)), file=sys.stderr)
         return 4
 
     text = reply.text
@@ -195,7 +243,7 @@ def cmd_ask(args: argparse.Namespace) -> int:
     print(text)
     if args.verbose:
         saved = format_saved(reply.prompt_tokens, reply.completion_tokens)
-        print(f"\n[served by {reply.provider_id}/{reply.model} · {saved}]", file=sys.stderr)
+        print(f"\n[served by {reply.provider_id}/{reply.model} | {saved}]", file=sys.stderr)
     return 0
 
 
@@ -213,7 +261,8 @@ def cmd_providers(args: argparse.Namespace) -> int:
     catalog = _runtime_catalog()
     configured = {p.id for p in configured_providers(catalog)}
     n_models = sum(1 for p in catalog for m in p.models if m.enabled)
-    print(f"sparrow catalog: {len(catalog)} providers, {n_models} models\n")
+    print(_heading("Provider catalog", f"{len(catalog)} providers | {n_models} enabled models"))
+    print()
     for p in catalog:
         mark = "[ok]" if p.id in configured else "[--]"
         status = "configured" if p.id in configured else f"set {p.key_env}"
@@ -296,6 +345,7 @@ def cmd_models(args: argparse.Namespace) -> int:
         print(json.dumps(rows, separators=(",", ":")))
         return 0
 
+    print(_heading("Model directory", "virtual routes first, then provider routes"))
     shown = 0
     keyless_configured = any(
         provider.keyless and provider.id in configured for provider in catalog
@@ -321,7 +371,8 @@ def cmd_models(args: argparse.Namespace) -> int:
             tag = "  (off by default)" if not m.enabled else ""
             print(f"    {p.id}/{m.name}{tag}")
     if shown == 0:
-        print("No models match. Try `sparrow providers` to see configuration status.")
+        print(_error_line("no models match", sys.stdout))
+        print("  hint: run `sparrow providers` to see configuration status")
         return 0
     print(
         "\nPass any id above to `--model`, e.g. "
@@ -337,7 +388,7 @@ def cmd_quota(args: argparse.Namespace) -> int:
     if not snap:
         print("No usage recorded today (UTC).")
         return 0
-    print("Today's usage (UTC):")
+    print(_heading("Today's usage", "UTC | local quota ledger"))
     for key, count in sorted(snap.items(), key=lambda kv: -kv[1]):
         print(f"  {count:>6}  {key}")
     return 0
@@ -363,7 +414,7 @@ def cmd_keys_status(args: argparse.Namespace) -> int:
     inventory_path = default_inventory_path()
     inventory = load_inventory(inventory_path)
     report = build_capacity_report(target=args.target, inventory=inventory)
-    print(f"Key inventory: {inventory_path}")
+    print(_heading("Key inventory", str(inventory_path)))
     print(f"Records: {len(inventory)}")
     print(f"Healthy providers: {report.healthy_count}/{args.target}\n")
     for row in report.providers:
@@ -382,15 +433,16 @@ def cmd_keys_usage(args: argparse.Namespace) -> int:
     from .credential_store import CredentialStore
     from .key_inventory import default_config_path
 
-    print(
-        render_usage(
-            CredentialStore(),
-            provider=args.provider,
-            day=args.day,
-            as_json=args.json,
-            config_path=default_config_path(),
-        )
+    usage = render_usage(
+        CredentialStore(),
+        provider=args.provider,
+        day=args.day,
+        as_json=args.json,
+        config_path=default_config_path(),
     )
+    if not args.json:
+        print(_heading("Credential usage", "local provider key ledger"))
+    print(usage)
     return 0
 
 
@@ -400,6 +452,7 @@ def cmd_keys_checklist(args: argparse.Namespace) -> int:
 
     report = build_capacity_report(target=args.target, inventory=load_inventory())
     todo = report.checklist()
+    print(_heading("Capacity checklist", f"target: {args.target} healthy providers"))
     if not todo:
         print(f"Enough healthy providers: {report.healthy_count}/{args.target}.")
         return 0
@@ -676,7 +729,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             external_note += ", stale"
     errors = validate_catalog()
 
-    print(f"sparrow {__version__}")
+    print(_heading("Sparrow doctor", f"sparrow {__version__} | local diagnostics"))
     print(f"python: {sys.version.split()[0]}")
     print(f"config: {default_config_path()}")
     print(f"providers: {len(configured)}/{len(catalog)} configured")
@@ -762,7 +815,7 @@ def cmd_start(args: argparse.Namespace) -> int:
                                                                             
                                                                       
         print(
-            f"sparrow: WARNING — binding to {host} (not loopback) with NO proxy key "
+            f"sparrow: WARNING -- binding to {host} (not loopback) with NO proxy key "
             "exposes all your configured providers to the network. Set --api-key or "
             "SPARROW_PROXY_KEY, or bind to 127.0.0.1.",
             file=sys.stderr,
@@ -798,7 +851,7 @@ def cmd_start(args: argparse.Namespace) -> int:
         s = pool.stats_snapshot()
         saved = format_saved(s["prompt_tokens"], s["completion_tokens"])
         print(
-            f"\nsparrow: shutting down — served {s['requests']} requests · {saved}",
+            f"\nsparrow: shutting down -- served {s['requests']} requests | {saved}",
             file=sys.stderr,
         )
     finally:
@@ -844,31 +897,31 @@ def _run_tailnet_serve(
                             
         if status.state == STATE_CLI_MISSING:
             print(
-                "sparrow: cannot start Tailnet serving — "
+                "sparrow: cannot start Tailnet serving -- "
                 f"{status.detail}",
                 file=sys.stderr,
             )
         elif status.state == STATE_LOGGED_OUT:
             print(
-                "sparrow: cannot start Tailnet serving — "
+                "sparrow: cannot start Tailnet serving -- "
                 f"{status.detail}",
                 file=sys.stderr,
             )
         elif status.state == STATE_NO_IPV4:
             print(
-                "sparrow: cannot start Tailnet serving — "
+                "sparrow: cannot start Tailnet serving -- "
                 f"{status.detail}",
                 file=sys.stderr,
             )
         elif status.state == STATE_MALFORMED:
             print(
-                "sparrow: cannot start Tailnet serving — "
+                "sparrow: cannot start Tailnet serving -- "
                 f"{status.detail}",
                 file=sys.stderr,
             )
         else:                                
             print(
-                "sparrow: cannot start Tailnet serving — "
+                "sparrow: cannot start Tailnet serving -- "
                 f"unknown Tailscale state: {status.state}",
                 file=sys.stderr,
             )
@@ -891,7 +944,7 @@ def _run_tailnet_serve(
     bind_host = status.ipv4
     if bind_host is None:
         print(
-            "sparrow: cannot start Tailnet serving — no validated Tailnet IPv4 found",
+            "sparrow: cannot start Tailnet serving -- no validated Tailnet IPv4 found",
             file=sys.stderr,
         )
         return 3
@@ -1019,7 +1072,7 @@ def _run_tailnet_serve(
         s = pool.stats_snapshot()
         saved = format_saved(s["prompt_tokens"], s["completion_tokens"])
         print(
-            f"\nsparrow: shutting down — served {s['requests']} requests · {saved}",
+            f"\nsparrow: shutting down -- served {s['requests']} requests | {saved}",
             file=sys.stderr,
         )
     finally:
@@ -1031,7 +1084,7 @@ def _run_tailnet_serve(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = _SparrowArgumentParser(
         prog="sparrow",
         description="Pool free-tier LLM APIs behind one OpenAI-compatible endpoint.",
     )
@@ -1144,6 +1197,12 @@ def main(argv: list[str] | None = None) -> int:
     from .observe import configure_logging_from_env
 
     configure_logging_from_env()
+    if argv is not None and not argv:
+        _welcome()
+        return 0
+    if argv is None and len(sys.argv) == 1:
+        _welcome()
+        return 0
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
