@@ -380,6 +380,7 @@ def test_models_route(server):
     ids = {m["id"] for m in body["data"]}
     assert "auto" in ids
     assert any(i.startswith("alpha/") for i in ids)
+    assert {"sparrow/spark-flash", "sparrow/spark", "sparrow/galaxy"} <= ids
 
 
 def test_models_route_accepts_query_string(server):
@@ -438,6 +439,8 @@ def test_dashboard(server):
     assert "sparrow" in body
     assert "Dashboard" in body
     assert "Playground" in body
+    assert "All available models" in body
+    assert 'id="model-rows"' in body
 
 
 def test_authenticated_proxy_serves_public_secret_free_unified_shell_with_security_headers(

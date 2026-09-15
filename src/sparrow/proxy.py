@@ -56,6 +56,7 @@ from .router import Pool
 from .routing_modes import PUBLIC_ROUTING_ALIASES, routing_override
 from .savings import usd_saved
 from .task_quality import task_resolution
+from .virtual_models import VIRTUAL_MODELS
 
 _MAX_BODY = 16 * 1024 * 1024                               
                                                                                         
@@ -85,7 +86,9 @@ def _model_ids(pool: Pool, ready_model_ids: frozenset[str] | None = None) -> lis
                                            
                                                                                 
                                                                                    
-    ids = list(PUBLIC_ROUTING_ALIASES) if ready_model_ids is None or ready_model_ids else []
+    ids: list[str] = list(PUBLIC_ROUTING_ALIASES) if ready_model_ids is None or ready_model_ids else []
+    if ready_model_ids is None:
+        ids.extend(model.name for model in VIRTUAL_MODELS)
     for provider in pool.providers:
         for m in provider.models:
             model_id = f"{provider.id}/{m.name}"
@@ -2203,6 +2206,24 @@ function readinessReason(provider) {
   if (provider.status === 'quota_exhausted') return 'daily quota exhausted';
   return humanStatus(provider.status);
 }
+function renderModelList(models) {
+  const rows = byId('model-rows');
+  rows.replaceChildren();
+  const entries = Array.isArray(models.data) ? models.data : [];
+  for (const model of entries) {
+    const row = document.createElement('tr');
+    appendCells(row, [model.id, model.owned_by || 'sparrow']);
+    rows.appendChild(row);
+  }
+  if (!entries.length) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 2;
+    cell.textContent = 'No available models are listed.';
+    row.appendChild(cell);
+    rows.appendChild(row);
+  }
+}
 function renderMetrics(status) {
   const measured = [];
   for (const provider of Array.isArray(status.providers) ? status.providers : []) {
@@ -2239,7 +2260,7 @@ function renderMetrics(status) {
     rows.appendChild(row);
   }
 }
-function renderDashboard(status, inventory, models) {
+function renderDashboard(status, inventory, readyModels, availableModels) {
   const usage = status.pool || {};
   text('requests', formatNumber(usage.requests));
   text('tokens', formatNumber(Number(usage.prompt_tokens || 0) + Number(usage.completion_tokens || 0)));
@@ -2247,7 +2268,7 @@ function renderDashboard(status, inventory, models) {
   text('saved', '$' + Number(usage.usd_saved || 0).toFixed(2));
   const providers = Array.isArray(inventory.data) ? inventory.data : [];
   text('healthy', providers.filter(item => item.ready).length + '/' + providers.length);
-  text('models', Array.isArray(models.data) ? models.data.length : 0);
+  text('models', Array.isArray(readyModels.data) ? readyModels.data.length : 0);
   const rows = byId('provider-rows');
   rows.replaceChildren();
   for (const provider of providers) {
@@ -2269,6 +2290,7 @@ function renderDashboard(status, inventory, models) {
     row.appendChild(cell);
     rows.appendChild(row);
   }
+  renderModelList(availableModels);
   renderMetrics(status);
 }
 function refreshDashboard() {
@@ -2278,11 +2300,12 @@ function refreshDashboard() {
     const responses = await Promise.all([
       protectedFetch('/v1/status', {}, epoch),
       protectedFetch('/v1/providers', {}, epoch),
-      protectedFetch('/v1/models?ready=true', {}, epoch)
+       protectedFetch('/v1/models?ready=true', {}, epoch),
+       protectedFetch('/v1/models', {}, epoch)
     ]);
     const data = await Promise.all(responses.map(readJson));
     if (epoch !== authEpoch) return;
-    renderDashboard(data[0], data[1], data[2]);
+    renderDashboard(data[0], data[1], data[2], data[3]);
     authPanel.hidden = true;
     app.hidden = false;
     authMessage.textContent = '';
@@ -2444,6 +2467,9 @@ def _browser_shell_html() -> str:
 <div class="card"><div id="models" class="big">0</div><div class="label">ready models</div></div></div>
 <h3>Provider capacity</h3><div class="table-wrap"><table><thead><tr><th>provider</th><th>status</th><th>ready</th><th>usage / daily quota</th><th>readiness reason</th></tr></thead>
 <tbody id="provider-rows"></tbody></table></div>
+<h3>All available models</h3><div class="sub">Every model currently exposed by this proxy, including virtual routes.</div>
+<div class="table-wrap"><table><thead><tr><th>model</th><th>owner</th></tr></thead>
+<tbody id="model-rows"></tbody></table></div>
 <h3>Measured latency and success</h3><div class="sub">Observed in this proxy process; fastest measured routes appear first.</div>
 <div class="table-wrap"><table><thead><tr><th>provider/model</th><th>latency</th><th>success</th><th>circuit</th></tr></thead>
 <tbody id="metrics-rows"></tbody></table></div></section>
