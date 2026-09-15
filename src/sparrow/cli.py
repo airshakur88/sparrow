@@ -34,6 +34,7 @@ from .router import Pool
 from .routing_modes import PUBLIC_ROUTING_ALIASES, routing_override
 from .savings import format_saved
 from .task_quality import TASK_HINTS
+from .virtual_models import VIRTUAL_MODELS
 
 
 def _read_stdin() -> str:
@@ -250,6 +251,9 @@ def cmd_models(args: argparse.Namespace) -> int:
     only = set(args.providers.split(",")) if args.providers else None
     if args.json:
         rows = []
+        keyless_configured = any(
+            provider.keyless and provider.id in configured for provider in catalog
+        )
         for provider in catalog:
             if (only is not None and provider.id not in only) or (
                 args.configured_only and provider.id not in configured
@@ -275,12 +279,32 @@ def cmd_models(args: argparse.Namespace) -> int:
                             for feature, result in evidence.items()
                             if result.get("status") == "pass"
                         ),
-                    }
-                )
+                        }
+                    )
+        if keyless_configured and (only is None or "sparrow" in only):
+            rows.extend(
+                {
+                    "provider": "sparrow",
+                    "model": model.name,
+                    "enabled": True,
+                    "configured": True,
+                    "virtual": True,
+                    "description": model.description,
+                }
+                for model in VIRTUAL_MODELS
+            )
         print(json.dumps(rows, separators=(",", ":")))
         return 0
 
     shown = 0
+    keyless_configured = any(
+        provider.keyless and provider.id in configured for provider in catalog
+    )
+    if keyless_configured and (only is None or "sparrow" in only):
+        print("\nSparrow virtual models")
+        for model in VIRTUAL_MODELS:
+            shown += 1
+            print(f"    {model.name}  ({model.description})")
     for p in catalog:
         if only is not None and p.id not in only:
             continue

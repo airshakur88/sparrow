@@ -71,6 +71,7 @@ from .task_quality import (
     task_evidence_table,
     validate_task,
 )
+from .virtual_models import virtual_model, virtual_routing, virtual_targets
 
                                                                                
                                                                     
@@ -487,7 +488,8 @@ class Pool:
                                                                                       
                                                                            
         provider_list = list(providers) if providers else None
-        eff = normalize_routing_mode(routing, self.routing)
+        model_routing = virtual_routing(model, routing)
+        eff = normalize_routing_mode(model_routing or routing, self.routing)
         difficulty = prompt_difficulty(messages) if eff in ("quality", "adaptive") else None
         if eff in ("quality", "adaptive"):
             resolved_task = resolve_task(messages, task)
@@ -874,7 +876,14 @@ class Pool:
         model: str | None = None,
     ) -> list[Target]:
         include_set = {p.strip() for p in include} if include else None
-        source = self._targets_by_model.get(model, ()) if model is not None else self._enabled_targets
+        source = (
+            self._enabled_targets
+            if virtual_model(model) is not None
+            else self._targets_by_model.get(model, ())
+            if model is not None
+            else self._enabled_targets
+        )
+        source = virtual_targets(source, model)
         if include_set is None:
             return list(source)
         return [target for target in source if target.provider.id in include_set]
@@ -1268,7 +1277,8 @@ class Pool:
                                                                              
                                                                                   
                                                                         
-        eff = normalize_routing_mode(routing, self.routing)
+        model_routing = virtual_routing(model, routing)
+        eff = normalize_routing_mode(model_routing or routing, self.routing)
         if eff in ("quality", "adaptive"):
             resolved_task = resolve_task(messages, task)
         else:
@@ -1629,7 +1639,8 @@ class Pool:
            
         if not self.providers:
             raise NoProvidersConfigured("no provider has an API key set")
-        eff = normalize_routing_mode(routing, self.routing)
+        model_routing = virtual_routing(model, routing)
+        eff = normalize_routing_mode(model_routing or routing, self.routing)
         difficulty = (
             prompt_difficulty(messages, max_tokens)
             if eff in ("quality", "adaptive")
