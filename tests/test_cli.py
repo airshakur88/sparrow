@@ -81,6 +81,8 @@ def test_start_parser_accepts_tailnet_options_and_rejects_proxy() -> None:
     assert args.command == "start"
     assert args.tailnet is True
     assert args.allow_lan is True
+    assert args.logs is False
+    assert parser.parse_args(["start", "--logs"]).logs is True
     help_text = parser.format_help()
     assert "start" in help_text
     assert not any(line.lstrip().startswith("proxy ") for line in help_text.splitlines())

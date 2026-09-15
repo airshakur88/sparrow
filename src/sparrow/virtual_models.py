@@ -28,7 +28,11 @@ VIRTUAL_MODELS = (
     ),
 )
 
-_BY_NAME = {model.name: model for model in VIRTUAL_MODELS}
+_BY_NAME = {
+    key: model
+    for model in VIRTUAL_MODELS
+    for key in (model.name, model.name.removeprefix("sparrow/"))
+}
 
 
 def virtual_model(name: str | None) -> VirtualModel | None:
@@ -38,7 +42,15 @@ def virtual_model(name: str | None) -> VirtualModel | None:
 def virtual_targets(targets: Iterable, name: str | None) -> list:
     if virtual_model(name) is None:
         return list(targets)
-    return [target for target in targets if target.provider.keyless]
+    return [
+        target
+        for target in targets
+        if target.provider.keyless
+        and not (
+            (model := target.provider.model(target.model)) is not None
+            and model.requires_key
+        )
+    ]
 
 
 def virtual_routing(name: str | None, requested: str | None) -> str | None:

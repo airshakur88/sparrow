@@ -17,6 +17,9 @@ def test_virtual_models_are_declared_with_routing_presets():
     assert spark_flash is not None and spark_flash.routing == "swift"
     assert spark is not None and spark.routing == "fair"
     assert galaxy is not None and galaxy.routing == "apex"
+    assert virtual_model("spark-flash") is spark_flash
+    assert virtual_model("spark") is spark
+    assert virtual_model("galaxy") is galaxy
 
 
 def test_virtual_model_targets_include_only_keyless_providers(env, quota):
@@ -66,3 +69,20 @@ def test_real_model_filter_remains_exact(env, quota):
         "keyed/shared",
         "free/shared",
     }
+
+
+def test_virtual_model_targets_exclude_key_required_models(env, quota):
+    provider = Provider(
+        id="optional",
+        label="Optional",
+        adapter="openai",
+        base_url="https://optional.test/v1",
+        key_env="OPTIONAL_KEY",
+        key_optional=True,
+        models=(Model("free-model"), Model("gemini", requires_key=True)),
+    )
+    pool = Pool([provider], env={}, quota=quota)
+
+    targets = pool.rank_targets([], model="sparrow/spark-flash")
+
+    assert [target.name for target in targets] == ["optional/free-model"]

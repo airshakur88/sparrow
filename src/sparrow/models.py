@@ -13,8 +13,9 @@ class Model:
     name: str
     rpd: int = 0                                                          
     enabled: bool = True                                                                      
-    context: int | None = None                                                         
+    context: int | None = None                                                          
     auto: bool = True                                                                             
+    requires_key: bool = False
 
     @property
     def key(self) -> str:

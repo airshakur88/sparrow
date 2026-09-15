@@ -455,6 +455,7 @@ def _parse_rows(rows: list, *, allow_local: bool | None = None) -> list[Provider
                     enabled=bool(m.get("enabled", True)),
                     auto=bool(m.get("auto", True)),
                     context=_maybe_int(m.get("context"), positive=True),
+                    requires_key=bool(m.get("requires_key", False)),
                 )
             )
         key_env = row.get("key_env")

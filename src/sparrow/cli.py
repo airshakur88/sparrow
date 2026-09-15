@@ -773,6 +773,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 1 if config_issues else 0
 
 
+def _print_start_logs(pool: Pool) -> None:
+    from pprint import pformat
+
+    snapshots = (
+        ("live stats", pool.stats_snapshot()),
+        ("lifetime stats", pool.lifetime_stats()),
+        ("quota", pool.quota.snapshot()),
+        ("route health", pool.route_health_snapshot()),
+        ("route cooldowns", pool.route_cooldown_snapshot()),
+    )
+    print("sparrow: usage and route logs", file=sys.stderr)
+    for label, snapshot in snapshots:
+        print(f"\n[{label}]\n{pformat(snapshot, sort_dicts=True)}", file=sys.stderr)
+
+
 def cmd_start(args: argparse.Namespace) -> int:
     from .proxy import serve                                                  
     from .tailnet import (
@@ -839,6 +854,8 @@ def cmd_start(args: argparse.Namespace) -> int:
         return 3
 
     httpd = serve(pool, host=host, port=args.port, api_key=proxy_key)
+    if getattr(args, "logs", False):
+        _print_start_logs(pool)
     n_models = sum(len(p.models) for p in pool.providers)
     auth_enabled = proxy_key is not None
     auth_note = "  auth: Bearer key required\n" if auth_enabled else ""
@@ -1188,6 +1205,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_start.add_argument(
         "--allow-no-auth", action="store_true", help="explicit escape hatch: serve on a non-loopback bind with NO proxy key"
+    )
+    p_start.add_argument(
+        "--logs", action="store_true", help="print usage and route diagnostics before serving"
     )
     p_start.set_defaults(func=cmd_start)
 
