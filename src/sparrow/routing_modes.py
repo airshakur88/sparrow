@@ -20,17 +20,6 @@ ROUTING_MODES = (
     "swift",
     "adaptive",
 )
-PUBLIC_ROUTING_ALIASES = (
-    "auto",
-    "agent",
-    "spread",
-    "fast",
-    "quality",
-    "fair",
-    "apex",
-    "swift",
-    "adaptive",
-)
 _ROUTING_SET = frozenset(ROUTING_MODES)
 
 

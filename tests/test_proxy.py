@@ -378,7 +378,7 @@ def test_models_route(server):
     with urllib.request.urlopen(server + "/v1/models") as resp:              
         body = json.load(resp)
     ids = {m["id"] for m in body["data"]}
-    assert "auto" in ids
+    assert "auto" not in ids
     assert any(i.startswith("alpha/") for i in ids)
     assert {"sparrow/spark-flash", "sparrow/spark", "sparrow/galaxy"} <= ids
 
@@ -387,7 +387,7 @@ def test_models_route_accepts_query_string(server):
     with urllib.request.urlopen(server + "/v1/models?limit=100") as resp:              
         body = json.load(resp)
     assert body["object"] == "list"
-    assert any(m["id"] == "auto" for m in body["data"])
+    assert any(m["id"] == "sparrow/spark-flash" for m in body["data"])
 
 
 def test_anthropic_model_discovery_shape(server):
@@ -399,8 +399,8 @@ def test_anthropic_model_discovery_shape(server):
         body = json.load(resp)
     assert body["has_more"] is False
     assert body["data"][0]["type"] == "model"
-    assert body["data"][0]["id"] == "auto"
-    assert body["data"][0]["display_name"] == "auto"
+    assert body["data"][0]["id"] == "sparrow/spark-flash"
+    assert body["data"][0]["display_name"] == "sparrow/spark-flash"
     ids = {m["id"] for m in body["data"]}
     assert "claude-3-5-haiku-latest" in ids
 
@@ -532,7 +532,7 @@ class Element {{
 const ids = [
   'auth-panel', 'app', 'proxy-token', 'auth-message', 'out', 'run', 'count',
   'requests', 'tokens', 'cache-hits', 'saved', 'healthy', 'models',
-  'provider-rows', 'metrics-rows', 'prompt', 'battle-disclosure', 'forget-token',
+      'provider-rows', 'metrics-rows', 'model-rows', 'prompt', 'battle-disclosure', 'forget-token',
   'auth-form', 'dashboard-panel', 'playground-panel'
 ];
 const elements = Object.fromEntries(ids.map(id => [id, new Element(id)]));
@@ -588,7 +588,7 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   await elements['auth-form'].listeners.submit({{preventDefault() {{}}}});
   check(elements['proxy-token'].value === '', 'accepted input must be cleared');
   check(elements['auth-panel'].hidden && !elements.app.hidden, 'successful auth must show app');
-  const authenticated = calls.slice(-3);
+  const authenticated = calls.slice(-4);
   check(authenticated.every(call => call.authorization === 'Bearer secret'),
     'all dashboard requests must use bearer auth');
   check(elements['provider-rows'].children[0].children.map(cell => cell.textContent).join('|')
@@ -599,7 +599,7 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   mode = 'blocked-refresh';
   const beforeRefresh = calls.length;
   intervalCallback(); intervalCallback();
-  check(calls.length - beforeRefresh === 3, 'overlapping refresh triples were started');
+  check(calls.length - beforeRefresh === 4, 'overlapping refresh requests were started');
   for (const pending of blockedRefreshes) pending.resolve(response(payloadFor(pending.path)));
   await settle(); await settle();
 
@@ -607,18 +607,18 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
   elements['proxy-token'].value = 'stale';
   const staleSubmit = elements['auth-form'].listeners.submit({{preventDefault() {{}}}});
   await settle();
-  check(blockedRefreshes.length === 3, 'first auth epoch did not start one refresh triple');
+  check(blockedRefreshes.length === 4, 'first auth epoch did not start one refresh set');
   elements['proxy-token'].value = 'fresh';
   const freshSubmit = elements['auth-form'].listeners.submit({{preventDefault() {{}}}});
   await settle();
-  check(blockedRefreshes.length === 6, 'new auth epoch reused the stale refresh');
-  const staleRequests = blockedRefreshes.slice(0, 3);
-  const freshRequests = blockedRefreshes.slice(3);
+  check(blockedRefreshes.length === 8, 'new auth epoch reused the stale refresh');
+  const staleRequests = blockedRefreshes.slice(0, 4);
+  const freshRequests = blockedRefreshes.slice(4);
   for (const pending of staleRequests) pending.resolve({{status: 401, ok: false, json: async () => ({{}})}});
   await staleSubmit;
   check(elements['auth-message'].textContent === 'Checking token...',
     'stale auth rejection displaced the pending replacement token');
-  check(calls.slice(-3).every(call => call.authorization === 'Bearer fresh'),
+  check(calls.slice(-4).every(call => call.authorization === 'Bearer fresh'),
     'pending replacement auth epoch did not retain the fresh bearer token');
   for (const pending of freshRequests) pending.resolve(response(payloadFor(pending.path)));
   await freshSubmit;
@@ -626,7 +626,7 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
     'stale auth result displaced the accepted replacement token');
   check(elements['auth-message'].textContent !== 'Checking token...',
     'replacement token remained stuck in checking state');
-  check(calls.slice(-3).every(call => call.authorization === 'Bearer fresh'),
+  check(calls.slice(-4).every(call => call.authorization === 'Bearer fresh'),
     'replacement auth epoch did not use the fresh bearer token');
 
   mode = 'battle';
@@ -759,7 +759,6 @@ def test_models_ready_filter_preserves_content_negotiation(providers, env, quota
         with urllib.request.urlopen(base + "/v1/models?ready=1") as resp:              
             openai_body = json.load(resp)
         ids = {item["id"] for item in openai_body["data"]}
-        assert "auto" in ids
         assert "free/free-1" in ids
         assert not any(item.startswith("alpha/") for item in ids)
 
@@ -2230,46 +2229,16 @@ def test_status_records_served_target(server):
     assert body["pool"]["requests"] >= 1
 
 
-def test_models_route_includes_routing_aliases(server):
+def test_models_route_includes_virtual_models(server):
     with urllib.request.urlopen(server + "/v1/models") as resp:              
         ids = {m["id"] for m in json.load(resp)["data"]}
-    assert {"auto", "agent", "fast", "quality", "fair", "spread"} <= ids
-
-
-def test_spread_alias_routes(server):
-                                                                                      
-                                                             
-    for name in (
-        "agent",
-        "sparrow/agent",
-        "spread",
-        "sparrow/spread",
-        "sparrow/auto",
-        "auto",
-    ):
-        status, body = _post_json(
-            server + "/v1/chat/completions",
-            {"model": name, "messages": [{"role": "user", "content": "hi"}]},
-        )
-        assert status == 200, name
-        assert body["choices"][0]["message"]["content"] == "ok", name
-        assert "x_sparrow" in body
-
-
-def test_model_name_is_treated_as_routing_keyword(server):
-                                                                                         
-    status, body = _post_json(
-        server + "/v1/chat/completions",
-        {"model": "fast", "messages": [{"role": "user", "content": "hi"}]},
-    )
-    assert status == 200
-    assert "x_sparrow" in body
+    assert {"sparrow/spark-flash", "sparrow/spark", "sparrow/galaxy"} <= ids
 
 
 def test_header_routing_override_accepted(server):
     status, body = _post_json_with_headers(
         server + "/v1/chat/completions",
-        {"model": "auto", "messages": [{"role": "user", "content": "hi"}]},
+        {"model": "alpha-small", "messages": [{"role": "user", "content": "hi"}]},
         {"X-Sparrow-Routing": "fast"},
     )
     assert status == 200
@@ -2278,7 +2247,7 @@ def test_header_routing_override_accepted(server):
 
 def test_task_hint_header_and_body_extension_are_validated(server):
     payload = {
-        "model": "quality",
+        "model": "alpha-small",
         "messages": [{"role": "user", "content": "read this"}],
     }
     status, _body = _post_json_with_headers(

@@ -11,7 +11,7 @@ def test_shell_installer_uses_github_source_and_current_tool_path():
     assert "tool install --python 3.11 --force sparrow\n" not in content
     assert "tool dir --bin" in content
     assert "command -v sparrow" in content
-    assert "sparrow --version" in content
+    assert "sparrow --help" in content
 
 
 def test_powershell_installer_uses_github_source_and_current_tool_path():
@@ -21,4 +21,4 @@ def test_powershell_installer_uses_github_source_and_current_tool_path():
     assert "tool install --python 3.11 --force sparrow\n" not in content
     assert "tool dir --bin" in content
     assert "Get-Command sparrow" in content
-    assert "sparrow --version" in content
+    assert "sparrow --help" in content

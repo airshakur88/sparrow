@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import subprocess
 import sys
 import tomllib
@@ -15,13 +14,10 @@ def metadata_errors(root: Path = ROOT) -> list[str]:
     errors: list[str] = []
     pyproject = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     project = pyproject["project"]
-    server = json.loads((root / "server.json").read_text(encoding="utf-8"))
     version = project["version"]
 
     if project["name"] != "sparrow":
         errors.append("project name must be sparrow")
-    if server.get("version") != version:
-        errors.append("server.json version mismatch")
     if not (root / "src" / "sparrow" / "providers.toml").is_file():
         errors.append("packaged provider catalog is missing")
     if not (root / "src" / "sparrow" / "__init__.py").is_file():

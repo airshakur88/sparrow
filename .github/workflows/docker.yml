@@ -102,7 +102,7 @@ jobs:
           docker load --input /tmp/sparrow-image.tar
           docker run --rm --entrypoint python "$image" -c \
             'import os, sparrow; assert sparrow.__version__; assert os.getuid() != 0'
-          docker run --rm "$image" --version
+          docker run --rm "$image" --help
           docker run --detach --name "$container" \
             --publish 127.0.0.1:18080:8080 "$image"
           cleanup() { docker rm --force "$container" >/dev/null 2>&1 || true; }

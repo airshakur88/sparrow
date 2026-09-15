@@ -121,3 +121,13 @@ def test_main_without_command_shows_welcome(capsys) -> None:
     assert "SPARROW" in output
     assert "sparrow ask" in output
     assert "sparrow doctor" in output
+
+
+def test_help_hides_usage_description_version_and_routing_aliases() -> None:
+    help_text = build_parser().format_help()
+
+    assert "usage:" not in help_text
+    assert "Pool free-tier" not in help_text
+    assert "--version" not in help_text
+    assert "--routing" not in help_text
+    assert "sparrow/quality" not in help_text

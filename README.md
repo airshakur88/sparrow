@@ -41,8 +41,37 @@ $env:SPARROW_REF = "v0.13.0"; irm https://raw.githubusercontent.com/airshakur88/
 Check the installation:
 
 ```text
-sparrow --version
+sparrow --help
 ```
+
+### Update
+
+Update Sparrow without removing its configuration, credentials, or usage data.
+
+Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/update.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/update.ps1 | iex
+```
+
+To update to a specific branch or tag, set `SPARROW_REF` first:
+
+```sh
+SPARROW_REF=develop curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/update.sh | sh
+```
+
+```powershell
+$env:SPARROW_REF = "v0.13.0"; irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/update.ps1 | iex
+```
+
+The update uses `uv tool install --force`; it replaces only the installed
+application and preserves user configuration and data.
 
 To uninstall Sparrow while preserving configuration and user data, run the
 matching command:

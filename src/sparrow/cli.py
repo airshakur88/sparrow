@@ -32,13 +32,21 @@ from .panel import render_panel_markdown, run_panel
 from .quota import QuotaStore
 from .roles import format_roles, get_role
 from .router import Pool
-from .routing_modes import PUBLIC_ROUTING_ALIASES, routing_override
+from .routing_modes import routing_override
 from .savings import format_saved
 from .task_quality import TASK_HINTS
 from .virtual_models import VIRTUAL_MODELS
 
 
 class _SparrowArgumentParser(argparse.ArgumentParser):
+    def format_help(self) -> str:
+        lines = super().format_help().splitlines()
+        if lines and lines[0].startswith("usage:"):
+            lines = lines[1:]
+            if lines and not lines[0]:
+                lines = lines[1:]
+        return "\n".join(lines) + "\n"
+
     def error(self, message: str) -> NoReturn:
         print(_error_line(message), file=sys.stderr)
         print("  hint: run `sparrow --help` for the command guide", file=sys.stderr)
@@ -157,12 +165,12 @@ def cmd_ask(args: argparse.Namespace) -> int:
     if temperature is None:
         temperature = role.temperature if (role is not None and role.temperature is not None) else 0.0
 
-    routing = routing_override(args.routing) if args.routing is not None else None
-    if args.routing is None and routing is None and role is not None and role.routing is not None:
+    routing = None
+    if routing is None and role is not None and role.routing is not None:
         routing = role.routing
-    if args.routing is None and routing is None and role is None and wise:
+    if routing is None and role is None and wise:
         routing = WISE_DEFAULT_ROUTING
-    if args.routing is None and routing is None and role is None and args.mode == "normal":
+    if routing is None and role is None and args.mode == "normal":
         if not has_routing_config:
             routing = "fair"
     task = args.task if args.task is not None else (role.task if role is not None else None)
@@ -1084,11 +1092,7 @@ def _run_tailnet_serve(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = _SparrowArgumentParser(
-        prog="sparrow",
-        description="Pool free-tier LLM APIs behind one OpenAI-compatible endpoint.",
-    )
-    parser.add_argument("--version", action="version", version=f"sparrow {__version__}")
+    parser = _SparrowArgumentParser(prog="sparrow")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_ask = sub.add_parser("ask", help="one-shot completion")
@@ -1106,9 +1110,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_ask.add_argument("--timeout", type=float, default=90.0, help="upstream provider timeout seconds")
     p_ask.add_argument("-r", "--role", help="use a role preset")
-    p_ask.add_argument(
-        "--routing", choices=PUBLIC_ROUTING_ALIASES, help="routing mode override (auto uses the pool default)"
-    )
     p_ask.add_argument(
         "--task", choices=TASK_HINTS, help="task hint for quality routing (auto classifies locally)"
     )

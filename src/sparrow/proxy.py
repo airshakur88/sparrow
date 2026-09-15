@@ -53,7 +53,7 @@ from .errors import (
 )
 from .readiness import ReadinessSnapshot, readiness_snapshot
 from .router import Pool
-from .routing_modes import PUBLIC_ROUTING_ALIASES, routing_override
+from .routing_modes import routing_override
 from .savings import usd_saved
 from .task_quality import task_resolution
 from .virtual_models import VIRTUAL_MODELS
@@ -86,7 +86,7 @@ def _model_ids(pool: Pool, ready_model_ids: frozenset[str] | None = None) -> lis
                                            
                                                                                 
                                                                                    
-    ids: list[str] = list(PUBLIC_ROUTING_ALIASES) if ready_model_ids is None or ready_model_ids else []
+    ids: list[str] = []
     if ready_model_ids is None:
         ids.extend(model.name for model in VIRTUAL_MODELS)
     for provider in pool.providers:
