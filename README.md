@@ -44,6 +44,21 @@ Check the installation:
 sparrow --version
 ```
 
+To uninstall Sparrow while preserving configuration and user data, run the
+matching command:
+
+Linux:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/uninstall.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/airshakur88/sparrow/refs/heads/main/uninstall.ps1 | iex
+```
+
 ## Configuration
 
 Sparrow starts without configuration when a provider supports keyless access.
