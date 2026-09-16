@@ -480,7 +480,8 @@ def _parse_rows(rows: list, *, allow_local: bool | None = None) -> list[Provider
                 key_optional=bool(row.get("key_optional", False)),
                 models=tuple(models),
                 extra_env=tuple(extra_env),
-            )
+                billing=str(row.get("billing", "paid")),
+                )
         )
     return providers
 
@@ -565,7 +566,49 @@ def configured_providers(
     catalog: list[Provider] | None = None,
     env: dict[str, str] | None = None,
 ) -> list[Provider]:
-                                                                              
+    from .credential_config import parse_credentials
+
     catalog = catalog if catalog is not None else load_catalog()
-    env = env if env is not None else effective_env()
-    return [p for p in catalog if p.is_configured(env)]
+    source_env = env if env is not None else dict(os.environ)
+    has_explicit_config = env is None or "SPARROW_CONFIG_FILE" in source_env
+    config_data = load_config_file(source_env) if has_explicit_config else {}
+    env = effective_env(source_env) if has_explicit_config else source_env
+    configured = {p.id for p in catalog if p.is_configured(env)}
+    providers_by_id = {p.id: p for p in catalog}
+
+    if config_data.get("providers") is not None or config_data.get("credentials") is not None:
+        slots = parse_credentials(config_data, catalog, env)
+        for slot in slots:
+            secret = env.get(slot.env_var, "").strip()
+            provider = providers_by_id.get(slot.provider)
+            if not slot.enabled or not secret or provider is None:
+                continue
+            slot_env = dict(env)
+            if provider.key_env:
+                slot_env[provider.key_env] = secret
+            if provider.is_configured(slot_env):
+                configured.add(slot.provider)
+
+    provider_config = config_data.get("providers", {})
+    explicit_provider_ids = (
+        set(provider_config)
+        if isinstance(provider_config, dict)
+        else {
+            item["id"]
+            for item in provider_config
+            if isinstance(item, dict) and isinstance(item.get("id"), str)
+        }
+        if isinstance(provider_config, list)
+        else set()
+    )
+
+    for provider in catalog:
+        if provider.id not in explicit_provider_ids and provider.key_env and any(
+            name.startswith(f"{provider.key_env}_")
+            and name[len(provider.key_env) + 1 :].isdigit()
+            and value.strip()
+            for name, value in env.items()
+        ):
+            configured.add(provider.id)
+
+    return [p for p in catalog if p.id in configured]

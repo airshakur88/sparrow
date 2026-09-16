@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from typing import Final
+
+BILLING_VALUES: Final = frozenset({"free", "paid"})
 
 
 @dataclass(frozen=True)
@@ -25,7 +28,12 @@ class Model:
 
 @dataclass(frozen=True)
 class Provider:
-                                                            
+    """A provider catalog entry and its declared billing/access metadata.
+
+    ``billing`` describes the catalog's free or paid access tier.  It is
+    intentionally independent from ``keyless``, which only describes whether
+    the provider can be used without a credential.
+    """
 
     id: str
     label: str
@@ -36,6 +44,7 @@ class Provider:
     auth: str = "bearer"                               
     key_optional: bool = False                                            
     extra_env: tuple[str, ...] = field(default_factory=tuple)
+    billing: str = "paid"
 
     @property
     def keyless(self) -> bool:

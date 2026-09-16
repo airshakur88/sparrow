@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 from sparrow.config import (
+    _parse_rows,
     configured_providers,
     known_aliases,
     load_catalog,
@@ -24,6 +26,51 @@ def _model(provider: Provider, name: str) -> Model:
 
 def _packaged_catalog() -> list[Provider]:
     return load_catalog(PACKAGED_CATALOG)
+
+
+def test_provider_billing_defaults_separately_from_keyless_access():
+    keyless = Provider(
+        id="keyless",
+        label="Keyless",
+        adapter="openai",
+        base_url="https://keyless.test/v1",
+        auth="none",
+        models=(Model("model"),),
+    )
+    keyed_free = Provider(
+        id="keyed-free",
+        label="Keyed Free",
+        adapter="openai",
+        base_url="https://keyed-free.test/v1",
+        key_env="KEYED_FREE_API_KEY",
+        billing="free",
+        models=(Model("model"),),
+    )
+
+    assert keyless.billing == "paid"
+    assert keyless.keyless
+    assert keyed_free.billing == "free"
+    assert not keyed_free.keyless
+
+
+def test_catalog_parser_reads_billing_and_uses_paid_default():
+    parsed = _parse_rows(
+        [
+            {
+                "id": "free",
+                "base_url": "https://free.test/v1",
+                "billing": "free",
+                "models": [{"name": "model"}],
+            },
+            {
+                "id": "default",
+                "base_url": "https://default.test/v1",
+                "models": [{"name": "model"}],
+            },
+        ]
+    )
+
+    assert [provider.billing for provider in parsed] == ["free", "paid"]
 
 
 def test_nvidia_catalog_contains_only_requested_models():
@@ -78,7 +125,7 @@ def test_known_aliases_include_env_alias():
 def test_packaged_catalog_loads():
     catalog = _packaged_catalog()
     ids = {p.id for p in catalog}
-    assert len(catalog) == 18
+    assert len(catalog) == 19
     assert ids == {
         "llm7",
         "ovh",
@@ -98,10 +145,57 @@ def test_packaged_catalog_loads():
         "aion",
         "opencode",
         "bai",
+        "openai",
     }
     for p in catalog:
-        assert p.models                                           
+        assert p.models                                            
         assert p.base_url.startswith("https://")
+
+
+def test_packaged_catalog_classifies_every_provider():
+    providers = {provider.id: provider for provider in _packaged_catalog()}
+    with PACKAGED_CATALOG.open("rb") as handle:
+        rows = tomllib.load(handle)["provider"]
+
+    assert set(providers) == {
+        "llm7",
+        "ovh",
+        "kilo",
+        "gemini",
+        "groq",
+        "nvidia",
+        "openrouter",
+        "ollama",
+        "kilo_code",
+        "modelscope",
+        "cloudflare",
+        "cohere",
+        "z_ai",
+        "chutes",
+        "agnes",
+        "aion",
+        "opencode",
+        "bai",
+        "openai",
+    }
+    assert all("billing" in row for row in rows)
+    assert all(provider.billing in {"free", "paid"} for provider in providers.values())
+
+
+def test_openai_provider_has_exact_paid_catalog_and_bearer_auth():
+    openai = next(provider for provider in _packaged_catalog() if provider.id == "openai")
+
+    assert openai.base_url == "https://api.openai.com/v1"
+    assert openai.auth == "bearer"
+    assert openai.key_env == "OPENAI_API_KEY"
+    assert openai.billing == "paid"
+    assert [model.name for model in openai.models] == [
+        "gpt-6-astra",
+        "gpt-5.6-luna",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.5",
+    ]
 
 
 def test_kimi_k27_catalog_entries_declare_verified_context_window():

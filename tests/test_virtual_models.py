@@ -80,6 +80,32 @@ def test_real_model_filter_remains_exact(env, quota):
     }
 
 
+def test_virtual_routing_uses_keyless_not_billing_classification(env, quota):
+    paid_keyless = Provider(
+        id="paid-keyless",
+        label="Paid Keyless",
+        adapter="openai",
+        base_url="https://paid-keyless.test/v1",
+        auth="none",
+        billing="paid",
+        models=(Model("model"),),
+    )
+    free_keyed = Provider(
+        id="free-keyed",
+        label="Free Keyed",
+        adapter="openai",
+        base_url="https://free-keyed.test/v1",
+        key_env="FREE_KEYED_API_KEY",
+        billing="free",
+        models=(Model("model"),),
+    )
+    pool = Pool([paid_keyless, free_keyed], env={}, quota=quota)
+
+    assert [target.name for target in pool.rank_targets([], model="sparrow/spark")] == [
+        "paid-keyless/model"
+    ]
+
+
 def test_virtual_model_targets_exclude_key_required_models(env, quota):
     provider = Provider(
         id="optional",

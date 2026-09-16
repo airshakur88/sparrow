@@ -1,6 +1,7 @@
 [[provider]]
 id = "llm7"
 label = "LLM7 (key optional)"
+billing = "free"
 adapter = "openai"
 base_url = "https://api.llm7.io/v1"
 key_env = "LLM7_API_KEY"
@@ -19,6 +20,7 @@ models = [
 [[provider]]
 id = "ovh"
 label = "OVHcloud AI Endpoints (keyless)"
+billing = "free"
 adapter = "openai"
 base_url = "https://oai.endpoints.kepler.ai.cloud.ovh.net/v1"
 auth = "none"
@@ -48,6 +50,7 @@ models = [
 [[provider]]
 id = "kilo"
 label = "Kilo Gateway (keyless)"
+billing = "free"
 adapter = "openai"
 base_url = "https://api.kilo.ai/api/gateway"
 auth = "none"
@@ -69,6 +72,7 @@ models = [
 [[provider]]
 id = "gemini"
 label = "Google Gemini"
+billing = "paid"
 adapter = "openai"
 base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 key_env = "GEMINI_API_KEY"
@@ -89,6 +93,7 @@ models = [
 [[provider]]
 id = "groq"
 label = "Groq"
+billing = "paid"
 adapter = "openai"
 base_url = "https://api.groq.com/openai/v1"
 key_env = "GROQ_API_KEY"
@@ -106,6 +111,7 @@ models = [
 [[provider]]
 id = "nvidia"
 label = "NVIDIA NIM"
+billing = "paid"
 adapter = "openai"
 base_url = "https://integrate.api.nvidia.com/v1"
 key_env = "NVIDIA_API_KEY"
@@ -124,6 +130,7 @@ models = [
 [[provider]]
 id = "openrouter"
 label = "OpenRouter"
+billing = "free"
 adapter = "openai"
 base_url = "https://openrouter.ai/api/v1"
 key_env = "OPENROUTER_API_KEY"
@@ -148,6 +155,7 @@ models = [
 [[provider]]
 id = "ollama"
 label = "Ollama Cloud"
+billing = "paid"
 adapter = "openai"
 base_url = "https://ollama.com/v1"
 key_env = "OLLAMA_API_KEY"
@@ -169,6 +177,7 @@ models = [
 [[provider]]
 id = "kilo_code"
 label = "Kilo Code"
+billing = "free"
 adapter = "openai"
 base_url = "https://api.kilo.ai/api/gateway"
 key_env = "KILO_API_KEY"
@@ -188,6 +197,7 @@ models = [
 [[provider]]
 id = "modelscope"
 label = "ModelScope"
+billing = "paid"
 adapter = "openai"
 base_url = "https://api-inference.modelscope.cn/v1"
 key_env = "MODELSCOPE_API_KEY"
@@ -208,6 +218,7 @@ models = [
 [[provider]]
 id = "cloudflare"
 label = "Cloudflare Workers AI"
+billing = "paid"
 adapter = "cloudflare"
 base_url = "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1"
 key_env = "CLOUDFLARE_API_TOKEN"
@@ -228,6 +239,7 @@ models = [
 [[provider]]
 id = "cohere"
 label = "Cohere"
+billing = "paid"
 adapter = "openai"
 base_url = "https://api.cohere.com/v2"
 key_env = "COHERE_API_KEY"
@@ -247,6 +259,7 @@ models = [
 [[provider]]
 id = "z_ai"
 label = "Z AI"
+billing = "paid"
 adapter = "openai"
 base_url = "https://open.bigmodel.cn/api/paas/v4"
 key_env = "ZAI_API_KEY"
@@ -259,6 +272,7 @@ models = [
 [[provider]]
 id = "chutes"
 label = "Chutes.ai"
+billing = "paid"
 adapter = "openai"
 base_url = "https://api.chutes.ai/v1"
 key_env = "CHUTES_API_KEY"
@@ -270,6 +284,7 @@ models = [
 [[provider]]
 id = "agnes"
 label = "Agnes AI"
+billing = "paid"
 adapter = "openai"
 base_url = "https://apihub.agnes-ai.com/v1"
 key_env = "AGNES_API_KEY"
@@ -284,6 +299,7 @@ models = [
 [[provider]]
 id = "aion"
 label = "Aion Labs"
+billing = "paid"
 adapter = "openai"
 base_url = "https://api.aionlabs.ai/v1"
 key_env = "AION_API_KEY"
@@ -297,6 +313,7 @@ models = [
 [[provider]]
 id = "opencode"
 label = "OpenCode Zen"
+billing = "free"
 adapter = "openai"
 base_url = "https://opencode.ai/zen/v1"
 auth = "none"
@@ -311,6 +328,7 @@ models = [
 [[provider]]
 id = "bai"
 label = "B.AI"
+billing = "paid"
 adapter = "openai"
 base_url = "https://api.b.ai/v1"
 key_env = "BAI_API_KEY"
@@ -319,4 +337,20 @@ models = [
     { name = "Qwen3.8-Flash", rpd = 0 },
     { name = "MiMo-V2.5", rpd = 0 },
     { name = "Hy3", rpd = 0 },
+]
+
+[[provider]]
+id = "openai"
+label = "OpenAI"
+billing = "paid"
+adapter = "openai"
+base_url = "https://api.openai.com/v1"
+auth = "bearer"
+key_env = "OPENAI_API_KEY"
+models = [
+    { name = "gpt-6-astra", rpd = 0 },
+    { name = "gpt-5.6-luna", rpd = 0 },
+    { name = "gpt-5.6-sol", rpd = 0 },
+    { name = "gpt-5.6-terra", rpd = 0 },
+    { name = "gpt-5.5", rpd = 0 },
 ]

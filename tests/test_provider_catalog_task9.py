@@ -111,15 +111,25 @@ def test_task9_malformed_and_unknown_catalog_rows_are_rejected(tmp_path: Path) -
         "[[provider]]\n"
         'id = "duplicate-model"\n'
         'base_url = "https://example.test/v1"\n'
-        'models = [{ name = "same" }, { name = "same" }]\n',
+        'models = [{ name = "same" }, { name = "same" }]\n'
+        "\n[[provider]]\n"
+        'id = "invalid-billing"\n'
+        'base_url = "https://example.test/v1"\n'
+        'billing = "trial"\n'
+        'models = [{ name = "model" }]\n',
         encoding="utf-8",
     )
 
     parsed = load_catalog(path)
-    assert [provider.id for provider in parsed] == ["unknown-adapter", "duplicate-model"]
+    assert [provider.id for provider in parsed] == [
+        "unknown-adapter",
+        "duplicate-model",
+        "invalid-billing",
+    ]
     errors = validate_catalog(path)
     assert any("unsupported adapter" in error for error in errors)
     assert any("duplicate model 'same'" in error for error in errors)
+    assert any("unsupported billing 'trial'" in error for error in errors)
 
 
 def test_task9_does_not_invent_unmapped_provider_endpoints() -> None:

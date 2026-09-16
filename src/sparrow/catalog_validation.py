@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 
 from .capability import capability_table, model_capability
 from .config import _safe_local_catalog_url, load_catalog, load_embedders, load_transcribers
-from .models import Provider
+from .models import BILLING_VALUES, Provider
 
 _ADAPTERS = {"openai", "gemini", "cloudflare"}
 _AUTH = {"bearer", "none"}
@@ -69,6 +69,8 @@ def _check_group(name: str, providers: list[Provider]) -> list[str]:
             errors.append(f"{prefix}: unsupported adapter {provider.adapter!r}")
         if provider.auth not in _AUTH:
             errors.append(f"{prefix}: unsupported auth {provider.auth!r}")
+        if provider.billing not in BILLING_VALUES:
+            errors.append(f"{prefix}: unsupported billing {provider.billing!r}")
         if not _valid_url(provider.base_url):
             errors.append(
                 f"{prefix}: base_url must be https or canonical literal loopback "

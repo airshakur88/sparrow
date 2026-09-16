@@ -277,7 +277,11 @@ def cmd_providers(args: argparse.Namespace) -> int:
         on = sum(1 for m in p.models if m.enabled)
         off = len(p.models) - on
         count = f"{on} models" + (f" (+{off} off)" if off else "")
-        print(f"  {mark} {p.id:<12} {p.label:<28} {count:<16} [{status}]")
+        access = "keyless" if p.keyless else "key required"
+        print(
+            f"  {mark} {p.id:<12} {p.label:<28} {count:<16} "
+            f"[{status}] [{p.billing} | {access}]"
+        )
     if not configured:
         print("\nNo providers configured yet. Add a key with `sparrow keys add <provider>`, or set one manually.")
     return 0
@@ -330,6 +334,8 @@ def cmd_models(args: argparse.Namespace) -> int:
                         "model": model.name,
                         "enabled": model.enabled,
                         "configured": provider.id in configured,
+                        "billing": provider.billing,
+                        "keyless": provider.keyless,
                         "capabilities": evidence,
                         "verified_features": sorted(
                             feature
@@ -371,7 +377,8 @@ def cmd_models(args: argparse.Namespace) -> int:
         keyless = ""
         if p.keyless and p.id in configured and not p.label.lower().endswith("(keyless)"):
             keyless = " (keyless)"
-        print(f"\n{p.label}{keyless}")
+        access = "keyless" if p.keyless else "key required"
+        print(f"\n{p.label}{keyless} [{p.billing} | {access}]")
         for m in p.models:
             if not m.enabled and not args.all:
                 continue

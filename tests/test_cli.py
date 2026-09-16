@@ -119,6 +119,76 @@ def test_models_json_is_machine_readable(monkeypatch, capsys) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert payload[0]["provider"] == "ready"
     assert payload[0]["model"] == "on"
+    assert payload[0]["billing"] == "paid"
+    assert payload[0]["keyless"] is True
+
+
+def test_models_json_classifies_each_openai_model_as_paid(monkeypatch, capsys) -> None:
+    model_names = (
+        "gpt-6-astra",
+        "gpt-5.6-luna",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.5",
+    )
+    catalog = [
+        Provider(
+            id="openai",
+            label="OpenAI",
+            adapter="openai",
+            base_url="https://api.openai.com/v1",
+            key_env="OPENAI_API_KEY",
+            billing="paid",
+            models=tuple(Model(name) for name in model_names),
+        )
+    ]
+    monkeypatch.setattr("sparrow.cli._runtime_catalog", lambda: catalog)
+    monkeypatch.setattr("sparrow.cli.configured_providers", lambda providers: [])
+
+    assert main(["models", "--json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert [row["model"] for row in payload] == list(model_names)
+    assert all(row["billing"] == "paid" and row["keyless"] is False for row in payload)
+
+
+def test_models_and_providers_plain_output_identifies_billing_and_access(
+    monkeypatch, capsys
+) -> None:
+    catalog = [
+        Provider(
+            id="ready",
+            label="Ready",
+            adapter="openai",
+            base_url="https://ready.test/v1",
+            auth="none",
+            billing="free",
+            models=(Model("on"),),
+        ),
+        Provider(
+            id="paid",
+            label="Paid",
+            adapter="openai",
+            base_url="https://paid.test/v1",
+            key_env="PAID_API_KEY",
+            billing="paid",
+            models=(Model("on"),),
+        ),
+    ]
+    monkeypatch.setattr("sparrow.cli._runtime_catalog", lambda: catalog)
+    monkeypatch.setattr("sparrow.cli.configured_providers", lambda providers: [catalog[0]])
+
+    assert main(["providers"]) == 0
+    providers_output = capsys.readouterr().out
+    assert "free" in providers_output
+    assert "keyless" in providers_output
+    assert "paid" in providers_output
+    assert "key required" in providers_output
+
+    assert main(["models", "--providers", "ready"]) == 0
+    models_output = capsys.readouterr().out
+    assert "free" in models_output
+    assert "keyless" in models_output
 
 
 def test_main_without_command_shows_welcome(capsys) -> None:

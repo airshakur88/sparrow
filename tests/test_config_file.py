@@ -42,6 +42,40 @@ def test_configured_providers_reads_default_config_file(tmp_path, monkeypatch):
     assert "groq" in ids
 
 
+def test_configured_providers_reads_provider_credential_slots(tmp_path):
+    env = _write(
+        tmp_path,
+        '[providers.nvidia]\n'
+        'api_keys = [{ id = "nvidia-1", env = "NVIDIA_API_KEY_1" }]\n',
+    )
+    env["NVIDIA_API_KEY_1"] = "test-key"
+
+    ids = {p.id for p in configured_providers(load_catalog(), env)}
+
+    assert "nvidia" in ids
+
+
+def test_configured_providers_reads_numbered_keys(tmp_path):
+    env = _write(tmp_path, '[keys]\nNVIDIA_API_KEY_1 = "from-file"\n')
+
+    ids = {p.id for p in configured_providers(load_catalog(), env)}
+
+    assert "nvidia" in ids
+
+
+def test_configured_providers_ignores_disabled_provider_credential_slot(tmp_path):
+    env = _write(
+        tmp_path,
+        '[providers.nvidia]\n'
+        'api_keys = [{ id = "nvidia-1", env = "NVIDIA_API_KEY_1", enabled = false }]\n',
+    )
+    env["NVIDIA_API_KEY_1"] = "test-key"
+
+    ids = {p.id for p in configured_providers(load_catalog(), env)}
+
+    assert "nvidia" not in ids
+
+
 def test_config_alias(tmp_path):
     env = _write(tmp_path, '[aliases]\n"gpt-4o-mini" = "groq/llama-3.1-8b-instant"\n')
     assert resolve_alias("gpt-4o-mini", env) == "groq/llama-3.1-8b-instant"
