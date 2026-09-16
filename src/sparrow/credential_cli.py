@@ -90,6 +90,64 @@ def register_credential(path: Path, *, provider: str, credential_id: str, env_va
     return _atomic_write(path, content)
 
 
+def remove_credential(path: Path, *, provider: str | None, credential_id: str) -> tuple[str, str]:
+    """Remove one explicit credential and its unshared config key."""
+    raw, content = _read_config(path)
+    rows = raw.get("credentials", [])
+    if not isinstance(rows, list):
+        raise ValueError("configuration credentials must be an array")
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, dict)
+        and row.get("id") == credential_id
+        and (provider is None or row.get("provider") == provider)
+    ]
+    if not matches:
+        scope = f"{provider}/{credential_id}" if provider else credential_id
+        raise ValueError(f"credential {scope} not found")
+    if len(matches) > 1:
+        raise ValueError(f"credential id {credential_id} is ambiguous; specify --provider")
+    match = matches[0]
+    match_provider = str(match["provider"])
+    env_var = str(match["env_var"])
+    blocks = content.split("\n[[credentials]]")
+    kept = [blocks[0]]
+    for block in blocks[1:]:
+        candidate = "[[credentials]]" + block
+        parsed = tomllib.loads(candidate)
+        row = parsed["credentials"][0]
+        if row.get("provider") == match_provider and row.get("id") == credential_id:
+            continue
+        kept.append(block)
+    updated = "\n[[credentials]]".join(kept)
+    remaining_refs = [
+        row.get("env_var")
+        for row in rows
+        if isinstance(row, dict)
+        and not (row.get("provider") == match_provider and row.get("id") == credential_id)
+    ]
+    if env_var not in remaining_refs:
+        updated = _remove_key_entry(updated, env_var)
+    _atomic_write(path, updated)
+    return match_provider, env_var
+
+
+def _remove_key_entry(content: str, name: str) -> str:
+    """Remove one key assignment from the TOML ``[keys]`` table."""
+    lines = content.splitlines(keepends=True)
+    in_keys = False
+    kept: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("["):
+            in_keys = stripped == "[keys]"
+        if in_keys and stripped.startswith(f"{name} ="):
+            continue
+        kept.append(line)
+    return "".join(kept)
+
+
 def render_usage(store: Any, *, provider: str | None = None, day: str | None = None,
                  as_json: bool = False, config_path: Path | None = None) -> str:
     rows = store.usage_report(provider=provider, day=day)

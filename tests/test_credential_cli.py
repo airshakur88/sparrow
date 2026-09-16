@@ -6,7 +6,12 @@ import tomllib
 import pytest
 
 from sparrow.cli import build_parser
-from sparrow.credential_cli import register_credential, render_status, render_usage
+from sparrow.credential_cli import (
+    register_credential,
+    remove_credential,
+    render_status,
+    render_usage,
+)
 from sparrow.credential_store import CredentialStore
 
 
@@ -131,3 +136,57 @@ def test_status_shows_duplicate_alias_without_secret(tmp_path):
     assert "alpha/one env=ALPHA_ONE group=team-a status=ready" in status
     assert "alpha/two env=ALPHA_TWO group=team-a status=duplicate-alias:one" in status
     assert "shared-secret" not in status
+
+
+def test_remove_credential_removes_only_target_slot_and_unshared_key(tmp_path):
+    config = tmp_path / "config.toml"
+    config.write_text(
+        '[keys]\nONE = "one-secret"\nTWO = "two-secret"\n\n'
+        '[[credentials]]\nprovider = "alpha"\nid = "one"\n'
+        'env_var = "ONE"\nquota_group = "shared"\nenabled = true\n\n'
+        '[[credentials]]\nprovider = "alpha"\nid = "two"\n'
+        'env_var = "TWO"\nquota_group = "shared"\nenabled = true\n',
+        encoding="utf-8",
+    )
+
+    assert remove_credential(config, provider="alpha", credential_id="one") == ("alpha", "ONE")
+    parsed = tomllib.loads(config.read_text(encoding="utf-8"))
+    assert parsed["keys"] == {"TWO": "two-secret"}
+    assert [row["id"] for row in parsed["credentials"]] == ["two"]
+
+
+def test_remove_credential_rejects_ambiguous_id(tmp_path):
+    config = tmp_path / "config.toml"
+    config.write_text(
+        '[[credentials]]\nprovider = "alpha"\nid = "shared"\nenv_var = "A"\n\n'
+        '[[credentials]]\nprovider = "beta"\nid = "shared"\nenv_var = "B"\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="ambiguous"):
+        remove_credential(config, provider=None, credential_id="shared")
+
+
+def test_register_credential_accumulates_distinct_slots(tmp_path):
+    config = tmp_path / "config.toml"
+
+    register_credential(
+        config,
+        provider="alpha",
+        credential_id="key-1",
+        env_var="ALPHA_API_KEY",
+        quota_group="shared",
+        secret="first-secret",
+    )
+    register_credential(
+        config,
+        provider="alpha",
+        credential_id="key-2",
+        env_var="ALPHA_API_KEY_2",
+        quota_group="shared",
+        secret="second-secret",
+    )
+
+    parsed = tomllib.loads(config.read_text(encoding="utf-8"))
+    assert [row["id"] for row in parsed["credentials"]] == ["key-1", "key-2"]
+    assert set(parsed["keys"]) == {"ALPHA_API_KEY", "ALPHA_API_KEY_2"}

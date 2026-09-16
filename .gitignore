@@ -29,3 +29,4 @@ sparrow-state/
 .dolt/
 .beads-credential-key
 /.omo
+SECURITY-AUDIT-*.md

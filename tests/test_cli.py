@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 import pytest
 
-from sparrow.cli import _strip_fences, build_parser
-from sparrow.cli import main
+from sparrow.cli import _strip_fences, build_parser, main
 from sparrow.models import Model, Provider
 
 
@@ -21,14 +21,16 @@ def test_build_parser_registers_exact_public_commands() -> None:
     command_action = next(action for action in parser._actions if action.dest == "command")
     assert isinstance(command_action, argparse._SubParsersAction)
     providers_parser = command_action.choices["providers"]
-    keys_parser = command_action.choices["keys"]
+    keys_parser = command_action.choices["key"]
 
     assert set(command_action.choices) == {
         "ask",
         "start",
         "models",
         "providers",
+        "key",
         "keys",
+        "settings",
         "quota",
         "doctor",
     }
@@ -38,7 +40,10 @@ def test_build_parser_registers_exact_public_commands() -> None:
         "usage",
         "checklist",
         "add",
+        "list",
+        "rm",
     }
+    assert _subparser_choices(command_action.choices["settings"], "settings_command") == {"edit"}
 
 
 @pytest.mark.parametrize(
@@ -123,6 +128,73 @@ def test_main_without_command_shows_welcome(capsys) -> None:
     assert "SPARROW" in output
     assert "sparrow ask" in output
     assert "sparrow doctor" in output
+
+
+def test_key_alias_and_new_commands_parse() -> None:
+    parser = build_parser()
+
+    assert parser.parse_args(["key", "list"]).command == "key"
+    assert parser.parse_args(["keys", "list"]).command == "keys"
+    assert parser.parse_args(["key", "rm", "key-1", "--yes"]).credential_id == "key-1"
+
+
+def test_key_list_never_prints_secret(monkeypatch, tmp_path, capsys) -> None:
+    config = tmp_path / "config.toml"
+    state = tmp_path / "state.db"
+    config.write_text(
+        '[keys]\nALPHA_API_KEY = "super-secret"\n\n'
+        '[[credentials]]\nprovider = "alpha"\nid = "key-1"\n'
+        'env_var = "ALPHA_API_KEY"\nquota_group = "shared"\nenabled = true\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SPARROW_CONFIG_FILE", str(config))
+    monkeypatch.setenv("SPARROW_CREDENTIAL_STATE_FILE", str(state))
+
+    assert main(["key", "list"]) == 0
+
+    output = capsys.readouterr().out
+    assert "alpha/key-1" in output
+    assert "super-secret" not in output
+
+
+def test_key_rm_removes_one_slot(monkeypatch, tmp_path, capsys) -> None:
+    config = tmp_path / "config.toml"
+    state = tmp_path / "state.db"
+    config.write_text(
+        '[keys]\nONE = "one-secret"\nTWO = "two-secret"\n\n'
+        '[[credentials]]\nprovider = "alpha"\nid = "one"\n'
+        'env_var = "ONE"\nquota_group = "shared"\nenabled = true\n\n'
+        '[[credentials]]\nprovider = "alpha"\nid = "two"\n'
+        'env_var = "TWO"\nquota_group = "shared"\nenabled = true\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("SPARROW_CONFIG_FILE", str(config))
+    monkeypatch.setenv("SPARROW_KEYS_PATH", str(tmp_path / "keys.toml"))
+    monkeypatch.setenv("SPARROW_CREDENTIAL_STATE_FILE", str(state))
+
+    assert main(["key", "rm", "one", "--yes"]) == 0
+
+    content = config.read_text(encoding="utf-8")
+    assert 'id = "one"' not in content
+    assert 'id = "two"' in content
+    assert "ONE =" not in content
+    assert "one-secret" not in capsys.readouterr().out
+
+
+def test_settings_edit_uses_windows_file_association(monkeypatch, tmp_path, capsys) -> None:
+    import sparrow.cli as cli_module
+
+    config = tmp_path / "config.toml"
+    opened: list[str] = []
+    monkeypatch.setenv("SPARROW_CONFIG_FILE", str(config))
+    monkeypatch.setattr(cli_module.sys, "platform", "win32")
+    monkeypatch.setattr(cli_module.os, "startfile", lambda path: opened.append(path), raising=False)
+
+    assert main(["settings", "edit"]) == 0
+
+    assert opened == [str(config)]
+    assert Path(config).exists()
+    assert "super-secret" not in capsys.readouterr().out
 
 
 def test_help_hides_usage_description_version_and_routing_aliases() -> None:

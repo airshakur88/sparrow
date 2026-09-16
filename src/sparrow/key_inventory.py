@@ -190,6 +190,18 @@ def append_inventory_record(record: KeyRecord, path: Path | None = None) -> Path
     return path
 
 
+def remove_inventory_record(provider: str, env_var: str, path: Path | None = None) -> Path:
+    """Remove the inventory record for one provider environment variable."""
+    path = path or default_inventory_path()
+    records = load_inventory(path)
+    kept = [record for record in records if not (record.provider == provider and record.env_var == env_var)]
+    if kept == records:
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_dump_inventory(kept), encoding="utf-8")
+    return path
+
+
 def _dump_inventory(records: list[KeyRecord]) -> str:
     chunks = []
     for record in records:

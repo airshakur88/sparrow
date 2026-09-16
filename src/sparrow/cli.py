@@ -33,7 +33,6 @@ from .panel import render_panel_markdown, run_panel
 from .quota import QuotaStore
 from .roles import format_roles, get_role
 from .router import Pool
-from .routing_modes import routing_override
 from .savings import format_saved
 from .task_quality import TASK_HINTS
 from .virtual_models import VIRTUAL_MODELS
@@ -609,6 +608,35 @@ def _choose_discovered_model(models: list[str], args: argparse.Namespace) -> str
     return None
 
 
+def _credential_identity(
+    path, provider_id: str, requested_id: str | None, requested_env: str | None, base_env: str
+) -> tuple[str, str]:
+    from .credential_cli import _read_config
+
+    raw, _ = _read_config(path)
+    rows = raw.get("credentials", [])
+    rows = rows if isinstance(rows, list) else []
+    provider_rows = [row for row in rows if isinstance(row, dict) and row.get("provider") == provider_id]
+    used_ids = {str(row.get("id")) for row in provider_rows}
+    used_env = {str(name) for name in raw.get("keys", {})} if isinstance(raw.get("keys", {}), dict) else set()
+    credential_id = requested_id
+    if not credential_id:
+        index = 1
+        while f"key-{index}" in used_ids:
+            index += 1
+        credential_id = f"key-{index}"
+    env_var = requested_env
+    if not env_var:
+        if base_env not in used_env and not provider_rows:
+            env_var = base_env
+        else:
+            index = 2
+            while f"{base_env}_{index}" in used_env:
+                index += 1
+            env_var = f"{base_env}_{index}"
+    return credential_id, env_var
+
+
 def cmd_keys_add(args: argparse.Namespace) -> int:
     import getpass
     from datetime import date
@@ -619,7 +647,6 @@ def cmd_keys_add(args: argparse.Namespace) -> int:
         KeyRecord,
         append_inventory_record,
         default_config_path,
-        upsert_config_key,
     )
 
     if getattr(args, "provider_arg", None) and not args.provider:
@@ -638,10 +665,12 @@ def cmd_keys_add(args: argparse.Namespace) -> int:
             return 3
         provider = _choose_provider(load_catalog(), local_id)
 
-    primary_env_var = args.env_var or provider.key_env
-    if not primary_env_var:
+    if not provider.key_env and not args.env_var:
         print(f"Provider {provider.id} has no key environment variable.", file=sys.stderr)
         return 3
+    credential_id, primary_env_var = _credential_identity(
+        default_config_path(), provider.id, args.credential_id, args.env_var, provider.key_env or "SPARROW_API_KEY"
+    )
     value = getpass.getpass(f"Paste {primary_env_var}: ").strip()
 
     if not value:
@@ -668,24 +697,17 @@ def cmd_keys_add(args: argparse.Namespace) -> int:
             print("Cancelled.")
             return 1
 
-    if args.credential_id:
-        config_path = register_credential(
-            default_config_path(),
-            provider=provider.id,
-            credential_id=args.credential_id,
-            env_var=primary_env_var,
-            quota_group=args.quota_group or "shared",
-            secret=value,
-            enabled=not args.disabled,
-        )
-    else:
-        config_path = upsert_config_key(primary_env_var, value)
+    config_path = register_credential(
+        default_config_path(),
+        provider=provider.id,
+        credential_id=credential_id,
+        env_var=primary_env_var,
+        quota_group=args.quota_group or "shared",
+        secret=value,
+        enabled=not args.disabled,
+    )
     if extra_values:
-        if args.credential_id:
-            config_path = set_config_keys(config_path, extra_values)
-        else:
-            for env_var, extra_value in extra_values.items():
-                config_path = upsert_config_key(env_var, extra_value)
+        config_path = set_config_keys(config_path, extra_values)
 
     written_names = [str(primary_env_var), *extra_values]
     inventory_path = append_inventory_record(
@@ -708,6 +730,71 @@ def cmd_keys_add(args: argparse.Namespace) -> int:
     print(f"Unlocked {unlocked} enabled model {suffix} for {provider.label}.")
     print("Next command:")
     print("  sparrow providers health -p " + provider.id)
+    return 0
+
+
+def cmd_keys_list(args: argparse.Namespace) -> int:
+    from .credential_cli import render_status
+    from .credential_store import CredentialStore
+    from .key_inventory import default_config_path
+
+    path = default_config_path()
+    if not path.exists():
+        print("No credential configuration found.")
+        return 0
+    status = render_status(path, CredentialStore(), env={})
+    rows = status.splitlines()
+    if args.provider:
+        rows = [row for row in rows if row.startswith(f"{args.provider}/")]
+    print(_heading("Configured API keys", str(path)))
+    print("\n".join(rows) if rows else "No matching credential slots configured.")
+    return 0
+
+
+def cmd_keys_rm(args: argparse.Namespace) -> int:
+    from .credential_cli import remove_credential
+    from .key_inventory import default_config_path, remove_inventory_record
+
+    path = default_config_path()
+    if not path.exists():
+        print("No credential configuration found.", file=sys.stderr)
+        return 3
+    if not args.yes and not _yes(input(f"Remove credential {args.credential_id}? [y/N] ")):
+        print("Cancelled.")
+        return 1
+    try:
+        provider_id, env_var = remove_credential(
+            path, provider=args.provider, credential_id=args.credential_id
+        )
+    except ValueError as exc:
+        print(f"{_error_line(str(exc))}", file=sys.stderr)
+        return 3
+    remove_inventory_record(provider_id, env_var)
+    print(f"Removed credential {args.credential_id}.")
+    return 0
+
+
+def cmd_settings_edit(args: argparse.Namespace) -> int:
+    import subprocess
+
+    from .key_inventory import default_config_path
+
+    path = default_config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch(exist_ok=True)
+    try:
+        if sys.platform == "win32":
+            os.startfile(str(path))
+        else:
+            opener = os.environ.get("VISUAL") or os.environ.get("EDITOR")
+            if not opener:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+            command = [opener, str(path)]
+            subprocess.run(command, check=True)
+    except (FileNotFoundError, OSError, subprocess.CalledProcessError) as exc:
+        print(f"{_error_line(f'could not open settings: {exc}')}", file=sys.stderr)
+        return 3
+    print(f"Opened settings: {path}")
     return 0
 
 
@@ -805,7 +892,7 @@ def _print_start_logs(pool: Pool) -> None:
 
 
 def cmd_start(args: argparse.Namespace) -> int:
-    from .proxy import serve                                                  
+    from .proxy import serve
     from .tailnet import (
         SetupTokenLabel,
         UnsafeBindError,
@@ -920,7 +1007,7 @@ def _run_tailnet_serve(
 ) -> int:
                                                                            
 
-    from .proxy import serve                                                  
+    from .proxy import serve
     from .tailnet import (
         STATE_CLI_MISSING,
         STATE_LOGGED_OUT,
@@ -1184,7 +1271,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_quota = sub.add_parser("quota", help="show today's per-provider usage")
     p_quota.set_defaults(func=cmd_quota)
 
-    p_keys = sub.add_parser("keys", help="inspect manually configured provider keys")
+    p_keys = sub.add_parser("key", aliases=["keys"], help="manage provider API keys")
     keys_sub = p_keys.add_subparsers(dest="keys_command", required=True)
     p_keys_status = keys_sub.add_parser("status", help="show key inventory and provider readiness")
     p_keys_status.add_argument("--target", type=int, default=5, help="desired healthy provider count")
@@ -1212,6 +1299,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_keys_add.add_argument("--commercial-allowed", action="store_true")
     p_keys_add.add_argument("-y", "--yes", action="store_true")
     p_keys_add.set_defaults(func=cmd_keys_add)
+    p_keys_list = keys_sub.add_parser("list", help="list configured provider keys without secrets")
+    p_keys_list.add_argument("-p", "--provider")
+    p_keys_list.set_defaults(func=cmd_keys_list)
+    p_keys_rm = keys_sub.add_parser("rm", help="remove one configured provider key")
+    p_keys_rm.add_argument("credential_id")
+    p_keys_rm.add_argument("-p", "--provider")
+    p_keys_rm.add_argument("-y", "--yes", action="store_true")
+    p_keys_rm.set_defaults(func=cmd_keys_rm)
+
+    p_settings = sub.add_parser("settings", help="open Sparrow settings")
+    settings_sub = p_settings.add_subparsers(dest="settings_command", required=True)
+    p_settings_edit = settings_sub.add_parser("edit", help="open config.toml in its associated application")
+    p_settings_edit.set_defaults(func=cmd_settings_edit)
 
     p_doctor = sub.add_parser("doctor", help="show local diagnostics without calling providers")
     p_doctor.set_defaults(func=cmd_doctor)

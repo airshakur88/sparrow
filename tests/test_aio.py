@@ -36,6 +36,37 @@ def test_aask_succeeds(providers, env, quota):
     assert reply.provider_id in {p.id for p in providers}
 
 
+@pytest.mark.parametrize("model_name", ["sparrow/spark", "sparrow/spark-flash", "sparrow/galaxy"])
+def test_async_virtual_model_uses_only_keyless_targets(quota, model_name):
+    keyed = Provider(
+        id="keyed",
+        label="Keyed",
+        adapter="openai",
+        base_url="https://keyed.test/v1",
+        key_env="KEYED_KEY",
+        models=(Model("shared"),),
+    )
+    keyless = Provider(
+        id="free",
+        label="Free",
+        adapter="openai",
+        base_url="https://free.test/v1",
+        auth="none",
+        models=(Model("shared"),),
+    )
+    apost = _async_post({"free.test": (200, {"choices": [{"message": {"content": "ok"}}]})})
+    pool = AsyncPool(
+        Pool([keyed, keyless], quota=quota, env={"KEYED_KEY": "secret"}), apost=apost
+    )
+
+    reply = asyncio.run(
+        pool.achat([{"role": "user", "content": "hi"}], model=model_name)
+    )
+
+    assert reply.provider_id == "free"
+    assert [call["url"] for call in apost.calls] == ["https://free.test/v1/chat/completions"]
+
+
 def test_async_failover_skips_500(providers, env, quota):
     apost = _async_post({"alpha.test": (500, {"error": "boom"})})
     pool = AsyncPool(Pool(providers, quota=quota, env=env), apost=apost)

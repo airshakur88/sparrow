@@ -52,6 +52,7 @@ from .router import (
 )
 from .routing_modes import normalize_routing_mode
 from .task_quality import TASK_GENERAL, resolve_task, validate_task
+from .virtual_models import virtual_routing
 
                                                                                        
 AsyncPostFn = Callable[[str, dict, dict, float], Awaitable["_client.HTTPResult"]]
@@ -460,7 +461,8 @@ class AsyncPool:
         if not p.providers:
             raise NoProvidersConfigured("no provider has an API key set")
         provider_list = list(providers) if providers else None
-        eff = normalize_routing_mode(routing, p.routing)
+        model_routing = virtual_routing(model, routing)
+        eff = normalize_routing_mode(model_routing or routing, p.routing)
         if eff in ("quality", "adaptive"):
             resolved_task = resolve_task(messages, task)
         else:
