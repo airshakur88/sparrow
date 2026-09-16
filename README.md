@@ -228,13 +228,12 @@ automatic routing retains its verified-capability requirement.
 
 ## Catalog
 
-The built-in catalog currently contains 19 providers and 160 models (160
+The built-in catalog currently contains 18 providers and 157 models (157
 enabled by default). Keyless providers can work without credentials; other
 providers require their corresponding API key.
 
 | Provider | Available models |
 |---|---|
-| `pollinations` | `openai`, `openai-fast`, `gpt-oss` |
 | `llm7` | `default`, `fast`, `codestral-latest`, `DeepSeek-V4-Flash-0731`, `minimax-m2.7`, `gemma4:31b`, `mistral-Nemo-Instruct-2407`, `gemini-3.1-flash-lite` |
 | `ovh` | `Meta-Llama-3_3-70B-Instruct`, `Mistral-Small-3.2-24B-Instruct-2506`, `Mistral-Nemo-Instruct-2407`, `Qwen2.5-VL-72B-Instruct`, `Mistral-7B-Instruct-v0.3`, `Qwen3.5-397B-A17B`, `gpt-oss-120b`, `Qwen3.6-27B`, `Qwen3.5-9B`, `qwen3.6-27b`, `qwen3.5-397b-a17b`, `qwen3.5-9b`, `qwen3-coder-30b-a3b-instruct`, `qwen2.5-vl-72b-instruct`, `mistral-small-3.2-24b-instruct`, `mistral-7b-instruct-v0.3`, `qwen3-32b`, `meta-llama-3_3-70b-instruct` |
 | `kilo` | `openrouter/free`, `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`, `poolside/laguna-s-2.1:free`, `kilo-auto/free`, `stepfun/step-3.7-flash:free`, `nvidia/nemotron-3-super-120b-a12b:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`, `cohere/north-mini-code:free`, `dots-studio/dots-3-note-preview:free`, `inclusionai/ling-3.0-flash-fin:free`, `liquid/lfm-2.5-2.6b:free`, `nvidia/nemotron-3.5-lightning:free` |

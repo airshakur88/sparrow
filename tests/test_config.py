@@ -78,9 +78,8 @@ def test_known_aliases_include_env_alias():
 def test_packaged_catalog_loads():
     catalog = _packaged_catalog()
     ids = {p.id for p in catalog}
-    assert len(catalog) == 19
+    assert len(catalog) == 18
     assert ids == {
-        "pollinations",
         "llm7",
         "ovh",
         "kilo",
@@ -126,7 +125,6 @@ def test_packaged_catalog_reflects_current_model_lifecycle():
     providers = {provider.id: provider for provider in _packaged_catalog()}
 
     expected_enabled = {
-        "pollinations": {"openai-fast", "gpt-oss"},
         "llm7": {"default", "fast", "minimax-m2.7"},
         "kilo": {"openrouter/free", "kilo-auto/free"},
         "gemini": {"gemini-2.5-flash", "gemini-3.8-flash"},
@@ -140,9 +138,6 @@ def test_packaged_catalog_reflects_current_model_lifecycle():
         assert names <= models.keys()
         assert all(models[name].enabled for name in names)
 
-    pollinations = providers["pollinations"]
-    assert _model(pollinations, "openai").auto is False
-    assert _model(pollinations, "gpt-oss").auto is False
     assert "free_ai" not in providers
 
 
@@ -271,23 +266,7 @@ def test_keyless_providers_always_configured():
     ids = {p.id for p in configured_providers(catalog, {})}
     assert "ovh" in ids           
     assert "llm7" in ids                
-    assert "pollinations" in ids           
     assert "groq" not in ids               
-
-
-def test_pollinations_catalog_matches_current_chat_selectors():
-    pollinations = next(provider for provider in _packaged_catalog() if provider.id == "pollinations")
-    models = {model.name: model for model in pollinations.models}
-
-    assert set(models) == {
-        "openai",
-        "openai-fast",
-        "gpt-oss",
-    }
-    assert models["gpt-oss"].enabled is True
-    assert models["openai-fast"].auto is True
-    assert models["openai"].auto is False
-    assert models["gpt-oss"].auto is False
 
 
 def test_configured_filter_by_env():

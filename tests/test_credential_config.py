@@ -288,10 +288,10 @@ class TestParseCredentialsInvalid:
     def test_auth_none_provider_rejects_credentials(self):
         config = {
             "credentials": [
-                {"provider": "pollinations", "id": "key1", "env_var": "K1", "quota_group": "g"}
+                {"provider": "opencode", "id": "key1", "env_var": "K1", "quota_group": "g"}
             ]
         }
-        providers = [make_provider("pollinations", auth="none", key_env=None)]
+        providers = [make_provider("opencode", auth="none", key_env=None)]
         env = {}
 
         with pytest.raises(ParseError) as exc:
@@ -406,7 +406,7 @@ class TestImplicitLegacySynthesis:
     def test_provider_without_key_env_no_legacy(self):
                                                                            
         config = {"credentials": []}
-        providers = [make_provider("pollinations", auth="none", key_env=None)]
+        providers = [make_provider("opencode", auth="none", key_env=None)]
         env = {}
 
         slots = parse_credentials(config, providers, env)

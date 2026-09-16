@@ -258,12 +258,12 @@ class TestLegacyProviderCompatibility:
 
     def test_provider_is_configured_keyless(self) -> None:
         provider = Provider(
-            id="pollinations",
-            label="Pollinations",
+            id="opencode",
+            label="OpenCode",
             adapter="openai",
-            base_url="https://text.pollinations.ai/openai",
+            base_url="https://opencode.ai/zen/v1",
             auth="none",
-            models=(Model("openai", rpd=0),),
+            models=(Model("nemotron-3-ultra-free", rpd=0),),
         )
         env = {}
         assert provider.is_configured(env) is True
@@ -346,24 +346,24 @@ class TestLegacyProviderCompatibility:
 
     def test_provider_api_key_returns_none_when_no_key_env(self) -> None:
         provider = Provider(
-            id="pollinations",
-            label="Pollinations",
+            id="opencode",
+            label="OpenCode",
             adapter="openai",
-            base_url="https://text.pollinations.ai/openai",
+            base_url="https://opencode.ai/zen/v1",
             auth="none",
-            models=(Model("openai", rpd=0),),
+            models=(Model("nemotron-3-ultra-free", rpd=0),),
         )
         env = {}
         assert provider.api_key(env) is None
 
     def test_provider_keyless_property(self) -> None:
         provider = Provider(
-            id="pollinations",
-            label="Pollinations",
+            id="opencode",
+            label="OpenCode",
             adapter="openai",
-            base_url="https://text.pollinations.ai/openai",
+            base_url="https://opencode.ai/zen/v1",
             auth="none",
-            models=(Model("openai", rpd=0),),
+            models=(Model("nemotron-3-ultra-free", rpd=0),),
         )
         assert provider.keyless is True
 

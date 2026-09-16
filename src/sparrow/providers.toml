@@ -1,16 +1,4 @@
 [[provider]]
-id = "pollinations"
-label = "Pollinations (keyless)"
-adapter = "openai"
-base_url = "https://text.pollinations.ai/openai"
-auth = "none"
-models = [
-    { name = "openai", rpd = 0, auto = false },
-    { name = "openai-fast", rpd = 0 },
-    { name = "gpt-oss", rpd = 0, auto = false },
-]
-
-[[provider]]
 id = "llm7"
 label = "LLM7 (key optional)"
 adapter = "openai"
