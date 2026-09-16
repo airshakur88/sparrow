@@ -278,16 +278,11 @@ def match_local_provider(
             return str(provider.id)
     aliases = {
         "google-gemini": "gemini",
-        "github-models": "github",
-        "z-ai-zhipu-glm": "zhipu",
         "llm7-io": "llm7",
         "openrouter": "openrouter",
         "nvidia-nim": "nvidia",
         "groq": "groq",
-        "cerebras": "cerebras",
         "cohere": "cohere",
-        "mistral-ai": "mistral",
-        "sambanova": "sambanova",
         "cloudflare-workers-ai": "cloudflare",
         "ollama-cloud": "ollama",
     }
@@ -486,10 +481,8 @@ def _external_lookup_slug(value: str) -> str:
         "ai21labs": "ai21-labs",
         "model-scope": "modelscope",
         "modelscope": "modelscope",
-        "silicon-flow": "siliconflow",
         "google": "google-gemini",
         "gemini": "google-gemini",
-        "github": "github-models",
         "hf": "hugging-face",
         "huggingface": "hugging-face",
     }

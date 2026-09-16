@@ -31,6 +31,7 @@ def test_nvidia_catalog_contains_only_requested_models():
 
     assert [model.name for model in nvidia.models] == [
         "mistralai/mistral-nemotron",
+        "z-ai/glm-5.3-flash",
         "nvidia/nemotron-3-ultra-550b-a55b",
         "nvidia/nemotron-ocr-v2",
         "moonshotai/kimi-k3",
@@ -77,7 +78,7 @@ def test_known_aliases_include_env_alias():
 def test_packaged_catalog_loads():
     catalog = _packaged_catalog()
     ids = {p.id for p in catalog}
-    assert len(catalog) == 21
+    assert len(catalog) == 19
     assert ids == {
         "pollinations",
         "llm7",
@@ -88,7 +89,6 @@ def test_packaged_catalog_loads():
         "nvidia",
         "openrouter",
         "ollama",
-        "github_models",
         "kilo_code",
         "modelscope",
         "cloudflare",
@@ -99,7 +99,6 @@ def test_packaged_catalog_loads():
         "aion",
         "opencode",
         "bai",
-        "free_ai",
     }
     for p in catalog:
         assert p.models                                           
@@ -135,24 +134,16 @@ def test_packaged_catalog_reflects_current_model_lifecycle():
         "cloudflare": {"@cf/qwen/qwen3.8-27b"},
         "opencode": {"nemotron-3-ultra-free", "big-pickle"},
     }
-    expected_disabled = {
-        "github_models": {model.name for model in providers["github_models"].models},
-        "free_ai": {"dynamic-catalog"},
-    }
 
     for provider_id, names in expected_enabled.items():
         models = {model.name: model for model in providers[provider_id].models}
         assert names <= models.keys()
         assert all(models[name].enabled for name in names)
-    for provider_id, names in expected_disabled.items():
-        models = {model.name: model for model in providers[provider_id].models}
-        assert names <= models.keys()
-        assert all(not models[name].enabled for name in names)
 
     pollinations = providers["pollinations"]
     assert _model(pollinations, "openai").auto is False
     assert _model(pollinations, "gpt-oss").auto is False
-    assert _model(providers["free_ai"], "dynamic-catalog").auto is False
+    assert "free_ai" not in providers
 
 
 def test_packaged_catalog_reflects_current_provider_refresh():
@@ -198,10 +189,8 @@ def test_packaged_catalog_reflects_current_automatic_routes():
     assert load_embedders(PACKAGED_CATALOG) == []
 
 
-def test_packaged_catalog_keeps_retired_github_models_disabled():
-    github = next(provider for provider in _packaged_catalog() if provider.id == "github_models")
-    assert github.models
-    assert all(not model.enabled for model in github.models)
+def test_packaged_catalog_removes_retired_github_models():
+    assert all(provider.id != "github_models" for provider in _packaged_catalog())
     assert load_embedders(PACKAGED_CATALOG) == []
 
 
@@ -223,10 +212,8 @@ def test_packaged_catalog_reflects_current_lifecycle_entries():
     providers = {provider.id: provider for provider in _packaged_catalog()}
 
     assert "longcat" not in providers
-    assert "github_models" in providers
-    assert all(not model.enabled for model in providers["github_models"].models)
-    assert _model(providers["free_ai"], "dynamic-catalog").enabled is False
-    assert _model(providers["free_ai"], "dynamic-catalog").auto is False
+    assert "github_models" not in providers
+    assert "free_ai" not in providers
     assert _model(providers["kilo_code"], "tencent/hy3:free").enabled
     assert _model(providers["z_ai"], "glm-4.7").enabled
     assert _model(providers["chutes"], "deepseek-ai/DeepSeek-R1").enabled
@@ -236,11 +223,11 @@ def test_packaged_embedder_catalog_is_empty_until_an_embedder_is_declared():
     assert load_embedders(PACKAGED_CATALOG) == []
 
 
-def test_packaged_catalog_keeps_disabled_routes_out_of_automatic_routing():
+def test_packaged_catalog_excludes_removed_providers_and_dynamic_placeholder():
     providers = {provider.id: provider for provider in _packaged_catalog()}
-    assert all(not model.enabled for model in providers["github_models"].models)
-    dynamic = providers["free_ai"].model("dynamic-catalog")
-    assert dynamic is not None and not dynamic.enabled and not dynamic.auto
+    assert "github_models" not in providers
+    assert "free_ai" not in providers
+    assert all(model.name != "dynamic-catalog" for p in providers.values() for model in p.models)
 
 
 def test_groq_catalog_matches_current_free_plan_routes():

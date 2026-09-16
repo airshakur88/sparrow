@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Callable
 from typing import NoReturn
 
 from . import __version__
@@ -773,19 +774,34 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 1 if config_issues else 0
 
 
-def _print_start_logs(pool: Pool) -> None:
-    from pprint import pformat
+def _format_start_log(entry: dict) -> str:
+    if entry.get("kind") == "error":
+        return (
+            f"[error] {entry.get('status', '?')} {entry.get('code', 'error')} "
+            f"{entry.get('path', '')} - {entry.get('message', '')}"
+        )
+    provider = entry.get("provider", "?")
+    model = entry.get("model", "?")
+    attempts = entry.get("attempts", 1)
+    return f"[request] {provider}/{model} attempts={attempts}"
 
-    snapshots = (
-        ("live stats", pool.stats_snapshot()),
-        ("lifetime stats", pool.lifetime_stats()),
-        ("quota", pool.quota.snapshot()),
-        ("route health", pool.route_health_snapshot()),
-        ("route cooldowns", pool.route_cooldown_snapshot()),
+
+def _print_start_logs(pool: Pool) -> None:
+    stats = pool.stats_snapshot()
+    lifetime = pool.lifetime_stats()
+    print("\nrequest logs (live)", file=sys.stderr)
+    print(
+        f"usage: {stats['requests']} requests | {stats['prompt_tokens']} prompt tokens | "
+        f"{stats['completion_tokens']} completion tokens | {stats['cache_hits']} cache hits",
+        file=sys.stderr,
     )
-    print("sparrow: usage and route logs", file=sys.stderr)
-    for label, snapshot in snapshots:
-        print(f"\n[{label}]\n{pformat(snapshot, sort_dicts=True)}", file=sys.stderr)
+    print(
+        f"lifetime: {lifetime.get('requests', 0)} requests | "
+        f"{lifetime.get('prompt_tokens', 0)} prompt tokens | "
+        f"{lifetime.get('completion_tokens', 0)} completion tokens",
+        file=sys.stderr,
+    )
+    print("waiting for requests...", file=sys.stderr)
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -853,9 +869,14 @@ def cmd_start(args: argparse.Namespace) -> int:
         )
         return 3
 
-    httpd = serve(pool, host=host, port=args.port, api_key=proxy_key)
+    request_logger: Callable[[dict], None] | None = None
     if getattr(args, "logs", False):
-        _print_start_logs(pool)
+        def emit_request_log(entry: dict) -> None:
+            print(_format_start_log(entry), file=sys.stderr, flush=True)
+
+        request_logger = emit_request_log
+
+    httpd = serve(pool, host=host, port=args.port, api_key=proxy_key, request_logger=request_logger)
     n_models = sum(len(p.models) for p in pool.providers)
     auth_enabled = proxy_key is not None
     auth_note = "  auth: Bearer key required\n" if auth_enabled else ""
@@ -870,6 +891,8 @@ def cmd_start(args: argparse.Namespace) -> int:
         "  press Ctrl-C to stop",
         file=sys.stderr,
     )
+    if getattr(args, "logs", False):
+        _print_start_logs(pool)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

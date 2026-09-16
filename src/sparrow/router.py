@@ -894,12 +894,28 @@ class Pool:
         features: Iterable[str],
         *,
         exact_pin: bool,
+        model: str | None = None,
     ) -> list[Target]:
                                                                                         
 
         wanted = frozenset(features)
         if not wanted or exact_pin or self.conformance is None:
             return targets
+        if virtual_model(model) is not None:
+            # Virtual models are explicit routes, usable before local canaries run.
+            # Missing evidence is not evidence that an upstream lacks a feature.
+            snapshot = self.conformance.snapshot()
+            return [
+                target
+                for target in targets
+                if all(
+                    row.get("status") not in {"fail", "unsupported"}
+                    for feature, row in self.conformance.evidence(
+                        target.provider, target.model, snapshot=snapshot
+                    ).items()
+                    if feature in wanted
+                )
+            ]
         return self.conformance.verified_targets(targets, wanted)
 
     def _order(
@@ -1273,6 +1289,7 @@ class Pool:
             self._all_targets(include=provider_list, model=model),
             features,
             exact_pin=exact_pin,
+            model=model,
         )
                                                                              
                                                                                   
@@ -1657,6 +1674,7 @@ class Pool:
             candidates,
             required_features(messages, stream=True, protocol=protocol),
             exact_pin=model is not None and provider_list is not None and len(provider_list) == 1,
+            model=model,
         )
         targets = self._order(
             candidates,

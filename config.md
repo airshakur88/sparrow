@@ -29,7 +29,7 @@ Everything is optional. Environment variables override values in this file.
 [aliases]
 # Map model names to a provider, provider/model, or "auto".
 # "gpt-4o-mini" = "groq/llama-3.3-70b-versatile"
-# "my-fast-model" = "cerebras/llama3.1-8b"
+# "my-fast-model" = "groq/llama-3.3-70b-versatile"
 
 [settings]
 # cooldown_seconds = 60

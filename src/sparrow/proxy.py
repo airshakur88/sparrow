@@ -408,7 +408,7 @@ def _task_hint(headers, req: dict) -> object:
     return header if header is not None else req.get("task")
 
 
-def make_handler(pool: Pool, api_key: str | None = None):
+def make_handler(pool: Pool, api_key: str | None = None, request_logger=None):
                                                                             
                                                                                 
                                                                             
@@ -418,6 +418,8 @@ def make_handler(pool: Pool, api_key: str | None = None):
     def record_recent(entry: dict) -> None:
         with recent_lock:
             recent.appendleft(entry)
+        if request_logger is not None:
+            request_logger(entry)
 
                                                                                       
                                                                                        
@@ -466,11 +468,19 @@ def make_handler(pool: Pool, api_key: str | None = None):
                 pass
 
         def _error(self, status: int, message: str, code: str = "sparrow_error") -> None:
+            if request_logger is not None:
+                request_logger(
+                    {"kind": "error", "status": status, "code": code, "message": message, "path": self.path}
+                )
             self._send(status, {"error": {"message": message, "type": code}})
 
         def _anthropic_error(self, status: int, message: str, code: str = "invalid_request_error"):
                                                                                    
                                                                        
+            if request_logger is not None:
+                request_logger(
+                    {"kind": "error", "status": status, "code": code, "message": message, "path": self.path}
+                )
             self._send(status, {"type": "error", "error": {"type": code, "message": message}})
 
         def _authorized(self) -> bool:
@@ -3017,12 +3027,13 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 8080,
     api_key: str | None = None,
+    request_logger=None,
 ) -> ThreadingHTTPServer:
                                                                               
                                                                                   
     if api_key is None:
         api_key = os.environ.get("SPARROW_PROXY_KEY") or None
-    handler = make_handler(pool, api_key)
+    handler = make_handler(pool, api_key, request_logger)
     httpd = _BoundedThreadingHTTPServer((host, port), handler)
     httpd.pool = pool
                                                                               

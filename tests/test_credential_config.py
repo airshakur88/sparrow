@@ -97,21 +97,21 @@ class TestParseCredentialsValid:
                     "enabled": True,
                 },
                 {
-                    "provider": "cerebras",
+                    "provider": "cohere",
                     "id": "key1",
-                    "env_var": "CEREBRAS_API_KEY",
-                    "quota_group": "cerebras",
+                    "env_var": "COHERE_API_KEY",
+                    "quota_group": "cohere",
                     "enabled": True,
                 },
             ]
         }
-        providers = [make_provider("groq"), make_provider("cerebras")]
-        env = {"GROQ_API_KEY": "sk-g", "CEREBRAS_API_KEY": "sk-c"}
+        providers = [make_provider("groq"), make_provider("cohere")]
+        env = {"GROQ_API_KEY": "sk-g", "COHERE_API_KEY": "sk-c"}
 
         slots = parse_credentials(config, providers, env)
 
         assert len(slots) == 2
-        assert {s.provider for s in slots} == {"groq", "cerebras"}
+        assert {s.provider for s in slots} == {"groq", "cohere"}
 
     def test_parse_credentials_with_env_var_from_config_toml_keys(self):
                                                                                      
@@ -449,9 +449,9 @@ class TestImplicitLegacySynthesis:
         }
         providers = [
             make_provider("groq", key_env="GROQ_API_KEY"),
-            make_provider("cerebras", key_env="CEREBRAS_API_KEY"),
+            make_provider("cohere", key_env="COHERE_API_KEY"),
         ]
-        env = {"GROQ_API_KEY": "sk-g", "CEREBRAS_API_KEY": "sk-c"}
+        env = {"GROQ_API_KEY": "sk-g", "COHERE_API_KEY": "sk-c"}
 
         slots = parse_credentials(config, providers, env)
 
@@ -460,7 +460,7 @@ class TestImplicitLegacySynthesis:
         assert "explicit" in ids
         assert "legacy" in ids
         providers_set = {s.provider for s in slots}
-        assert providers_set == {"groq", "cerebras"}
+        assert providers_set == {"groq", "cohere"}
 
 
 class TestDeduplication:
@@ -508,16 +508,16 @@ class TestDeduplication:
                     "enabled": True,
                 },
                 {
-                    "provider": "cerebras",
+                    "provider": "cohere",
                     "id": "key1",
-                    "env_var": "CEREBRAS_API_KEY",
-                    "quota_group": "cerebras",
+                    "env_var": "COHERE_API_KEY",
+                    "quota_group": "cohere",
                     "enabled": True,
                 },
             ]
         }
-        providers = [make_provider("groq"), make_provider("cerebras")]
-        env = {"GROQ_API_KEY": "sk-same", "CEREBRAS_API_KEY": "sk-same"}
+        providers = [make_provider("groq"), make_provider("cohere")]
+        env = {"GROQ_API_KEY": "sk-same", "COHERE_API_KEY": "sk-same"}
 
         slots = parse_credentials(config, providers, env)
 

@@ -480,6 +480,7 @@ class AsyncPool:
             p._all_targets(include=provider_list, model=model),
             features,
             exact_pin=exact_pin,
+            model=model,
         )
 
         cache_key = None

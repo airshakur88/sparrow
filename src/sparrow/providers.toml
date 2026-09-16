@@ -123,6 +123,7 @@ base_url = "https://integrate.api.nvidia.com/v1"
 key_env = "NVIDIA_API_KEY"
 models = [
     { name = "mistralai/mistral-nemotron", rpd = 0 },
+    { name = "z-ai/glm-5.3-flash", rpd = 0 },
     { name = "nvidia/nemotron-3-ultra-550b-a55b", rpd = 0 },
     { name = "nvidia/nemotron-ocr-v2", rpd = 0 },
     { name = "moonshotai/kimi-k3", rpd = 0 },
@@ -175,27 +176,6 @@ models = [
     { name = "gpt-oss-20b", rpd = 0 },
     { name = "nemotron-3-ultra", rpd = 0 },
     { name = "qwen3.5-397b", rpd = 0 },
-]
-
-[[provider]]
-id = "github_models"
-label = "GitHub Models"
-adapter = "openai"
-base_url = "https://models.github.ai/inference"
-key_env = "GITHUB_TOKEN"
-models = [
-    { name = "gpt-5", rpd = 0, enabled = false },
-    { name = "gpt-4.1", rpd = 0, enabled = false },
-    { name = "gpt-4.1-mini", rpd = 0, enabled = false },
-    { name = "gpt-4o", rpd = 0, enabled = false },
-    { name = "o4-mini", rpd = 0, enabled = false },
-    { name = "deepseek-r1", rpd = 0, enabled = false },
-    { name = "llama-4-scout-17b-16e-instruct", rpd = 0, enabled = false },
-    { name = "llama-3.3-70b-instruct", rpd = 0, enabled = false },
-    { name = "mistral-small-3.1", rpd = 0, enabled = false },
-    { name = "Phi-4", rpd = 0, enabled = false },
-    { name = "Mistral-large-2411", rpd = 0, enabled = false },
-    { name = "AI21-Jamba-1.5-Large", rpd = 0, enabled = false },
 ]
 
 [[provider]]
@@ -351,14 +331,4 @@ models = [
     { name = "Qwen3.8-Flash", rpd = 0 },
     { name = "MiMo-V2.5", rpd = 0 },
     { name = "Hy3", rpd = 0 },
-]
-
-[[provider]]
-id = "free_ai"
-label = "Free.ai (dynamic catalog)"
-adapter = "openai"
-base_url = "https://api.free.ai/v1"
-key_env = "FREE_AI_API_KEY"
-models = [
-    { name = "dynamic-catalog", rpd = 0, enabled = false, auto = false },
 ]

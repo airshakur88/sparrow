@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from sparrow.conformance import ConformanceStore
 from sparrow.models import Model, Provider
 from sparrow.router import Pool
 from sparrow.virtual_models import VIRTUAL_MODELS, virtual_model
@@ -86,3 +89,18 @@ def test_virtual_model_targets_exclude_key_required_models(env, quota):
     targets = pool.rank_targets([], model="sparrow/spark-flash")
 
     assert [target.name for target in targets] == ["optional/free-model"]
+
+
+@pytest.mark.parametrize("name", ["sparrow/galaxy", "sparrow/spark", "sparrow/spark-flash"])
+def test_virtual_features_allow_unknown_but_reject_known_failures(tmp_path, quota, name):
+    provider = Provider("free", "Free", "openai", "https://free.test/v1",
+                        (Model("unknown"), Model("incompatible")), auth="none")
+    store = ConformanceStore(tmp_path / "conformance.json")
+    store.record(provider, "incompatible", "tools", status="unsupported",
+                 classification="unsupported")
+    pool = Pool([provider], env={}, quota=quota, conformance=store)
+
+    targets = pool._feature_targets(pool._all_targets(model=name), {"tools", "streaming"},
+                                    exact_pin=False, model=name)
+
+    assert [target.model for target in targets] == ["unknown"]
