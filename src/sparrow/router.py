@@ -36,6 +36,7 @@ from .config import (
     load_config_file,
     load_embedders,
     load_transcribers,
+    parse_virtual_providers,
     settings,
 )
 from .conformance import ConformanceStore, default_conformance_path, required_features
@@ -73,8 +74,6 @@ from .task_quality import (
 )
 from .virtual_models import virtual_model, virtual_routing, virtual_targets
 
-                                                                               
-                                                                    
 _MIN_LEARNABLE_CONTEXT = 256
                                                                                  
                                                                                
@@ -245,8 +244,10 @@ class Pool:
         route_health: RouteHealthStore | None = None,
         conformance: ConformanceStore | None = None,
         credential_manager: CredentialManager | None = None,
+        virtual_providers: Iterable[str] | None = None,
     ):
         self.providers = providers
+        self._virtual_providers = frozenset(virtual_providers or ())
         targets: list[Target] = []
         enabled_targets: list[Target] = []
         targets_by_provider: dict[str, list[Target]] = {}
@@ -566,7 +567,7 @@ class Pool:
         post: PostFn = default_post,
         on_event: EventHook | None = None,
     ) -> Pool:
-        from .plugins import registered_providers                             
+        from .plugins import registered_providers
 
                                                                    
         env = effective_env(env)
@@ -621,6 +622,7 @@ class Pool:
             transcribers=transcribers,
             cache=cache,
             routing=routing,
+            virtual_providers=parse_virtual_providers(cfg),
             on_event=on_event,
             stats_store=StatsStore(
                 flush_every=_positive_int_setting(
@@ -883,7 +885,7 @@ class Pool:
             if model is not None
             else self._enabled_targets
         )
-        source = virtual_targets(source, model)
+        source = virtual_targets(source, model, self._virtual_providers)
         if include_set is None:
             return list(source)
         return [target for target in source if target.provider.id in include_set]

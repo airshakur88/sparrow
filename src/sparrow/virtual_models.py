@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
 from dataclasses import dataclass
+
 
 @dataclass(frozen=True)
 class VirtualModel:
@@ -39,13 +40,24 @@ def virtual_model(name: str | None) -> VirtualModel | None:
     return _BY_NAME.get(name or "")
 
 
-def virtual_targets(targets: Iterable, name: str | None) -> list:
+def virtual_targets(
+    targets: Iterable,
+    name: str | None,
+    virtual_providers: Collection[str] | None = None,
+) -> list:
     if virtual_model(name) is None:
         return list(targets)
+    allowed_providers = virtual_providers or ()
     return [
         target
         for target in targets
-        if target.provider.keyless
+        if (
+            target.provider.keyless
+            or (
+                target.provider.billing == "paid"
+                and target.provider.id in allowed_providers
+            )
+        )
         and not (
             (model := target.provider.model(target.model)) is not None
             and model.requires_key

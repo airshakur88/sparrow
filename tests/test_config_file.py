@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sparrow.config as config_module
 from sparrow.config import (
     config_diagnostics,
     configured_providers,
@@ -99,14 +100,22 @@ def test_settings(tmp_path):
     assert s["proxy_key"] == "abc"
 
 
+def test_virtual_provider_setting_normalizes_nonempty_string_ids():
+    assert config_module.parse_virtual_providers(
+        {"virtual_providers": [" openai ", "", 42, "openai"]}
+    ) == frozenset({"openai"})
+
+
+def test_empty_virtual_provider_setting_has_no_opt_in():
+    assert config_module.parse_virtual_providers({"virtual_providers": []}) == frozenset()
+
+
 def test_malformed_config_is_ignored(tmp_path):
     env = _write(tmp_path, "this is not valid toml = = =")
     assert load_config_file(env) == {}
 
 
 def test_config_file_parse_is_cached_but_return_value_is_isolated(tmp_path, monkeypatch):
-    import sparrow.config as config_module
-
     env = _write(tmp_path, '[keys]\nGROQ_API_KEY = "secret"\n')
     original = config_module.tomllib.load
     calls = 0
@@ -145,3 +154,53 @@ def test_config_diagnostics_report_wrong_table_types_without_values(tmp_path):
     assert {item["code"] for item in diagnostics} == {"table_type"}
     assert "super-secret" not in repr(diagnostics)
     assert "private-model" not in repr(diagnostics)
+
+
+def test_config_diagnostics_report_unknown_virtual_provider_ids(tmp_path):
+    env = _write(
+        tmp_path,
+        '[settings]\nvirtual_providers = ["openai", "missing-provider"]\n',
+    )
+
+    diagnostics = config_diagnostics(env)
+
+    unknown = [item for item in diagnostics if item["code"] == "unknown_provider"]
+    assert len(unknown) == 1
+    assert unknown[0]["setting"] == "virtual_providers"
+    assert unknown[0]["provider"] == "missing-provider"
+    assert "openai" not in repr(unknown)
+
+
+def test_config_diagnostics_reject_free_virtual_provider_ids(tmp_path):
+    env = _write(tmp_path, '[settings]\nvirtual_providers = ["openrouter"]\n')
+
+    diagnostics = config_diagnostics(env)
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0]["code"] == "setting_value"
+    assert diagnostics[0]["provider"] == "openrouter"
+    assert "paid providers" in str(diagnostics[0]["message"])
+
+
+def test_config_diagnostics_report_free_virtual_provider_as_setting_value(tmp_path):
+    env = _write(tmp_path, '[settings]\nvirtual_providers = ["openrouter"]\n')
+
+    diagnostics = config_diagnostics(env)
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0]["code"] == "setting_value"
+    assert diagnostics[0]["setting"] == "virtual_providers"
+    assert diagnostics[0]["provider"] == "openrouter"
+    assert "paid providers" in str(diagnostics[0]["message"])
+    assert "unknown_provider" not in repr(diagnostics)
+
+
+def test_config_diagnostics_report_invalid_virtual_provider_setting_type(tmp_path):
+    env = _write(tmp_path, '[settings]\nvirtual_providers = "openai"\n')
+
+    diagnostics = config_diagnostics(env)
+
+    assert len(diagnostics) == 1
+    assert diagnostics[0]["code"] == "setting_type"
+    assert diagnostics[0]["message"] == "[settings].virtual_providers must be a list"
+    assert diagnostics[0]["setting"] == "virtual_providers"

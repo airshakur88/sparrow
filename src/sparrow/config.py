@@ -382,6 +382,67 @@ def config_diagnostics(env: dict[str, str] | None = None) -> list[dict[str, obje
                     "column": None,
                 }
             )
+    settings_data = data.get("settings")
+    if isinstance(settings_data, dict) and "virtual_providers" in settings_data:
+        value = settings_data["virtual_providers"]
+        if not isinstance(value, list):
+            diagnostics.append(
+                {
+                    "code": "setting_type",
+                    "message": "[settings].virtual_providers must be a list",
+                    "path": signature[0],
+                    "setting": "virtual_providers",
+                    "line": None,
+                    "column": None,
+                }
+            )
+        else:
+            catalog = {provider.id: provider for provider in load_catalog()}
+            for provider_id in value:
+                if not isinstance(provider_id, str) or not provider_id.strip():
+                    diagnostics.append(
+                        {
+                            "code": "setting_value",
+                            "message": (
+                                "[settings].virtual_providers entries must be "
+                                "non-empty strings"
+                            ),
+                            "path": signature[0],
+                            "setting": "virtual_providers",
+                            "line": None,
+                            "column": None,
+                        }
+                    )
+                elif provider_id.strip() not in catalog:
+                    diagnostics.append(
+                        {
+                            "code": "unknown_provider",
+                            "message": (
+                                "[settings].virtual_providers references unknown "
+                                f"provider {provider_id.strip()!r}"
+                            ),
+                            "path": signature[0],
+                            "setting": "virtual_providers",
+                            "provider": provider_id.strip(),
+                            "line": None,
+                            "column": None,
+                        }
+                    )
+                elif catalog[provider_id.strip()].billing != "paid":
+                    diagnostics.append(
+                        {
+                            "code": "setting_value",
+                            "message": (
+                                "[settings].virtual_providers may only include "
+                                f"paid providers, got {provider_id.strip()!r}"
+                            ),
+                            "path": signature[0],
+                            "setting": "virtual_providers",
+                            "provider": provider_id.strip(),
+                            "line": None,
+                            "column": None,
+                        }
+                    )
     return diagnostics
 
 
@@ -398,9 +459,21 @@ def effective_env(env: dict[str, str] | None = None) -> dict[str, str]:
 
 
 def settings(env: dict[str, str] | None = None) -> dict:
-                                                            
+                                                             
     value = load_config_file(env).get("settings", {})
     return value if isinstance(value, dict) else {}
+
+
+def parse_virtual_providers(settings_data: dict) -> frozenset[str]:
+    """Return normalized provider IDs from the virtual model allowlist."""
+    value = settings_data.get("virtual_providers", [])
+    if not isinstance(value, list):
+        return frozenset()
+    return frozenset(
+        provider_id.strip()
+        for provider_id in value
+        if isinstance(provider_id, str) and provider_id.strip()
+    )
 
 
 def _maybe_int(value, *, positive: bool = False) -> int | None:
