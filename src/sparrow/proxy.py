@@ -523,6 +523,8 @@ def make_handler(pool: Pool, api_key: str | None = None, request_logger=None):
             self._response_started = False
             try:
                 self._do_get()
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
             except Exception as exc:                                       
                 _log.exception("unexpected GET handler failure")
                 if self._response_started:
@@ -534,6 +536,8 @@ def make_handler(pool: Pool, api_key: str | None = None, request_logger=None):
             self._response_started = False
             try:
                 self._do_post()
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
             except Exception as exc:                                       
                 _log.exception("unexpected POST handler failure")
                 if self._response_started:
@@ -1295,10 +1299,12 @@ def make_handler(pool: Pool, api_key: str | None = None, request_logger=None):
 
         def _write_named_sse(self, name: str, payload: dict) -> None:
             block = f"event: {name}\ndata: {json.dumps(payload)}\n\n"
-            self.wfile.write(block.encode("utf-8"))
-                                                                                
-                                                                                 
-            self.wfile.flush()
+            try:
+                self.wfile.write(block.encode("utf-8"))
+                self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
+                raise
 
         @staticmethod
         def _close_upstream_stream(gen) -> None:
@@ -1748,24 +1754,17 @@ def make_handler(pool: Pool, api_key: str | None = None, request_logger=None):
                                                                                  
                                                        
                
-            self.send_response(200)
-            self.send_header("Content-Type", "text/event-stream")
-            self.send_header("Cache-Control", "no-cache")
-            self.send_header("Connection", "close")
-            self.end_headers()
             try:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.end_headers()
                 for block in sse_blocks:
                     self.wfile.write(block.encode())
                 self.wfile.flush()
             except (BrokenPipeError, ConnectionResetError):                    
-                pass
-            except Exception:                
-                                                                                     
-                                                                                       
-                                                                                  
-                                                                                     
-                                                                                   
-                pass
+                self.close_connection = True
 
     return Handler
 

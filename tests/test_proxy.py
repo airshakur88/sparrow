@@ -55,6 +55,63 @@ def _post_json(url, payload):
         return resp.status, json.load(resp)
 
 
+def test_named_sse_disconnect_is_treated_as_normal(providers, env, quota):
+    class DisconnectingWriter:
+        def write(self, _data):
+            raise ConnectionResetError
+
+        def flush(self):
+            raise AssertionError("flush should not run after a failed write")
+
+    handler_type = make_handler(Pool(providers, quota=quota, env=env))
+    handler = object.__new__(handler_type)
+    handler.wfile = DisconnectingWriter()
+    handler.close_connection = False
+
+    with pytest.raises(ConnectionResetError):
+        handler._write_named_sse("message_start", {"type": "message_start"})
+
+    assert handler.close_connection is True
+
+
+def test_sse_header_disconnect_is_treated_as_normal(providers, env, quota):
+    handler_type = make_handler(Pool(providers, quota=quota, env=env))
+    handler = object.__new__(handler_type)
+    handler.close_connection = False
+    handler.send_response = lambda _status: None
+    handler.send_header = lambda _name, _value: None
+
+    def disconnecting_end_headers() -> None:
+        raise ConnectionResetError(10054, "connection reset by peer")
+
+    handler.end_headers = disconnecting_end_headers
+
+    handler._send_sse(["data: hello\n\n"])
+
+    assert handler.close_connection is True
+
+
+@pytest.mark.parametrize("error", [RuntimeError("unexpected"), OSError("unexpected")])
+def test_sse_unexpected_write_errors_remain_observable(providers, env, quota, error):
+    class UnexpectedWriter:
+        def write(self, _data):
+            raise error
+
+        def flush(self):
+            raise AssertionError("flush should not run after a failed write")
+
+    handler_type = make_handler(Pool(providers, quota=quota, env=env))
+    handler = object.__new__(handler_type)
+    handler.wfile = UnexpectedWriter()
+    handler.close_connection = False
+    handler.send_response = lambda _status: None
+    handler.send_header = lambda _name, _value: None
+    handler.end_headers = lambda: None
+
+    with pytest.raises(type(error), match="unexpected"):
+        handler._send_sse(["data: hello\n\n"])
+
+
 def test_chat_completions_shape(server, monkeypatch):
     monkeypatch.setattr(proxy_module.time, "time", lambda: 1_700_000_000.875)
     status, body = _post_json(

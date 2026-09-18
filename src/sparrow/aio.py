@@ -344,7 +344,9 @@ class AsyncPool:
             base_url = base_url.replace("{account_id}", self.env.get("CLOUDFLARE_ACCOUNT_ID", ""))
         url = f"{base_url}/chat/completions"
         headers = {"Content-Type": "application/json"}
-        if api_key:
+        if provider.id == "opencode":
+            headers.update(_client._opencode_headers())
+        elif api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         body = {
             "model": model,

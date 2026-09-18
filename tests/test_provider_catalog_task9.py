@@ -16,15 +16,9 @@ REQUESTED_TARGETS = {
         "deepseek-v4-pro:0813",
         "deepseek-v4-flash:0731",
     ),
-    "cloudflare": (
-        "@cf/openai/gpt-oss-120b",
-        "@cf/openai/gpt-oss-20b",
-        "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
-    ),
     "nvidia": (
         "mistralai/mistral-nemotron",
         "nvidia/nemotron-3-ultra-550b-a55b",
-        "nvidia/nemotron-ocr-v2",
         "moonshotai/kimi-k3",
         "deepseek-ai/deepseek-v4-flash-0731",
         "nvidia/nemotron-3.5-lightning-30b-a3b",
@@ -39,7 +33,6 @@ REQUESTED_TARGETS = {
         "gemini-3.5-flash-lite",
         "gemini-3.1-flash-lite",
         "gemini-2.5-pro",
-        "gemini-2.5-flash",
         "gemini-2.5-flash-lite",
         "gemma-4-26b-a4b-it",
         "gemma-4-31b-it",
@@ -58,11 +51,6 @@ def test_task9_requested_models_are_unique_and_provider_qualified() -> None:
 
     expected_endpoints = {
         "ollama": ("openai", "https://ollama.com/v1", "OLLAMA_API_KEY"),
-        "cloudflare": (
-            "cloudflare",
-            "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1",
-            "CLOUDFLARE_API_TOKEN",
-        ),
         "nvidia": ("openai", "https://integrate.api.nvidia.com/v1", "NVIDIA_API_KEY"),
         "gemini": (
             "openai",
@@ -130,6 +118,28 @@ def test_task9_malformed_and_unknown_catalog_rows_are_rejected(tmp_path: Path) -
     assert any("unsupported adapter" in error for error in errors)
     assert any("duplicate model 'same'" in error for error in errors)
     assert any("unsupported billing 'trial'" in error for error in errors)
+
+
+def test_task9_allows_empty_bai_catalog_but_rejects_other_empty_providers(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "providers.toml"
+    path.write_text(
+        "[[provider]]\n"
+        'id = "bai"\n'
+        'base_url = "https://api.b.ai/v1"\n'
+        "models = []\n\n"
+        "[[provider]]\n"
+        'id = "empty"\n'
+        'base_url = "https://empty.test/v1"\n'
+        "models = []\n",
+        encoding="utf-8",
+    )
+
+    errors = validate_catalog(path)
+
+    assert "provider:bai: no models configured" not in errors
+    assert "provider:empty: no models configured" in errors
 
 
 def test_task9_does_not_invent_unmapped_provider_endpoints() -> None:

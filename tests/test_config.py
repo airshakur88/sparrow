@@ -80,7 +80,6 @@ def test_nvidia_catalog_contains_only_requested_models():
         "mistralai/mistral-nemotron",
         "z-ai/glm-5.3-flash",
         "nvidia/nemotron-3-ultra-550b-a55b",
-        "nvidia/nemotron-ocr-v2",
         "moonshotai/kimi-k3",
         "deepseek-ai/deepseek-v4-flash-0731",
         "nvidia/nemotron-3.5-lightning-30b-a3b",
@@ -125,7 +124,7 @@ def test_known_aliases_include_env_alias():
 def test_packaged_catalog_loads():
     catalog = _packaged_catalog()
     ids = {p.id for p in catalog}
-    assert len(catalog) == 19
+    assert len(catalog) == 18
     assert ids == {
         "llm7",
         "ovh",
@@ -137,7 +136,6 @@ def test_packaged_catalog_loads():
         "ollama",
         "kilo_code",
         "modelscope",
-        "cloudflare",
         "cohere",
         "z_ai",
         "chutes",
@@ -147,8 +145,10 @@ def test_packaged_catalog_loads():
         "bai",
         "openai",
     }
+    assert sum(len(provider.models) for provider in catalog) == 141
+    assert not next(provider for provider in catalog if provider.id == "bai").models
     for p in catalog:
-        assert p.models                                            
+        assert p.models or p.id == "bai"
         assert p.base_url.startswith("https://")
 
 
@@ -168,7 +168,6 @@ def test_packaged_catalog_classifies_every_provider():
         "ollama",
         "kilo_code",
         "modelscope",
-        "cloudflare",
         "cohere",
         "z_ai",
         "chutes",
@@ -198,21 +197,15 @@ def test_openai_provider_has_exact_paid_catalog_and_bearer_auth():
     ]
 
 
-def test_kimi_k27_catalog_entries_declare_verified_context_window():
+def test_packaged_catalog_excludes_cloudflare_workers_ai():
     providers = {provider.id: provider for provider in _packaged_catalog()}
-    kimi = providers["cloudflare"].model("@cf/moonshotai/kimi-k2.7-code")
-    assert kimi is not None
-    assert kimi.context is None
 
-
-def test_cloudflare_catalog_matches_current_free_billing_and_lifecycle():
-    cloudflare = next(provider for provider in _packaged_catalog() if provider.id == "cloudflare")
-
-    qwen = cloudflare.model("@cf/qwen/qwen3.8-27b")
-    kimi = cloudflare.model("@cf/moonshotai/kimi-k2.7-code")
-    assert qwen is not None and qwen.enabled
-    assert kimi is not None and kimi.enabled
-    assert cloudflare.model("@cf/meta/llama-3.1-70b-instruct") is None
+    assert "cloudflare" not in providers
+    assert all(
+        not model.name.startswith("@cf/")
+        for provider in providers.values()
+        for model in provider.models
+    )
 
 
 def test_packaged_catalog_reflects_current_model_lifecycle():
@@ -221,9 +214,8 @@ def test_packaged_catalog_reflects_current_model_lifecycle():
     expected_enabled = {
         "llm7": {"default", "fast", "minimax-m2.7"},
         "kilo": {"openrouter/free", "kilo-auto/free"},
-        "gemini": {"gemini-2.5-flash", "gemini-3.8-flash"},
+        "gemini": {"gemini-3.8-flash"},
         "groq": {"groq/compound", "qwen/qwen3.8-27b"},
-        "cloudflare": {"@cf/qwen/qwen3.8-27b"},
         "opencode": {"nemotron-3-ultra-free", "big-pickle"},
     }
 
@@ -287,8 +279,8 @@ def test_packaged_catalog_exposes_current_gemini_and_llm7_selectors():
     providers = {provider.id: provider for provider in _packaged_catalog()}
 
     gemini = providers["gemini"]
-    assert _model(gemini, "gemini-2.5-flash").enabled
     assert _model(gemini, "gemini-3.8-flash").enabled
+    assert gemini.model("gemini-2.5-flash") is None
     assert gemini.model("gemini-2.0-flash") is None
 
     llm7 = providers["llm7"]
@@ -325,7 +317,6 @@ def test_groq_catalog_matches_current_free_plan_routes():
 
     assert set(models) == {
         "qwen/qwen3.8-27b",
-        "qwen/qwen3.6-27b",
         "openai/gpt-oss-120b",
         "openai/gpt-oss-20b",
         "groq/compound",
@@ -342,12 +333,7 @@ def test_groq_catalog_matches_current_free_plan_routes():
 def test_packaged_catalog_includes_current_provider_metadata():
     providers = {provider.id: provider for provider in _packaged_catalog()}
 
-    cloudflare = providers["cloudflare"]
-    assert cloudflare.extra_env == ("CLOUDFLARE_ACCOUNT_ID",)
-    assert cloudflare.is_configured(
-        {"CLOUDFLARE_API_TOKEN": "token", "CLOUDFLARE_ACCOUNT_ID": "account"}
-    )
-
+    assert "cloudflare" not in providers
     assert providers["gemini"].base_url.endswith("/v1beta/openai")
     assert providers["cohere"].base_url == "https://api.cohere.com/v2"
     assert providers["modelscope"].key_env == "MODELSCOPE_API_KEY"
@@ -369,20 +355,6 @@ def test_configured_filter_by_env():
     assert "groq" in ids
     assert "nvidia" not in ids                     
     assert "ovh" in ids                            
-
-
-def test_cloudflare_requires_extra_env():
-    catalog = _packaged_catalog()
-                                                            
-    with_token = {p.id for p in configured_providers(catalog, {"CLOUDFLARE_API_TOKEN": "t"})}
-    assert "cloudflare" not in with_token
-    with_both = {
-        p.id
-        for p in configured_providers(
-            catalog, {"CLOUDFLARE_API_TOKEN": "t", "CLOUDFLARE_ACCOUNT_ID": "acc"}
-        )
-    }
-    assert "cloudflare" in with_both
 
 
 def test_user_override(tmp_path):

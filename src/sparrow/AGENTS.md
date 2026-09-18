@@ -24,7 +24,7 @@ src/sparrow/
 ├── stats.py            # Usage persistence
 ├── cache.py            # Response caching
 ├── recipes/            # EMPTY - remove or populate
-├── providers.toml      # 18 providers, 157 models
+├── providers.toml      # 18 providers, 152 models
 ├── capability_scores.json
 ├── task_evidence.json
 └── __init__.py         # Lazy AsyncPool via __getattr__

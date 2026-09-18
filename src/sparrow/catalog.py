@@ -283,7 +283,6 @@ def match_local_provider(
         "nvidia-nim": "nvidia",
         "groq": "groq",
         "cohere": "cohere",
-        "cloudflare-workers-ai": "cloudflare",
         "ollama-cloud": "ollama",
     }
     wanted = aliases.get(external_slug)

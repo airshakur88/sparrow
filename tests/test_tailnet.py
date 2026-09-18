@@ -335,11 +335,11 @@ def test_generate_session_token_simple_zero_length():
                                                                             
 
 
-def test_format_setup_hints_includes_openai_and_anthropic_urls():
+def test_format_setup_hints_includes_openai_url_only():
     out = format_setup_hints(base_url="http://100.64.0.5:8080", auth_enabled=False)
     assert "OPENAI_BASE_URL=http://100.64.0.5:8080/v1" in out
     assert "SPARROW_BASE_URL=http://100.64.0.5:8080/v1" in out
-    assert "ANTHROPIC_BASE_URL=http://100.64.0.5:8080" in out
+    assert "ANTHROPIC_BASE_URL" not in out
     assert "OPENAI_API_KEY=anything" in out
     assert "dashboard" in out.lower()
 
@@ -364,7 +364,7 @@ def test_format_setup_hints_accepts_only_safe_auth_labels():
                                                                          
     assert "GROQ_API_KEY" not in out
     assert "OPENAI_API_KEY='<proxy-key>'" in out
-    assert "ANTHROPIC_API_KEY='<proxy-key>'" in out
+    assert "ANTHROPIC_API_KEY" not in out
     assert "OPENAI_API_KEY=anything" not in out
 
     with pytest.raises(TypeError):

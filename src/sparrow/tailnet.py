@@ -376,18 +376,13 @@ def format_setup_hints(
         raise TypeError("token_label must be a SetupTokenLabel")
 
     openai_base = f"{base_url}/v1"
-    anthropic_base = base_url
     if auth_enabled:
         key_value = token_label.value
         openai_key = f"'{key_value}'"
         openai_note = "# proxy bearer token"
-        anthropic_key = f"'{key_value}'"
-        anthropic_note = "# proxy x-api-key token"
     else:
         openai_key = "anything"
         openai_note = "# ignored when proxy auth is disabled"
-        anthropic_key = "anything"
-        anthropic_note = "# ignored when proxy auth is disabled"
 
     auth_lines = []
     if auth_enabled:
@@ -398,15 +393,12 @@ def format_setup_hints(
     auth_block = ("\n".join(auth_lines) + "\n") if auth_lines else ""
     return (
         f"  OpenAI-compatible base URL : {openai_base}\n"
-        f"  Anthropic Messages base URL: {anthropic_base}\n"
         f"  dashboard                  : {base_url}/dashboard\n"
         "\n"
         "  On the client machine (or in the agent's env):\n"
         f"    export OPENAI_BASE_URL={openai_base}\n"
         f"    export OPENAI_API_KEY={openai_key}        {openai_note}\n"
         f"    export SPARROW_BASE_URL={openai_base}\n"
-        f"    export ANTHROPIC_BASE_URL={anthropic_base}\n"
-        f"    export ANTHROPIC_API_KEY={anthropic_key}       {anthropic_note}\n"
         f"{auth_block}"
     )
 

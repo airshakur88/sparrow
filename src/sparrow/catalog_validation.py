@@ -12,10 +12,11 @@ from .capability import capability_table, model_capability
 from .config import _safe_local_catalog_url, load_catalog, load_embedders, load_transcribers
 from .models import BILLING_VALUES, Provider
 
-_ADAPTERS = {"openai", "gemini", "cloudflare"}
+_ADAPTERS = {"openai", "gemini"}
 _AUTH = {"bearer", "none"}
 _MAX_MODEL_ID = 200
 _SAFE_MODEL_ID = re.compile(r"^[A-Za-z0-9@][A-Za-z0-9._:/@+-]{0,199}$")
+_EMPTY_MODEL_PROVIDERS = {"bai"}
 
 
 def normalize_model_listing(payload: Any) -> tuple[str, ...]:
@@ -76,7 +77,7 @@ def _check_group(name: str, providers: list[Provider]) -> list[str]:
                 f"{prefix}: base_url must be https or canonical literal loopback "
                 "without control chars"
             )
-        if not provider.models:
+        if not provider.models and provider.id not in _EMPTY_MODEL_PROVIDERS:
             errors.append(f"{prefix}: no models configured")
         model_names = Counter(model.name for model in provider.models)
         for model_name, count in model_names.items():

@@ -665,7 +665,7 @@ class Pool:
         if not self.embedders:
             raise NoProvidersConfigured(
                 "no embedder configured; set a key for one of: cohere, github, "
-                "cloudflare, mistral, nvidia"
+                "mistral, nvidia"
             )
         include = {p.strip() for p in providers} if providers else None
         attempts: list[tuple[str, str]] = []

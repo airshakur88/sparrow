@@ -21,13 +21,14 @@ import sys
 import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 
 from ._version import __version__
 from .errors import ProviderHTTPError
 from .models import EmbedReply, Provider, Reply, TranscribeReply
+from .plugins import registered_adapters
 
 Message = dict[str, str]
 
@@ -93,9 +94,6 @@ class HTTPResult:
 
 
 PostFn = Callable[[str, dict, dict, float], HTTPResult]
-                                                                             
-                                                   
-from collections.abc import Iterable, Iterator              
 
 StreamPostFn = Callable[
     [str, dict, dict, float],
@@ -434,8 +432,6 @@ def stream_call(
                                                                                   
        
     base_url = provider.base_url
-    if provider.adapter == "cloudflare":
-        base_url = base_url.replace("{account_id}", env.get("CLOUDFLARE_ACCOUNT_ID", ""))
     url = f"{base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
     if provider.id == "opencode":
@@ -668,14 +664,11 @@ def _adapter_gemini(
                                                                                  
 _BUILTIN_ADAPTERS = {
     "openai": _adapter_openai,
-    "cloudflare": _adapter_openai,                                                 
     "gemini": _adapter_gemini,
 }
 
 
 def _resolve_adapter(name: str):
-    from .plugins import registered_adapters                             
-
     custom = registered_adapters()
     if name in custom:
         return custom[name]
@@ -749,9 +742,6 @@ def _call_openai(
     post: PostFn,
 ) -> Reply:
     base_url = provider.base_url
-    if provider.adapter == "cloudflare":
-        account_id = env.get("CLOUDFLARE_ACCOUNT_ID", "")
-        base_url = base_url.replace("{account_id}", account_id)
 
     url = f"{base_url}/chat/completions"
     headers = {"Content-Type": "application/json"}
@@ -809,8 +799,6 @@ def embed(
 ) -> EmbedReply:
                                                                         
     base_url = provider.base_url
-    if provider.adapter == "cloudflare" or "{account_id}" in base_url:
-        base_url = base_url.replace("{account_id}", env.get("CLOUDFLARE_ACCOUNT_ID", ""))
     url = f"{base_url}/embeddings"
     headers = {"Content-Type": "application/json"}
     if provider.id == "opencode":
@@ -927,8 +915,6 @@ def transcribe(
 ) -> TranscribeReply:
                                                                                            
     base_url = provider.base_url
-    if provider.adapter == "cloudflare" or "{account_id}" in base_url:
-        base_url = base_url.replace("{account_id}", env.get("CLOUDFLARE_ACCOUNT_ID", ""))
     url = f"{base_url}/audio/transcriptions"
     headers = {}                                                                     
     if api_key:

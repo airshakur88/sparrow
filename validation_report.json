@@ -1,0 +1,910 @@
+{
+  "results": [
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.38,
+      "model": "default",
+      "provider": "llm7",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.89,
+      "model": "fast",
+      "provider": "llm7",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 2.14,
+      "model": "codestral-latest",
+      "provider": "llm7",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 1.53,
+      "model": "DeepSeek-V4-Flash-0731",
+      "provider": "llm7",
+      "status": 401,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 2.04,
+      "model": "minimax-m2.7",
+      "provider": "llm7",
+      "status": 200,
+      "text_preview": "The user says: \"Reply with the single word: ok\". The user wa"
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.46,
+      "model": "gemma4:31b",
+      "provider": "llm7",
+      "status": 401,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.27,
+      "model": "mistral-Nemo-Instruct-2407",
+      "provider": "llm7",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.47,
+      "model": "gemini-3.1-flash-lite",
+      "provider": "llm7",
+      "status": 401,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.62,
+      "model": "Meta-Llama-3_3-70B-Instruct",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "Mistral-Small-3.2-24B-Instruct-2506",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.27,
+      "model": "Mistral-Nemo-Instruct-2407",
+      "provider": "ovh",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "Qwen2.5-VL-72B-Instruct",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.66,
+      "model": "Mistral-7B-Instruct-v0.3",
+      "provider": "ovh",
+      "status": 200,
+      "text_preview": "Understood."
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "Qwen3.5-397B-A17B",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "gpt-oss-120b",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.22,
+      "model": "Qwen3.6-27B",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "Qwen3.5-9B",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "qwen3.6-27b",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "qwen3.5-397b-a17b",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.22,
+      "model": "qwen3.5-9b",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "qwen3-coder-30b-a3b-instruct",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "qwen2.5-vl-72b-instruct",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.21,
+      "model": "mistral-small-3.2-24b-instruct",
+      "provider": "ovh",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.26,
+      "model": "mistral-7b-instruct-v0.3",
+      "provider": "ovh",
+      "status": 200,
+      "text_preview": "Understood."
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "qwen3-32b",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.21,
+      "model": "meta-llama-3_3-70b-instruct",
+      "provider": "ovh",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 1.33,
+      "model": "openrouter/free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.98,
+      "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 1.44,
+      "model": "poolside/laguna-s-2.1:free",
+      "provider": "kilo",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.99,
+      "model": "kilo-auto/free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 1.92,
+      "model": "stepfun/step-3.7-flash:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.77,
+      "model": "nvidia/nemotron-3-super-120b-a12b:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.95,
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 0.58,
+      "model": "cohere/north-mini-code:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 1.05,
+      "model": "dots-studio/dots-3-note-preview:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 1.15,
+      "model": "inclusionai/ling-3.0-flash-fin:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 1.93,
+      "model": "liquid/lfm-2.5-2.6b:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 5.64,
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "provider": "kilo",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.32,
+      "model": "gemini-2.5-pro",
+      "provider": "gemini",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.65,
+      "model": "gemini-2.5-flash",
+      "provider": "gemini",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.25,
+      "model": "gemini-2.5-flash-lite",
+      "provider": "gemini",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 10.66,
+      "model": "gemini-3.8-flash",
+      "provider": "gemini",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.0,
+      "model": "gemini-3.7-flash",
+      "provider": "gemini",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.09,
+      "model": "gemini-3.6-flash",
+      "provider": "gemini",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 1.02,
+      "model": "gemini-3.5-flash",
+      "provider": "gemini",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.03,
+      "model": "gemini-3.5-flash-lite",
+      "provider": "gemini",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.77,
+      "model": "gemini-3.1-flash-lite",
+      "provider": "gemini",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.0,
+      "model": "gemma-4-31b-it",
+      "provider": "gemini",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.48,
+      "model": "gemma-4-26b-a4b-it",
+      "provider": "gemini",
+      "status": 200,
+      "text_preview": "<thought>The user wants a single</thought>"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.23,
+      "model": "qwen/qwen3.8-27b",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.03,
+      "model": "qwen/qwen3.6-27b",
+      "provider": "groq",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.43,
+      "model": "openai/gpt-oss-120b",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.29,
+      "model": "openai/gpt-oss-20b",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.51,
+      "model": "groq/compound",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "**Reasoning**\n\nThe user\u2019s original request was simply to \u201cRe"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.58,
+      "model": "groq/compound-mini",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.35,
+      "model": "meta-llama/llama-prompt-guard-2-86m",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "0.0003657583729363978"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.35,
+      "model": "meta-llama/llama-prompt-guard-2-22m",
+      "provider": "groq",
+      "status": 200,
+      "text_preview": "0.0008750615525059402"
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.26,
+      "model": "mistralai/mistral-nemotron",
+      "provider": "nvidia",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.24,
+      "model": "z-ai/glm-5.3-flash",
+      "provider": "nvidia",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.29,
+      "model": "nvidia/nemotron-3-ultra-550b-a55b",
+      "provider": "nvidia",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.37,
+      "model": "nvidia/nemotron-ocr-v2",
+      "provider": "nvidia",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.0,
+      "model": "moonshotai/kimi-k3",
+      "provider": "nvidia",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "TRANSPORT",
+      "elapsed": 15.24,
+      "model": "deepseek-ai/deepseek-v4-flash-0731",
+      "provider": "nvidia",
+      "status": null,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 6.76,
+      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "provider": "nvidia",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 3.93,
+      "model": "meta/muse-glimmer-30b",
+      "provider": "nvidia",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SERVER_ERROR",
+      "elapsed": 0.51,
+      "model": "poolside/laguna-xs-2.1",
+      "provider": "nvidia",
+      "status": 503,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.92,
+      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "provider": "openrouter",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 2.27,
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "provider": "openrouter",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 1.15,
+      "model": "inclusionai/ling-3.0-flash-fin:free",
+      "provider": "openrouter",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 0.94,
+      "model": "inclusionai/ling-3.0-flash-sante:free",
+      "provider": "openrouter",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.71,
+      "model": "nex-agi/nex-n2.5-pro:free",
+      "provider": "openrouter",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.03,
+      "model": "thinkingmachines/inkling:free",
+      "provider": "openrouter",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.04,
+      "model": "thinkingmachines/inkling-small:free",
+      "provider": "openrouter",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.56,
+      "model": "poolside/laguna-s-2.1:free",
+      "provider": "openrouter",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 0.27,
+      "model": "cohere/north-mini-code:free",
+      "provider": "openrouter",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.62,
+      "model": "google/gemma-4-31b-it:free",
+      "provider": "openrouter",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.53,
+      "model": "openai/gpt-oss-120b:free",
+      "provider": "openrouter",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.03,
+      "model": "openai/gpt-oss-20b:free",
+      "provider": "openrouter",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.02,
+      "model": "qwen/qwen3-coder-30b-a3b-instruct:free",
+      "provider": "openrouter",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.04,
+      "model": "qwen/qwen3-vl-8b-thinking:free",
+      "provider": "openrouter",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.02,
+      "model": "z-ai/glm-4.5-air:free",
+      "provider": "openrouter",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.28,
+      "model": "deepseek-v4-pro:0813",
+      "provider": "ollama",
+      "status": 402,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.21,
+      "model": "deepseek-v4-flash:0731",
+      "provider": "ollama",
+      "status": 402,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.21,
+      "model": "deepseek-v4-pro",
+      "provider": "ollama",
+      "status": 402,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.21,
+      "model": "deepseek-v4-flash",
+      "provider": "ollama",
+      "status": 402,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.22,
+      "model": "minimax-m3",
+      "provider": "ollama",
+      "status": 402,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.22,
+      "model": "kimi-k3",
+      "provider": "ollama",
+      "status": 402,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 0.59,
+      "model": "gpt-oss:120b",
+      "provider": "ollama",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.1,
+      "model": "gpt-oss:20b",
+      "provider": "ollama",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.21,
+      "model": "gpt-oss-120b",
+      "provider": "ollama",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.21,
+      "model": "gpt-oss-20b",
+      "provider": "ollama",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "SUCCESS",
+      "elapsed": 1.06,
+      "model": "nemotron-3-ultra",
+      "provider": "ollama",
+      "status": 200,
+      "text_preview": "ok"
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.23,
+      "model": "qwen3.5-397b",
+      "provider": "ollama",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "EMPTY_SUCCESS",
+      "elapsed": 0.79,
+      "model": "agnes-2.0-flash",
+      "provider": "agnes",
+      "status": 200,
+      "text_preview": ""
+    },
+    {
+      "classification": "SERVER_ERROR",
+      "elapsed": 0.88,
+      "model": "agnes-1.5-flash",
+      "provider": "agnes",
+      "status": 503,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.32,
+      "model": "agnes-image-2.0-flash",
+      "provider": "agnes",
+      "status": 400,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.32,
+      "model": "agnes-image-2.1-flash",
+      "provider": "agnes",
+      "status": 400,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.31,
+      "model": "agnes-video-v2.0",
+      "provider": "agnes",
+      "status": 400,
+      "text_preview": ""
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.63,
+      "model": "nemotron-3-ultra-free",
+      "provider": "opencode",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.3,
+      "model": "nemotron-3.5-lightning-free",
+      "provider": "opencode",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.32,
+      "model": "big-pickle",
+      "provider": "opencode",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.31,
+      "model": "mimo-v2.5-free",
+      "provider": "opencode",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "AUTH",
+      "elapsed": 0.39,
+      "model": "ling-3.0-flash-fin-free",
+      "provider": "opencode",
+      "status": 403,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 1.07,
+      "model": "GLM-5.3-Flash",
+      "provider": "bai",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.35,
+      "model": "Qwen3.8-Flash",
+      "provider": "bai",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.37,
+      "model": "MiMo-V2.5",
+      "provider": "bai",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "NOT_FOUND",
+      "elapsed": 0.37,
+      "model": "Hy3",
+      "provider": "bai",
+      "status": 404,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 2.17,
+      "model": "gpt-6-astra",
+      "provider": "openai",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "CLIENT_ERROR",
+      "elapsed": 0.76,
+      "model": "gpt-5.6-luna",
+      "provider": "openai",
+      "status": 400,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 1.51,
+      "model": "gpt-5.6-sol",
+      "provider": "openai",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.93,
+      "model": "gpt-5.6-terra",
+      "provider": "openai",
+      "status": 429,
+      "text_preview": ""
+    },
+    {
+      "classification": "RATE_LIMIT",
+      "elapsed": 0.55,
+      "model": "gpt-5.5",
+      "provider": "openai",
+      "status": 429,
+      "text_preview": ""
+    }
+  ],
+  "summary": {
+    "AUTH": 10,
+    "CLIENT_ERROR": 10,
+    "EMPTY_SUCCESS": 12,
+    "NOT_FOUND": 18,
+    "RATE_LIMIT": 22,
+    "SERVER_ERROR": 2,
+    "SUCCESS": 30,
+    "TRANSPORT": 8
+  }
+}

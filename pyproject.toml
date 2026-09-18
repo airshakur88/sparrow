@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "sparrow"
 version = "0.0.0"
-description = "Free LLM gateway: 18 LLM providers, 157 enabled chat routes, 157 cataloged chat models; keyless start when available."
+description = "Free LLM gateway: 18 LLM providers, 141 enabled chat routes, 141 cataloged chat models; keyless start when available."
 license = "MIT"
 requires-python = ">=3.11"
 authors = [{ name = "airshakur88" }]

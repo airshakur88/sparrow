@@ -46,7 +46,7 @@ _PROVIDER_PREFIX_RE = re.compile(r"^[^/]+/")
 _VENDOR_PREFIX_RE = re.compile(
     r"^(?:meta|mistralai|nvidia|google|microsoft|nousresearch|cognitivecomputations|"
     r"deepseek-ai|cohere|c4ai|ai21|aisingapore|ibm-granite|ibm|zai-org|zai|"
-    r"moonshotai|cf-moonshotai|minimaxai|xiaomimimo|opengvlab|sarvamai|01-ai|"
+    r"moonshotai|minimaxai|xiaomimimo|opengvlab|sarvamai|01-ai|"
     r"openai|z-ai)[-_]",
     re.IGNORECASE,
 )
@@ -76,7 +76,6 @@ _MODEL_NAME_ALIASES = {
                                                                              
                                                                                
                                                                              
-    "kimi-k2.7-code": "kimi-k2.6",
     "qwen3.6-27b": "qwen3-30b-a3b",
     "qwen3.6-35b-a3b": "qwen3-30b-a3b",
 }

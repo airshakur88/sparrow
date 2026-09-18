@@ -152,7 +152,7 @@ def test_models_json_classifies_each_openai_model_as_paid(monkeypatch, capsys) -
     assert all(row["billing"] == "paid" and row["keyless"] is False for row in payload)
 
 
-def test_models_and_providers_plain_output_identifies_billing_and_access(
+def test_models_and_providers_plain_output_identifies_access_and_status(
     monkeypatch, capsys
 ) -> None:
     catalog = [
@@ -180,15 +180,15 @@ def test_models_and_providers_plain_output_identifies_billing_and_access(
 
     assert main(["providers"]) == 0
     providers_output = capsys.readouterr().out
-    assert "free" in providers_output
     assert "keyless" in providers_output
-    assert "paid" in providers_output
     assert "key required" in providers_output
+    assert "paid |" not in providers_output
+    assert "[OK] ready" in providers_output
 
     assert main(["models", "--providers", "ready"]) == 0
     models_output = capsys.readouterr().out
-    assert "free" in models_output
     assert "keyless" in models_output
+    assert "[OK] Ready" in models_output
 
 
 def test_main_without_command_shows_welcome(capsys) -> None:

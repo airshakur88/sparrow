@@ -296,28 +296,28 @@ class TestLegacyProviderCompatibility:
 
     def test_provider_is_configured_extra_env_required(self) -> None:
         provider = Provider(
-            id="cloudflare",
-            label="Cloudflare",
-            adapter="cloudflare",
-            base_url="https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run",
-            key_env="CLOUDFLARE_API_TOKEN",
-            extra_env=("CLOUDFLARE_ACCOUNT_ID",),
-            models=(Model("@cf/meta/llama-3.1-8b-instruct", rpd=0),),
+            id="synthetic",
+            label="Synthetic",
+            adapter="openai",
+            base_url="https://synthetic.test/v1",
+            key_env="SYNTHETIC_API_KEY",
+            extra_env=("SYNTHETIC_ACCOUNT_ID",),
+            models=(Model("synthetic-model", rpd=0),),
         )
-        env = {"CLOUDFLARE_API_TOKEN": "token", "CLOUDFLARE_ACCOUNT_ID": "account"}
+        env = {"SYNTHETIC_API_KEY": "token", "SYNTHETIC_ACCOUNT_ID": "account"}
         assert provider.is_configured(env) is True
 
     def test_provider_is_configured_missing_extra_env(self) -> None:
         provider = Provider(
-            id="cloudflare",
-            label="Cloudflare",
-            adapter="cloudflare",
-            base_url="https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run",
-            key_env="CLOUDFLARE_API_TOKEN",
-            extra_env=("CLOUDFLARE_ACCOUNT_ID",),
-            models=(Model("@cf/meta/llama-3.1-8b-instruct", rpd=0),),
+            id="synthetic",
+            label="Synthetic",
+            adapter="openai",
+            base_url="https://synthetic.test/v1",
+            key_env="SYNTHETIC_API_KEY",
+            extra_env=("SYNTHETIC_ACCOUNT_ID",),
+            models=(Model("synthetic-model", rpd=0),),
         )
-        env = {"CLOUDFLARE_API_TOKEN": "token"}
+        env = {"SYNTHETIC_API_KEY": "token"}
         assert provider.is_configured(env) is False
 
     def test_provider_api_key_returns_key(self) -> None:

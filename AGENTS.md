@@ -5,7 +5,7 @@
 **Branch:** main
 
 ## OVERVIEW
-Sparrow is a free LLM gateway providing 18 providers, 157 chat routes, and 157 cataloged models with keyless start when available. Built as a Python package with CLI, HTTP proxy, and programmatic API.
+Sparrow is a free LLM gateway providing 18 providers, 152 chat routes, and 152 cataloged models with keyless start when available. Built as a Python package with CLI, HTTP proxy, and programmatic API.
 
 ## STRUCTURE
 ```
@@ -31,7 +31,7 @@ sparrow/
 | Core routing logic | src/sparrow/router.py:Pool | 1904 lines |
 | Configuration | src/sparrow/config.py | load_catalog, settings |
 | Credential management | src/sparrow/credential_*.py | Store, manager, CLI |
-| Provider catalog | src/sparrow/providers.toml | 18 providers, 157 models |
+| Provider catalog | src/sparrow/providers.toml | 18 providers, 152 models |
 | Capability scoring | src/sparrow/capability_scores.json | Model capability data |
 | Test fixtures | tests/fixtures/ | grounded_reading.json |
 | CI pipeline | .github/workflows/ci.yml | Test, lint, docker, release |

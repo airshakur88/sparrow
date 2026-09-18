@@ -19,10 +19,13 @@ def test_normalize_collapses_variants_and_strips_vendor():
     assert c.normalize_model_name("Meta-Llama-3.3-70B-Instruct").startswith("llama-3.3-70b")
 
 
+def test_removed_model_alias_is_not_preserved():
+    assert c.normalize_model_name("kimi-k2.7-code") == "kimi-k2.7-code"
+
+
 @pytest.mark.parametrize(
     ("catalog_name", "benchmark_name"),
     [
-        ("cloudflare/@cf/moonshotai/kimi-k2.6", "kimi-k2.6"),
         ("huggingface/MiniMaxAI/MiniMax-M3", "minimax-m3"),
         ("nvidia/minimaxai/minimax-m3", "minimax-m3"),
         ("huggingface/XiaomiMiMo/MiMo-V2.5-Pro", "mimo-v2.5-pro"),
@@ -30,7 +33,6 @@ def test_normalize_collapses_variants_and_strips_vendor():
         ("morph/morph-glm52-744b", "glm-5.2"),
         ("morph/morph-minimax3-428b", "minimax-m3"),
         ("morph/morph-dsv4flash", "deepseek-v4-flash"),
-        ("cloudflare/@cf/moonshotai/kimi-k2.7-code", "kimi-k2.6"),
         ("huggingface/Qwen/Qwen3.6-27B", "qwen3-30b-a3b"),
         ("huggingface/Qwen/Qwen3.6-35B-A3B", "qwen3-30b-a3b"),
     ],
@@ -48,7 +50,6 @@ def test_bundled_scores_include_current_artificial_analysis_frontier_models():
 
 def test_current_agent_models_use_researched_capability_tiers():
     table = c.capability_table()
-    assert c.model_capability("@cf/moonshotai/kimi-k2.7-code", table) >= 0.95
     assert c.model_capability("Qwen/Qwen3.6-35B-A3B", table) == c.model_capability(
         "Qwen/Qwen3-30B-A3B", table
     )

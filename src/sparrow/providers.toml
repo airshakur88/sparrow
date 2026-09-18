@@ -41,7 +41,6 @@ models = [
     { name = "qwen3.5-9b", rpd = 0 },
     { name = "qwen3-coder-30b-a3b-instruct", rpd = 0 },
     { name = "qwen2.5-vl-72b-instruct", rpd = 0 },
-    { name = "mistral-small-3.2-24b-instruct", rpd = 0 },
     { name = "mistral-7b-instruct-v0.3", rpd = 0 },
     { name = "qwen3-32b", rpd = 0 },
     { name = "meta-llama-3_3-70b-instruct", rpd = 0 },
@@ -78,7 +77,6 @@ base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
 key_env = "GEMINI_API_KEY"
 models = [
     { name = "gemini-2.5-pro", rpd = 0 },
-    { name = "gemini-2.5-flash", rpd = 0 },
     { name = "gemini-2.5-flash-lite", rpd = 0 },
     { name = "gemini-3.8-flash", rpd = 0 },
     { name = "gemini-3.7-flash", rpd = 0 },
@@ -99,7 +97,6 @@ base_url = "https://api.groq.com/openai/v1"
 key_env = "GROQ_API_KEY"
 models = [
     { name = "qwen/qwen3.8-27b", rpd = 0 },
-    { name = "qwen/qwen3.6-27b", rpd = 0 },
     { name = "openai/gpt-oss-120b", rpd = 0 },
     { name = "openai/gpt-oss-20b", rpd = 0 },
     { name = "groq/compound", rpd = 0 },
@@ -119,7 +116,6 @@ models = [
     { name = "mistralai/mistral-nemotron", rpd = 0 },
     { name = "z-ai/glm-5.3-flash", rpd = 0 },
     { name = "nvidia/nemotron-3-ultra-550b-a55b", rpd = 0 },
-    { name = "nvidia/nemotron-ocr-v2", rpd = 0 },
     { name = "moonshotai/kimi-k3", rpd = 0 },
     { name = "deepseek-ai/deepseek-v4-flash-0731", rpd = 0 },
     { name = "nvidia/nemotron-3.5-lightning-30b-a3b", rpd = 0 },
@@ -168,10 +164,7 @@ models = [
     { name = "kimi-k3", rpd = 0 },
     { name = "gpt-oss:120b", rpd = 0 },
     { name = "gpt-oss:20b", rpd = 0 },
-    { name = "gpt-oss-120b", rpd = 0 },
-    { name = "gpt-oss-20b", rpd = 0 },
     { name = "nemotron-3-ultra", rpd = 0 },
-    { name = "qwen3.5-397b", rpd = 0 },
 ]
 
 [[provider]]
@@ -213,27 +206,6 @@ models = [
     { name = "Tencent-Hunyuan/Hy3", rpd = 0 },
     { name = "stepfun-ai/Step-3.7-Flash", rpd = 0 },
     { name = "Qwen/Qwen3.5-397B-A17B", rpd = 0 },
-]
-
-[[provider]]
-id = "cloudflare"
-label = "Cloudflare Workers AI"
-billing = "paid"
-adapter = "cloudflare"
-base_url = "https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1"
-key_env = "CLOUDFLARE_API_TOKEN"
-extra_env = ["CLOUDFLARE_ACCOUNT_ID"]
-models = [
-    { name = "@cf/qwen/qwen3.8-27b", rpd = 0 },
-    { name = "@cf/moonshotai/kimi-k2.7-code", rpd = 0 },
-    { name = "@cf/google/gemma-4-26b-a4b-it", rpd = 0 },
-    { name = "@cf/zai-org/glm-4.7-flash", rpd = 0 },
-    { name = "@cf/openai/gpt-oss-120b", rpd = 0 },
-    { name = "@cf/nvidia/nemotron-3-120b-a12b", rpd = 0 },
-    { name = "@cf/meta/llama-4-scout-17b-16e-instruct", rpd = 0 },
-    { name = "@cf/mistralai/mistral-small-3.1-24b-instruct", rpd = 0 },
-    { name = "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b", rpd = 0 },
-    { name = "@cf/openai/gpt-oss-20b", rpd = 0 },
 ]
 
 [[provider]]
@@ -333,10 +305,6 @@ adapter = "openai"
 base_url = "https://api.b.ai/v1"
 key_env = "BAI_API_KEY"
 models = [
-    { name = "GLM-5.3-Flash", rpd = 0 },
-    { name = "Qwen3.8-Flash", rpd = 0 },
-    { name = "MiMo-V2.5", rpd = 0 },
-    { name = "Hy3", rpd = 0 },
 ]
 
 [[provider]]

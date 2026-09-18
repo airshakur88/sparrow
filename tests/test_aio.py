@@ -152,6 +152,39 @@ def test_async_gemini_shape(providers, env, quota):
     assert reply.text == "hi from gemini"
 
 
+def test_async_opencode_headers_sent_for_keyless_provider():
+    seen_headers = {}
+
+    async def apost(url, headers, body, timeout):
+        del url, body, timeout
+        seen_headers.update(headers)
+        return sync_client.HTTPResult(200, {"choices": [{"message": {"content": "ok"}}]}, "ok")
+
+    provider = Provider(
+        id="opencode",
+        label="OpenCode Zen",
+        adapter="openai",
+        base_url="https://opencode.ai/zen/v1",
+        auth="none",
+        models=(Model("mimo-v2.5-free"),),
+    )
+    pool = AsyncPool(Pool([provider], env={}), apost=apost)
+    reply = asyncio.run(
+        pool.achat(
+            [{"role": "user", "content": "hi"}],
+            providers=["opencode"],
+        )
+    )
+
+    assert reply.text == "ok"
+    assert seen_headers["User-Agent"].startswith("opencode/sparrow/")
+    assert "x-opencode-project" in seen_headers
+    assert "x-opencode-session" in seen_headers
+    assert "x-opencode-request" in seen_headers
+    assert "x-opencode-client" in seen_headers
+    assert "Authorization" not in seen_headers
+
+
 @pytest.mark.parametrize("model", ["gemini-3.6-flash", "gemini-3.7-flash"])
 def test_async_gemini_36_and_37_omit_sampling_and_receive_thinking_headroom(model, quota):
     provider = Provider(
