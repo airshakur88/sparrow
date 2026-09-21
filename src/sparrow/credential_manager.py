@@ -34,6 +34,14 @@ class CredentialManager:
         self._store = store
         self._clock = clock
 
+    def has_credentials(self, provider_id: str) -> bool:
+        return any(
+            slot.provider == provider_id
+            and slot.enabled
+            and self._env.get(slot.env_var, "").strip()
+            for slot in self._slots
+        )
+
     def generation(self, provider_id: str) -> str:
         records = [
             {

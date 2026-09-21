@@ -598,7 +598,11 @@ class Pool:
                 for slot in slots
                 if slot.enabled and env.get(slot.env_var, "").strip()
             }
-            providers = [provider for provider in catalog if provider.id in configured_ids]
+            providers = [
+                provider for provider in catalog
+                if provider.id not in disabled_ids
+                and (provider.id in configured_ids or provider.keyless)
+            ]
             store = CredentialStore()
             credential_manager = CredentialManager(slots, env, store)
         else:
@@ -1446,7 +1450,10 @@ class Pool:
                 attempts.append((target.name, "skipped (overall request timeout exhausted)"))
                 break
             selection: CredentialSelection | None = None
-            if self._credential_manager is not None:
+            if self._credential_manager is not None and (
+                not target.provider.keyless
+                or self._credential_manager.has_credentials(target.provider.id)
+            ):
                 reserved = self._credential_manager.reserve(
                     target.provider.id,
                     target.model,
@@ -1712,7 +1719,10 @@ class Pool:
                 attempts.append((target.name, "skipped (provider quota unavailable this request)"))
                 continue
             selected_credential: CredentialSelection | None = None
-            if self.credential_manager is not None:
+            if self.credential_manager is not None and (
+                not target.provider.keyless
+                or self.credential_manager.has_credentials(target.provider.id)
+            ):
                 selected = self.credential_manager.reserve(
                     target.provider.id,
                     target.model,
